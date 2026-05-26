@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "Business" ADD COLUMN "businessType" TEXT NOT NULL DEFAULT 'HOME_SERVICES';

@@ -8,6 +8,9 @@ Run commands from the project folder:
 
 ```bash
 cd /mnt/c/Users/zoene/saas/leadreply
+npm install
+npx prisma generate
+npx prisma migrate deploy
 npm run dev
 ```
 
@@ -31,9 +34,21 @@ If the dev server gets stale after adding routes, schema changes, or migrations,
 
 ## Local database
 
-This project currently uses SQLite through Prisma. The local database file is `dev.db`, and it is intentionally ignored by Git.
+This project uses PostgreSQL through Prisma. Set `DATABASE_URL` in `.env` before running migrations.
 
-After schema changes, run:
+Example local connection string:
+
+```text
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/leadreply?schema=public"
+```
+
+Create the `leadreply` database in your local Postgres server first, then run:
+
+```bash
+createdb leadreply
+```
+
+After schema changes, run migrations and regenerate Prisma Client:
 
 ```bash
 npx prisma generate
@@ -49,7 +64,7 @@ npx prisma migrate deploy
 
 ## Before production
 
-- Move from SQLite to hosted Postgres.
+- Point `DATABASE_URL` at a hosted Postgres database.
 - Use a strong production `NEXTAUTH_SECRET`.
 - Keep Twilio credentials in environment variables only.
 - Add a preview step before sending real SMS messages.
