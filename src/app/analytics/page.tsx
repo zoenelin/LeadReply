@@ -3,6 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { businessCategoryLabels } from "@/lib/business-options"
+import { getStarterLeads } from "@/lib/demo-data"
 import {
   formatMoney,
   leadSourceLabels,
@@ -13,31 +14,6 @@ import {
 } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../components/AppNav"
-
-const averageLeadValues: Record<string, number> = {
-  AUTOMOTIVE: 42000,
-  HOME_SERVICES: 65000,
-  BEAUTY_SERVICES: 12000,
-  FOOD_SERVICES: 18000,
-  MEDICAL_WELLNESS: 26000,
-  LEGAL: 90000,
-  FITNESS: 16000,
-  REAL_ESTATE: 120000,
-  PROFESSIONAL_SERVICES: 75000,
-  RETAIL: 14000,
-  OTHER: 30000,
-}
-
-function makeDate(monthsAgo: number, day: number) {
-  const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth() - monthsAgo, day, 10, 0, 0)
-}
-
-function closeDate(createdAt: Date, daysLater: number) {
-  const date = new Date(createdAt)
-  date.setDate(date.getDate() + daysLater)
-  return date
-}
 
 function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
@@ -56,104 +32,6 @@ function getLastSixMonths() {
       label: date.toLocaleString("en-US", { month: "short" }),
     }
   })
-}
-
-function buildStarterLeads(businessId: string, businessType: string) {
-  const baseValue = averageLeadValues[businessType] ?? averageLeadValues.OTHER
-  const firstWonDate = makeDate(5, 8)
-  const secondWonDate = makeDate(3, 17)
-  const thirdWonDate = makeDate(1, 12)
-
-  return [
-    {
-      businessId,
-      customerName: "Jamie Parker",
-      customerPhone: "(555) 014-1824",
-      source: "MISSED_CALL",
-      status: "WON",
-      estimatedValueCents: baseValue,
-      wonValueCents: baseValue,
-      createdAt: firstWonDate,
-      closedAt: closeDate(firstWonDate, 2),
-    },
-    {
-      businessId,
-      customerName: "Morgan Lee",
-      customerPhone: "(555) 016-4480",
-      source: "WEBSITE",
-      status: "CONTACTED",
-      estimatedValueCents: Math.round(baseValue * 0.7),
-      wonValueCents: 0,
-      createdAt: makeDate(4, 14),
-      closedAt: null,
-    },
-    {
-      businessId,
-      customerName: "Taylor Brooks",
-      customerPhone: "(555) 019-2571",
-      source: "MISSED_CALL",
-      status: "WON",
-      estimatedValueCents: Math.round(baseValue * 1.3),
-      wonValueCents: Math.round(baseValue * 1.15),
-      createdAt: secondWonDate,
-      closedAt: closeDate(secondWonDate, 3),
-    },
-    {
-      businessId,
-      customerName: "Casey Nguyen",
-      customerPhone: "(555) 013-9022",
-      source: "REFERRAL",
-      status: "LOST",
-      estimatedValueCents: Math.round(baseValue * 0.5),
-      wonValueCents: 0,
-      createdAt: makeDate(2, 6),
-      closedAt: closeDate(makeDate(2, 6), 4),
-    },
-    {
-      businessId,
-      customerName: "Riley Smith",
-      customerPhone: "(555) 011-7304",
-      source: "WEBSITE",
-      status: "NEW",
-      estimatedValueCents: Math.round(baseValue * 0.8),
-      wonValueCents: 0,
-      createdAt: makeDate(1, 4),
-      closedAt: null,
-    },
-    {
-      businessId,
-      customerName: "Avery Johnson",
-      customerPhone: "(555) 018-6161",
-      source: "MISSED_CALL",
-      status: "WON",
-      estimatedValueCents: Math.round(baseValue * 1.1),
-      wonValueCents: baseValue,
-      createdAt: thirdWonDate,
-      closedAt: closeDate(thirdWonDate, 1),
-    },
-    {
-      businessId,
-      customerName: "Jordan Davis",
-      customerPhone: "(555) 015-3348",
-      source: "MANUAL",
-      status: "CONTACTED",
-      estimatedValueCents: Math.round(baseValue * 0.9),
-      wonValueCents: 0,
-      createdAt: makeDate(0, 10),
-      closedAt: null,
-    },
-    {
-      businessId,
-      customerName: "Skyler Reed",
-      customerPhone: "(555) 017-4209",
-      source: "WEBSITE",
-      status: "NEW",
-      estimatedValueCents: Math.round(baseValue * 0.6),
-      wonValueCents: 0,
-      createdAt: makeDate(0, 19),
-      closedAt: null,
-    },
-  ]
 }
 
 async function getBusinessWithLeads(userId: string) {
@@ -211,7 +89,7 @@ export default async function AnalyticsPage({
 
   if (business.leads.length === 0) {
     await prisma.lead.createMany({
-      data: buildStarterLeads(business.id, business.businessType),
+      data: getStarterLeads(business.id, business.businessType),
     })
 
     const refreshedBusiness = await getBusinessWithLeads(session.user.id)
@@ -255,6 +133,14 @@ export default async function AnalyticsPage({
   const recoveredRevenueCents = wonLeads
     .filter((lead) => lead.source === "MISSED_CALL")
     .reduce((total, lead) => total + lead.wonValueCents, 0)
+  const missedCallLeads = leads.filter((lead) => lead.source === "MISSED_CALL")
+  const recoveredLeadCount = missedCallLeads.filter(
+    (lead) => lead.status === "WON"
+  ).length
+  const missedCallWinRate =
+    missedCallLeads.length === 0
+      ? 0
+      : Math.round((recoveredLeadCount / missedCallLeads.length) * 100)
   const conversionRate =
     leads.length === 0 ? 0 : Math.round((wonLeads.length / leads.length) * 100)
   const monthRows = getLastSixMonths().map((month) => {
@@ -398,15 +284,28 @@ export default async function AnalyticsPage({
           </div>
 
           <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-            <p className="text-sm font-medium text-emerald-800">
-              Recovered by LeadReply
-            </p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">
-              {formatMoney(recoveredRevenueCents)}
-            </p>
-            <p className="mt-2 text-sm text-slate-700">
-              This counts won revenue from missed-call leads.
-            </p>
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
+                  ROI card
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                  {formatMoney(recoveredRevenueCents)} recovered by LeadReply
+                </h2>
+                <p className="mt-2 text-sm text-slate-700">
+                  Won revenue from missed-call leads. {recoveredLeadCount} of{" "}
+                  {missedCallLeads.length} missed-call leads are won.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                <p className="text-sm font-medium text-slate-500">
+                  Missed-call win rate
+                </p>
+                <p className="mt-1 text-3xl font-bold text-slate-950">
+                  {missedCallWinRate}%
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 grid gap-5 lg:grid-cols-2">

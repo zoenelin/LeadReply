@@ -9,6 +9,7 @@ import {
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { AppNav } from "../components/AppNav"
+import { DemoResetButton } from "../components/DemoResetButton"
 
 const businessTypeContent: Record<
   string,
@@ -169,6 +170,29 @@ export default async function DashboardPage() {
         },
       })
     : null
+  const recoveredLeadAnalytics = business
+    ? await prisma.lead.aggregate({
+        where: {
+          businessId: business.id,
+          source: "MISSED_CALL",
+          status: "WON",
+        },
+        _count: {
+          _all: true,
+        },
+        _sum: {
+          wonValueCents: true,
+        },
+      })
+    : null
+  const missedCallLeadCount = business
+    ? await prisma.lead.count({
+        where: {
+          businessId: business.id,
+          source: "MISSED_CALL",
+        },
+      })
+    : 0
   const todayEnd = new Date()
   todayEnd.setHours(23, 59, 59, 999)
   const followUpsDue = business
@@ -197,6 +221,13 @@ export default async function DashboardPage() {
       })
     : 0
   const revenueWonCents = leadAnalytics?._sum.wonValueCents ?? 0
+  const recoveredRevenueCents =
+    recoveredLeadAnalytics?._sum.wonValueCents ?? 0
+  const recoveredLeadCount = recoveredLeadAnalytics?._count._all ?? 0
+  const missedCallWinRate =
+    missedCallLeadCount === 0
+      ? 0
+      : Math.round((recoveredLeadCount / missedCallLeadCount) * 100)
 
   const dashboardContent =
     businessTypeContent[business?.businessType ?? ""] ??
@@ -381,6 +412,31 @@ export default async function DashboardPage() {
           </div>
         </div>
 
+        <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
+                ROI snapshot
+              </p>
+              <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                {formatMoney(recoveredRevenueCents)} recovered
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                Won revenue from missed-call leads. {recoveredLeadCount} of{" "}
+                {missedCallLeadCount} missed-call leads are won so far.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+              <p className="text-sm font-medium text-slate-500">
+                Missed-call win rate
+              </p>
+              <p className="mt-1 text-3xl font-bold text-slate-950">
+                {missedCallWinRate}%
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-8 rounded-2xl border border-slate-200 p-5">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
@@ -449,6 +505,22 @@ export default async function DashboardPage() {
               {reviewRequestsCount} request
               {reviewRequestsCount === 1 ? "" : "s"} tracked
             </p>
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Demo tools</p>
+              <h2 className="mt-2 text-xl font-bold text-slate-950">
+                Reset sample data
+              </h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Restore the sample leads, missed calls, and review workflow for
+                demos or testing.
+              </p>
+            </div>
+            <DemoResetButton />
           </div>
         </div>
 

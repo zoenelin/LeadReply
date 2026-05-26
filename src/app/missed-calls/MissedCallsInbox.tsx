@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
 
 type MissedCall = {
@@ -9,6 +10,7 @@ type MissedCall = {
   createdAt: string
   reason: string
   status: string
+  convertedLeadId: string | null
 }
 
 type MissedCallsInboxProps = {
@@ -57,6 +59,38 @@ export function MissedCallsInbox({
       )
     )
     setMessage("Call marked as replied.")
+  }
+
+  async function convertToLead() {
+    if (!selectedCall) {
+      return
+    }
+
+    setMessage("")
+
+    const res = await fetch(`/api/missed-calls/${selectedCall.id}`, {
+      method: "POST",
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setMessage(data.error || "Something went wrong.")
+      return
+    }
+
+    setLocalCalls((currentCalls) =>
+      currentCalls.map((call) =>
+        call.id === selectedCall.id
+          ? { ...call, convertedLeadId: data.lead.id }
+          : call
+      )
+    )
+    setMessage(
+      data.alreadyConverted
+        ? "This missed call is already in the pipeline."
+        : "Lead created from missed call."
+    )
   }
 
   async function copyReply() {
@@ -113,6 +147,11 @@ export function MissedCallsInbox({
                 >
                   {call.status === "REPLIED" ? "Replied" : "New"}
                 </span>
+                {call.convertedLeadId && (
+                  <span className="rounded-lg bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-700">
+                    Lead
+                  </span>
+                )}
               </div>
               <p className="mt-3 text-sm text-slate-600">{call.reason}</p>
             </button>
@@ -165,6 +204,24 @@ export function MissedCallsInbox({
           >
             Copy reply
           </button>
+          <button
+            type="button"
+            onClick={convertToLead}
+            disabled={Boolean(selectedCall.convertedLeadId)}
+            className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {selectedCall.convertedLeadId
+              ? "Already in pipeline"
+              : "Convert to lead"}
+          </button>
+          {selectedCall.convertedLeadId && (
+            <Link
+              href={`/leads/${selectedCall.convertedLeadId}`}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            >
+              Open lead
+            </Link>
+          )}
         </div>
 
         {message && <p className="mt-4 text-sm text-slate-600">{message}</p>}

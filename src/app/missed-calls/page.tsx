@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { authOptions } from "@/auth/auth"
+import { getStarterMissedCalls } from "@/lib/demo-data"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
@@ -8,179 +9,6 @@ import { MissedCallsInbox } from "./MissedCallsInbox"
 
 const fallbackReply =
   "Thanks for calling. Sorry we missed you. How can we help?"
-
-const seedCallsByType = {
-  AUTOMOTIVE: [
-    {
-      callerName: "Jamie Parker",
-      callerPhone: "(555) 214-9021",
-      reason: "Asked about a brake inspection and same-week availability.",
-    },
-    {
-      callerName: "Morgan Lee",
-      callerPhone: "(555) 782-1140",
-      reason: "Wanted an estimate for engine diagnostics.",
-    },
-    {
-      callerName: "Taylor Smith",
-      callerPhone: "(555) 640-3318",
-      reason: "Called about oil change pricing and drop-off times.",
-    },
-  ],
-  HOME_SERVICES: [
-    {
-      callerName: "Jamie Parker",
-      callerPhone: "(555) 214-9021",
-      reason: "Asked about a same-week estimate for a leaking sink.",
-    },
-    {
-      callerName: "Morgan Lee",
-      callerPhone: "(555) 782-1140",
-      reason: "Wanted availability for a small repair before Friday.",
-    },
-    {
-      callerName: "Taylor Smith",
-      callerPhone: "(555) 640-3318",
-      reason: "Called about service area and pricing for a new job.",
-    },
-  ],
-  BEAUTY_SERVICES: [
-    {
-      callerName: "Ari Johnson",
-      callerPhone: "(555) 418-2904",
-      reason: "Asked about openings for a haircut this afternoon.",
-    },
-    {
-      callerName: "Casey Nguyen",
-      callerPhone: "(555) 906-4412",
-      reason: "Wanted pricing and availability for a full set.",
-    },
-    {
-      callerName: "Riley Carter",
-      callerPhone: "(555) 335-7729",
-      reason: "Called to ask if walk-ins are available today.",
-    },
-  ],
-  FOOD_SERVICES: [
-    {
-      callerName: "Chris Rivera",
-      callerPhone: "(555) 829-1044",
-      reason: "Asked about catering for a lunch order tomorrow.",
-    },
-    {
-      callerName: "Sam Brooks",
-      callerPhone: "(555) 503-6671",
-      reason: "Wanted to confirm reservation availability for six people.",
-    },
-    {
-      callerName: "Jordan Kim",
-      callerPhone: "(555) 721-8840",
-      reason: "Called about pickup timing and menu options.",
-    },
-  ],
-  MEDICAL_WELLNESS: [
-    {
-      callerName: "Chris Rivera",
-      callerPhone: "(555) 829-1044",
-      reason: "Asked about appointment availability for next week.",
-    },
-    {
-      callerName: "Sam Brooks",
-      callerPhone: "(555) 503-6671",
-      reason: "Wanted to ask about services and insurance questions.",
-    },
-    {
-      callerName: "Jordan Kim",
-      callerPhone: "(555) 721-8840",
-      reason: "Called about consultation availability.",
-    },
-  ],
-  LEGAL: [
-    {
-      callerName: "Chris Rivera",
-      callerPhone: "(555) 829-1044",
-      reason: "Asked about scheduling an initial consultation.",
-    },
-    {
-      callerName: "Sam Brooks",
-      callerPhone: "(555) 503-6671",
-      reason: "Wanted to know if the firm handles their case type.",
-    },
-    {
-      callerName: "Jordan Kim",
-      callerPhone: "(555) 721-8840",
-      reason: "Called about fees and appointment availability.",
-    },
-  ],
-  FITNESS: [
-    {
-      callerName: "Chris Rivera",
-      callerPhone: "(555) 829-1044",
-      reason: "Asked about membership options and trial classes.",
-    },
-    {
-      callerName: "Sam Brooks",
-      callerPhone: "(555) 503-6671",
-      reason: "Wanted personal training availability.",
-    },
-    {
-      callerName: "Jordan Kim",
-      callerPhone: "(555) 721-8840",
-      reason: "Called about class schedules.",
-    },
-  ],
-  REAL_ESTATE: [
-    {
-      callerName: "Chris Rivera",
-      callerPhone: "(555) 829-1044",
-      reason: "Asked about scheduling a property showing.",
-    },
-    {
-      callerName: "Sam Brooks",
-      callerPhone: "(555) 503-6671",
-      reason: "Wanted information about selling their home.",
-    },
-    {
-      callerName: "Jordan Kim",
-      callerPhone: "(555) 721-8840",
-      reason: "Called about rental availability.",
-    },
-  ],
-  PROFESSIONAL_SERVICES: [
-    {
-      callerName: "Chris Rivera",
-      callerPhone: "(555) 829-1044",
-      reason: "Asked about booking a consultation.",
-    },
-    {
-      callerName: "Sam Brooks",
-      callerPhone: "(555) 503-6671",
-      reason: "Wanted to understand service pricing.",
-    },
-    {
-      callerName: "Jordan Kim",
-      callerPhone: "(555) 721-8840",
-      reason: "Called about project availability.",
-    },
-  ],
-  RETAIL: [
-    {
-      callerName: "Chris Rivera",
-      callerPhone: "(555) 829-1044",
-      reason: "Asked about product availability.",
-    },
-    {
-      callerName: "Sam Brooks",
-      callerPhone: "(555) 503-6671",
-      reason: "Wanted pickup timing for an order.",
-    },
-    {
-      callerName: "Jordan Kim",
-      callerPhone: "(555) 721-8840",
-      reason: "Called about store hours and special orders.",
-    },
-  ],
-}
 
 export default async function MissedCallsPage() {
   const session = await getServerSession(authOptions)
@@ -209,15 +37,8 @@ export default async function MissedCallsPage() {
   let missedCalls = business.missedCalls
 
   if (missedCalls.length === 0) {
-    const seedCalls =
-      seedCallsByType[business.businessType as keyof typeof seedCallsByType] ??
-      seedCallsByType.PROFESSIONAL_SERVICES
-
     await prisma.missedCall.createMany({
-      data: seedCalls.map((call) => ({
-        ...call,
-        businessId: business.id,
-      })),
+      data: getStarterMissedCalls(business.id, business.businessType),
     })
 
     missedCalls = await prisma.missedCall.findMany({
@@ -274,6 +95,7 @@ export default async function MissedCallsPage() {
               createdAt: call.createdAt.toISOString(),
               reason: call.reason,
               status: call.status,
+              convertedLeadId: call.convertedLeadId,
             }))}
             replyTemplate={replyTemplate}
           />

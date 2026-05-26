@@ -1,4 +1,5 @@
 import { authOptions } from "@/auth/auth"
+import { getAverageLeadValueCents } from "@/lib/demo-data"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { z } from "zod"
@@ -6,6 +7,21 @@ import { z } from "zod"
 const missedCallSchema = z.object({
   status: z.enum(["NEW", "REPLIED"]),
 })
+
+async function findUserMissedCall(id: string, userId: string) {
+  return prisma.missedCall.findFirst({
+    where: {
+      id,
+      business: {
+        userId,
+      },
+    },
+    include: {
+      business: true,
+      convertedLead: true,
+    },
+  })
+}
 
 export async function PATCH(
   req: Request,
@@ -30,14 +46,7 @@ export async function PATCH(
 
     const { id } = await params
 
-    const missedCall = await prisma.missedCall.findFirst({
-      where: {
-        id,
-        business: {
-          userId: session.user.id,
-        },
-      },
-    })
+    const missedCall = await findUserMissedCall(id, session.user.id)
 
     if (!missedCall) {
       return Response.json({ error: "Missed call not found." }, { status: 404 })
@@ -57,6 +66,74 @@ export async function PATCH(
   } catch {
     return Response.json(
       { error: "Something went wrong updating the missed call." },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions)
+
+  if (!session) {
+    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  }
+
+  const { id } = await params
+  const missedCall = await findUserMissedCall(id, session.user.id)
+
+  if (!missedCall) {
+    return Response.json({ error: "Missed call not found." }, { status: 404 })
+  }
+
+  if (missedCall.convertedLead) {
+    return Response.json({
+      lead: missedCall.convertedLead,
+      alreadyConverted: true,
+    })
+  }
+
+  const followUpAt = new Date()
+  followUpAt.setDate(followUpAt.getDate() + 1)
+  followUpAt.setHours(9, 0, 0, 0)
+
+  try {
+    const lead = await prisma.$transaction(async (tx) => {
+      const createdLead = await tx.lead.create({
+        data: {
+          businessId: missedCall.businessId,
+          customerName: missedCall.callerName,
+          customerPhone: missedCall.callerPhone,
+          source: "MISSED_CALL",
+          status: "NEW",
+          estimatedValueCents: getAverageLeadValueCents(
+            missedCall.business.businessType
+          ),
+          notes: missedCall.reason,
+          followUpAt,
+          followUpNote: `Follow up from missed call: ${missedCall.reason}`,
+          createdAt: missedCall.createdAt,
+        },
+      })
+
+      await tx.missedCall.update({
+        where: {
+          id: missedCall.id,
+        },
+        data: {
+          convertedLeadId: createdLead.id,
+        },
+      })
+
+      return createdLead
+    })
+
+    return Response.json({ lead }, { status: 201 })
+  } catch {
+    return Response.json(
+      { error: "Something went wrong converting the missed call." },
       { status: 500 }
     )
   }

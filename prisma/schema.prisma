@@ -43,15 +43,17 @@ model Business {
 }
 
 model MissedCall {
-  id          String    @id @default(cuid())
-  callerName  String
-  callerPhone String
-  reason      String
-  status      String    @default("NEW")
-  createdAt   DateTime  @default(now())
-  repliedAt   DateTime?
-  businessId  String
-  business    Business  @relation(fields: [businessId], references: [id])
+  id              String    @id @default(cuid())
+  callerName      String
+  callerPhone     String
+  reason          String
+  status          String    @default("NEW")
+  createdAt       DateTime  @default(now())
+  repliedAt       DateTime?
+  convertedLeadId String?   @unique
+  convertedLead   Lead?     @relation(fields: [convertedLeadId], references: [id], onDelete: SetNull)
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id])
 }
 
 model Lead {
@@ -72,6 +74,7 @@ model Lead {
   businessId          String
   business            Business        @relation(fields: [businessId], references: [id])
   reviewRequests      ReviewRequest[]
+  sourceMissedCall    MissedCall?
 
   @@index([businessId])
 }
