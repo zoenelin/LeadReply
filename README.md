@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LeadReply
 
-## Getting Started
+LeadReply is a small Next.js SaaS prototype for missed-call follow-up. It has account signup, business onboarding, a tailored dashboard, editable business settings, saved reply templates, and a missed-call inbox.
 
-First, run the development server:
+## Run locally
+
+Run commands from the project folder:
 
 ```bash
+cd /mnt/c/Users/zoene/saas/leadreply
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If the dev server gets stale after adding routes, schema changes, or migrations, stop it with `Ctrl + C` and start it again.
 
-## Learn More
+## Useful pages
 
-To learn more about Next.js, take a look at the following resources:
+```text
+/signup
+/login
+/dashboard
+/missed-calls
+/settings/business
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Local database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project currently uses SQLite through Prisma. The local database file is `dev.db`, and it is intentionally ignored by Git.
 
-## Deploy on Vercel
+After schema changes, run:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Current product flow
+
+- A user signs up with business name, phone, and category.
+- The dashboard adapts copy for home services, beauty services, or food/restaurants.
+- Business settings let the user update business details and save a missed-call reply template.
+- The missed-call inbox stores call records in the database and lets the user copy a reply or mark a call as replied.
+
+## Before production
+
+- Move from SQLite to hosted Postgres.
+- Use a strong production `NEXTAUTH_SECRET`.
+- Keep Twilio credentials in environment variables only.
+- Add a preview step before sending real SMS messages.
+- Run `npm run build` in the same environment where dependencies were installed.

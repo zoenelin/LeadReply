@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  business  Business?
+}
+
+model Business {
+  id            String @id @default(cuid())
+  name          String
+  phone         String
+  businessType  String @default("HOME_SERVICES")
+  replyTemplate String @default("")
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id])
+  missedCalls   MissedCall[]
+}
+
+model MissedCall {
+  id          String    @id @default(cuid())
+  callerName  String
+  callerPhone String
+  reason      String
+  status      String    @default("NEW")
+  createdAt   DateTime  @default(now())
+  repliedAt   DateTime?
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id])
+}
