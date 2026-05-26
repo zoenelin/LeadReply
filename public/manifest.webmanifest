@@ -1,0 +1,30 @@
+{
+  "name": "LeadReply",
+  "short_name": "LeadReply",
+  "description": "Missed call recovery and follow-up for local businesses.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Leads",
+      "url": "/leads"
+    },
+    {
+      "name": "Analytics",
+      "url": "/analytics"
+    }
+  ]
+}

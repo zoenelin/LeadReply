@@ -10,6 +10,23 @@ const fallbackReply =
   "Thanks for calling. Sorry we missed you. How can we help?"
 
 const seedCallsByType = {
+  AUTOMOTIVE: [
+    {
+      callerName: "Jamie Parker",
+      callerPhone: "(555) 214-9021",
+      reason: "Asked about a brake inspection and same-week availability.",
+    },
+    {
+      callerName: "Morgan Lee",
+      callerPhone: "(555) 782-1140",
+      reason: "Wanted an estimate for engine diagnostics.",
+    },
+    {
+      callerName: "Taylor Smith",
+      callerPhone: "(555) 640-3318",
+      reason: "Called about oil change pricing and drop-off times.",
+    },
+  ],
   HOME_SERVICES: [
     {
       callerName: "Jamie Parker",
@@ -61,6 +78,108 @@ const seedCallsByType = {
       reason: "Called about pickup timing and menu options.",
     },
   ],
+  MEDICAL_WELLNESS: [
+    {
+      callerName: "Chris Rivera",
+      callerPhone: "(555) 829-1044",
+      reason: "Asked about appointment availability for next week.",
+    },
+    {
+      callerName: "Sam Brooks",
+      callerPhone: "(555) 503-6671",
+      reason: "Wanted to ask about services and insurance questions.",
+    },
+    {
+      callerName: "Jordan Kim",
+      callerPhone: "(555) 721-8840",
+      reason: "Called about consultation availability.",
+    },
+  ],
+  LEGAL: [
+    {
+      callerName: "Chris Rivera",
+      callerPhone: "(555) 829-1044",
+      reason: "Asked about scheduling an initial consultation.",
+    },
+    {
+      callerName: "Sam Brooks",
+      callerPhone: "(555) 503-6671",
+      reason: "Wanted to know if the firm handles their case type.",
+    },
+    {
+      callerName: "Jordan Kim",
+      callerPhone: "(555) 721-8840",
+      reason: "Called about fees and appointment availability.",
+    },
+  ],
+  FITNESS: [
+    {
+      callerName: "Chris Rivera",
+      callerPhone: "(555) 829-1044",
+      reason: "Asked about membership options and trial classes.",
+    },
+    {
+      callerName: "Sam Brooks",
+      callerPhone: "(555) 503-6671",
+      reason: "Wanted personal training availability.",
+    },
+    {
+      callerName: "Jordan Kim",
+      callerPhone: "(555) 721-8840",
+      reason: "Called about class schedules.",
+    },
+  ],
+  REAL_ESTATE: [
+    {
+      callerName: "Chris Rivera",
+      callerPhone: "(555) 829-1044",
+      reason: "Asked about scheduling a property showing.",
+    },
+    {
+      callerName: "Sam Brooks",
+      callerPhone: "(555) 503-6671",
+      reason: "Wanted information about selling their home.",
+    },
+    {
+      callerName: "Jordan Kim",
+      callerPhone: "(555) 721-8840",
+      reason: "Called about rental availability.",
+    },
+  ],
+  PROFESSIONAL_SERVICES: [
+    {
+      callerName: "Chris Rivera",
+      callerPhone: "(555) 829-1044",
+      reason: "Asked about booking a consultation.",
+    },
+    {
+      callerName: "Sam Brooks",
+      callerPhone: "(555) 503-6671",
+      reason: "Wanted to understand service pricing.",
+    },
+    {
+      callerName: "Jordan Kim",
+      callerPhone: "(555) 721-8840",
+      reason: "Called about project availability.",
+    },
+  ],
+  RETAIL: [
+    {
+      callerName: "Chris Rivera",
+      callerPhone: "(555) 829-1044",
+      reason: "Asked about product availability.",
+    },
+    {
+      callerName: "Sam Brooks",
+      callerPhone: "(555) 503-6671",
+      reason: "Wanted pickup timing for an order.",
+    },
+    {
+      callerName: "Jordan Kim",
+      callerPhone: "(555) 721-8840",
+      reason: "Called about store hours and special orders.",
+    },
+  ],
 }
 
 export default async function MissedCallsPage() {
@@ -92,7 +211,7 @@ export default async function MissedCallsPage() {
   if (missedCalls.length === 0) {
     const seedCalls =
       seedCallsByType[business.businessType as keyof typeof seedCallsByType] ??
-      seedCallsByType.HOME_SERVICES
+      seedCallsByType.PROFESSIONAL_SERVICES
 
     await prisma.missedCall.createMany({
       data: seedCalls.map((call) => ({
@@ -116,7 +235,7 @@ export default async function MissedCallsPage() {
     savedReplyTemplate.length > 0 ? savedReplyTemplate : fallbackReply
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-8">
+    <main className="min-h-screen bg-slate-50 px-6 py-8 pb-28 md:pb-8">
       <div className="mx-auto max-w-5xl">
         <AppNav />
 

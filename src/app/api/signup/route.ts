@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/prisma"
+import { businessCategoryLabels, planLabels } from "@/lib/business-options"
 import bcrypt from "bcrypt"
 import { z } from "zod"
+
+const businessCategoryValues = Object.keys(businessCategoryLabels) as [
+  string,
+  ...string[],
+]
+const planValues = Object.keys(planLabels) as [string, ...string[]]
 
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -12,7 +19,14 @@ const signupSchema = z.object({
     .regex(/[0-9]/, "Password must include at least one number."),
   businessName: z.string().min(1, "Please enter your business name."),
   businessPhone: z.string().min(1, "Please enter your business phone number."),
-  businessType: z.enum(["HOME_SERVICES", "BEAUTY_SERVICES", "FOOD_SERVICES"]),
+  website: z.string().trim().optional().default(""),
+  address: z.string().min(1, "Please enter your business address."),
+  city: z.string().min(1, "Please enter your city."),
+  state: z.string().min(1, "Please select your state."),
+  zip: z.string().min(1, "Please enter your ZIP code."),
+  businessType: z.enum(businessCategoryValues),
+  selectedPlan: z.enum(planValues),
+  bookingNotes: z.string().trim().optional().default(""),
 })
 
 export async function POST(req: Request) {
@@ -28,8 +42,20 @@ export async function POST(req: Request) {
       )
     }
 
-    const { email, password, businessName, businessPhone, businessType } =
-      result.data
+    const {
+      email,
+      password,
+      businessName,
+      businessPhone,
+      website,
+      address,
+      city,
+      state,
+      zip,
+      businessType,
+      selectedPlan,
+      bookingNotes,
+    } = result.data
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -52,7 +78,15 @@ export async function POST(req: Request) {
           create: {
             name: businessName,
             phone: businessPhone,
+            website,
+            address,
+            city,
+            state,
+            zip,
             businessType,
+            selectedPlan,
+            bookingNotes,
+            onboardingComplete: true,
           },
         },
       },

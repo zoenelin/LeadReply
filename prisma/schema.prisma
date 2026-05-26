@@ -7,22 +7,39 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String    @id @default(cuid())
+  email     String    @unique
   password  String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   business  Business?
 }
 
 model Business {
-  id            String @id @default(cuid())
-  name          String
-  phone         String
-  businessType  String @default("HOME_SERVICES")
-  replyTemplate String @default("")
-  userId        String @unique
-  user          User   @relation(fields: [userId], references: [id])
-  missedCalls   MissedCall[]
+  id                       String          @id @default(cuid())
+  name                     String
+  phone                    String
+  website                  String          @default("")
+  address                  String          @default("")
+  city                     String          @default("")
+  state                    String          @default("")
+  zip                      String          @default("")
+  businessType             String          @default("HOME_SERVICES")
+  selectedPlan             String          @default("BASIC")
+  bookingNotes             String          @default("")
+  phoneAutomationEnabled   Boolean         @default(false)
+  bookingAutomationEnabled Boolean         @default(false)
+  reviewAutomationEnabled  Boolean         @default(true)
+  seoSetupNotes            String          @default("")
+  marketingSetupNotes      String          @default("")
+  preferredContactMethod   String          @default("TEXT")
+  billingStatus            String          @default("MOCK_ACTIVE")
+  onboardingComplete       Boolean         @default(false)
+  replyTemplate            String          @default("")
+  userId                   String          @unique
+  user                     User            @relation(fields: [userId], references: [id])
+  missedCalls              MissedCall[]
+  leads                    Lead[]
+  reviewRequests           ReviewRequest[]
 }
 
 model MissedCall {
@@ -35,4 +52,43 @@ model MissedCall {
   repliedAt   DateTime?
   businessId  String
   business    Business  @relation(fields: [businessId], references: [id])
+}
+
+model Lead {
+  id                  String          @id @default(cuid())
+  customerName        String
+  customerPhone       String
+  customerEmail       String          @default("")
+  source              String          @default("MISSED_CALL")
+  status              String          @default("NEW")
+  estimatedValueCents Int             @default(0)
+  wonValueCents       Int             @default(0)
+  notes               String          @default("")
+  followUpAt          DateTime?
+  followUpNote        String          @default("")
+  followUpCompletedAt DateTime?
+  createdAt           DateTime        @default(now())
+  closedAt            DateTime?
+  businessId          String
+  business            Business        @relation(fields: [businessId], references: [id])
+  reviewRequests      ReviewRequest[]
+
+  @@index([businessId])
+}
+
+model ReviewRequest {
+  id            String    @id @default(cuid())
+  customerName  String
+  customerPhone String
+  message       String    @default("")
+  status        String    @default("DRAFT")
+  createdAt     DateTime  @default(now())
+  sentAt        DateTime?
+  leadId        String?
+  lead          Lead?     @relation(fields: [leadId], references: [id])
+  businessId    String
+  business      Business  @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+  @@index([leadId])
 }

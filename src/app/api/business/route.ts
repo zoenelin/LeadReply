@@ -1,12 +1,26 @@
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
+import { businessCategoryLabels, planLabels } from "@/lib/business-options"
 import { getServerSession } from "next-auth"
 import { z } from "zod"
+
+const businessCategoryValues = Object.keys(businessCategoryLabels) as [
+  string,
+  ...string[],
+]
+const planValues = Object.keys(planLabels) as [string, ...string[]]
 
 const businessSchema = z.object({
   name: z.string().min(1, "Please enter your business name."),
   phone: z.string().min(1, "Please enter your business phone number."),
-  businessType: z.enum(["HOME_SERVICES", "BEAUTY_SERVICES", "FOOD_SERVICES"]),
+  website: z.string().trim().optional().default(""),
+  address: z.string().min(1, "Please enter your business address."),
+  city: z.string().min(1, "Please enter your city."),
+  state: z.string().min(1, "Please select your state."),
+  zip: z.string().min(1, "Please enter your ZIP code."),
+  businessType: z.enum(businessCategoryValues),
+  selectedPlan: z.enum(planValues),
+  bookingNotes: z.string().trim().optional().default(""),
   replyTemplate: z
     .string()
     .max(500, "Reply template must be 500 characters or fewer."),
@@ -37,6 +51,7 @@ export async function PUT(req: Request) {
       update: result.data,
       create: {
         ...result.data,
+        onboardingComplete: true,
         userId: session.user.id,
       },
     })
