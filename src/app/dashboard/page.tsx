@@ -19,6 +19,10 @@ import {
   getResponseSpeedMessage,
   getResponseSpeedStats,
 } from "@/lib/response-speed"
+import {
+  getReviewFunnelMessage,
+  getReviewFunnelStats,
+} from "@/lib/review-funnel"
 import { buildRevenueSummaryRows } from "@/lib/reporting"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -212,6 +216,9 @@ export default async function DashboardPage() {
         where: {
           businessId: business.id,
         },
+        include: {
+          reviewRequests: true,
+        },
       })
     : []
   const responseCalls = business
@@ -273,6 +280,7 @@ export default async function DashboardPage() {
     )
     .slice(0, 3)
   const responseStats = getResponseSpeedStats(responseCalls)
+  const reviewFunnelStats = getReviewFunnelStats(dashboardLeads)
   const lostRevenueStats = getLostRevenueStats({
     leads: dashboardLeads,
     missedCalls: responseCalls,
@@ -773,15 +781,37 @@ export default async function DashboardPage() {
 
           <div className="rounded-2xl border border-slate-200 p-5">
             <p className="text-sm font-medium text-slate-500">
-              Review request plan
+              Review funnel
             </p>
             <p className="mt-3 text-slate-800">
-              {dashboardContent.reviewPrompt}
+              {getReviewFunnelMessage(reviewFunnelStats)}
             </p>
-            <p className="mt-3 text-sm font-semibold text-slate-500">
-              {reviewRequestsCount} request
-              {reviewRequestsCount === 1 ? "" : "s"} tracked
-            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div>
+                <p className="text-sm text-slate-500">Won</p>
+                <p className="text-lg font-bold text-slate-950">
+                  {reviewFunnelStats.wonLeadCount}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Requested</p>
+                <p className="text-lg font-bold text-slate-950">
+                  {reviewFunnelStats.requestedWonLeadCount}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Received</p>
+                <p className="text-lg font-bold text-slate-950">
+                  {reviewFunnelStats.receivedCount}
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/reviews"
+              className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            >
+              Open review funnel
+            </Link>
           </div>
         </div>
 

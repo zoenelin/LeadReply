@@ -87,6 +87,7 @@ model ReviewRequest {
   status        String    @default("DRAFT")
   createdAt     DateTime  @default(now())
   sentAt        DateTime?
+  receivedAt    DateTime?
   leadId        String?
   lead          Lead?     @relation(fields: [leadId], references: [id])
   businessId    String

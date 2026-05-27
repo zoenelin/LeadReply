@@ -57,6 +57,32 @@ export async function POST() {
       }),
     ])
 
+    const wonLeads = await prisma.lead.findMany({
+      where: {
+        businessId: business.id,
+        status: "WON",
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    })
+
+    if (wonLeads.length > 0) {
+      const now = new Date()
+      await prisma.reviewRequest.createMany({
+        data: wonLeads.slice(0, 3).map((lead, index) => ({
+          businessId: business.id,
+          leadId: lead.id,
+          customerName: lead.customerName,
+          customerPhone: lead.customerPhone,
+          message: `Thanks for choosing ${business.name}. Would you mind leaving us a quick review?`,
+          status: index === 0 ? "RECEIVED" : index === 1 ? "SENT" : "DRAFT",
+          sentAt: index <= 1 ? now : null,
+          receivedAt: index === 0 ? now : null,
+        })),
+      })
+    }
+
     return Response.json({
       message: "Demo data reset.",
       leads: starterLeads.length,

@@ -25,6 +25,7 @@ import {
   getResponseSpeedMessage,
   getResponseSpeedStats,
 } from "@/lib/response-speed"
+import { getReviewFunnelStats } from "@/lib/review-funnel"
 import { buildRevenueSummaryRows } from "@/lib/reporting"
 import { AppNav } from "../components/AppNav"
 
@@ -56,6 +57,9 @@ async function getBusinessWithLeads(userId: string) {
       leads: {
         orderBy: {
           createdAt: "asc",
+        },
+        include: {
+          reviewRequests: true,
         },
       },
       missedCalls: {
@@ -259,6 +263,7 @@ export default async function AnalyticsPage({
     lostRevenueStats.actionItems.length > 0
       ? lostRevenueStats.actionItems.slice(0, 3)
       : lostRevenueStats.lostItems.slice(0, 3)
+  const reviewFunnelStats = getReviewFunnelStats(leads)
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -465,6 +470,55 @@ export default async function AnalyticsPage({
                     {factor.status}
                   </p>
                 </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-slate-200 p-5">
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                  Review funnel
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                  {reviewFunnelStats.requestRate}% request rate
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                  {reviewFunnelStats.receivedCount} review
+                  {reviewFunnelStats.receivedCount === 1 ? "" : "s"} received
+                  from {reviewFunnelStats.wonLeadCount} won customer
+                  {reviewFunnelStats.wonLeadCount === 1 ? "" : "s"} in this
+                  view.
+                </p>
+              </div>
+              <Link
+                href="/reviews"
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                Open reviews
+              </Link>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {reviewFunnelStats.funnelSteps.map((step) => (
+                <div key={step.label} className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-950">
+                    {step.label}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-950">
+                    {step.count}
+                  </p>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                    <div
+                      className="h-full rounded-full bg-emerald-500"
+                      style={{
+                        width:
+                          step.percent === 0
+                            ? "0%"
+                            : `${Math.max(8, step.percent)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
               ))}
             </div>
           </div>

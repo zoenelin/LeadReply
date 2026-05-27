@@ -14,6 +14,10 @@ import {
   formatResponseDuration,
   getResponseSpeedStats,
 } from "@/lib/response-speed"
+import {
+  getReviewFunnelMessage,
+  getReviewFunnelStats,
+} from "@/lib/review-funnel"
 import { buildRevenueSummaryRows } from "@/lib/reporting"
 import { AppNav } from "../components/AppNav"
 
@@ -130,6 +134,9 @@ export default async function OwnerPage() {
         orderBy: {
           createdAt: "desc",
         },
+        include: {
+          reviewRequests: true,
+        },
       },
       missedCalls: {
         orderBy: {
@@ -195,6 +202,7 @@ export default async function OwnerPage() {
     reviewRequestCount: business._count.reviewRequests,
     missedCallValueCents: getAverageLeadValueCents(business.businessType),
   })
+  const reviewFunnelStats = getReviewFunnelStats(business.leads)
   const bestSource = [...sourceRows]
     .filter((source) => source.leadCount > 0)
     .sort(
@@ -316,6 +324,18 @@ export default async function OwnerPage() {
               </p>
               <p className="mt-3 text-sm font-medium text-slate-700">
                 Recover next
+              </p>
+            </Link>
+            <Link
+              href="/reviews"
+              className="rounded-2xl border border-slate-200 p-5 hover:bg-slate-50"
+            >
+              <p className="text-sm text-slate-500">Reviews received</p>
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                {reviewFunnelStats.receivedCount}
+              </p>
+              <p className="mt-3 text-sm font-medium text-slate-700">
+                {reviewFunnelStats.requestRate}% requested
               </p>
             </Link>
             <div className="rounded-2xl border border-slate-200 p-5">
@@ -449,6 +469,16 @@ export default async function OwnerPage() {
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
                     {getLostRevenueMessage(lostRevenueStats)}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Review funnel</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-950">
+                    {reviewFunnelStats.requestedWonLeadCount}/
+                    {reviewFunnelStats.wonLeadCount}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {getReviewFunnelMessage(reviewFunnelStats)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">

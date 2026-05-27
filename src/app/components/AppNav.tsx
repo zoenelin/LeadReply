@@ -10,6 +10,7 @@ const navLinks = [
   { href: "/leads", label: "Leads" },
   { href: "/missed-calls", label: "Inbox" },
   { href: "/analytics", label: "Analytics" },
+  { href: "/reviews", label: "Reviews" },
   { href: "/settings/business", label: "Settings" },
   { href: "/settings/billing", label: "Billing" },
 ]
@@ -19,6 +20,7 @@ const mobileNavLinks = [
   { href: "/leads", label: "Leads" },
   { href: "/missed-calls", label: "Inbox" },
   { href: "/analytics", label: "Stats" },
+  { href: "/reviews", label: "Reviews" },
   { href: "/settings/business", label: "Settings" },
 ]
 
@@ -70,7 +72,7 @@ export function AppNav() {
       </nav>
 
       <nav className="fixed inset-x-3 bottom-3 z-50 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg md:hidden">
-        <div className="grid grid-cols-5 gap-1 text-center text-xs font-semibold">
+        <div className="grid grid-cols-6 gap-1 text-center text-[11px] font-semibold">
           {mobileNavLinks.map((link) => {
             const active =
               link.href === "/settings/business"

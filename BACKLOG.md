@@ -12,7 +12,6 @@ Review the brainstorm list after the current milestone and pull the next stronge
 - Lead quality score: estimate which leads are most likely to convert based on source, value, and activity.
 - Team notes: let staff leave internal notes on a lead without changing customer-facing messages.
 - Appointment outcome tracking: record booked, showed, no-show, rescheduled, or cancelled.
-- Review funnel: track won lead to review requested to review received.
 - Website widget concept: a small LeadReply button for "Text us" or "Request a call back."
 - Weekly owner email: summarize leads, revenue, follow-ups, and missed opportunities.
 - Industry presets: starter templates for automotive, home services, restaurants, beauty, legal, and medical/wellness.
@@ -23,11 +22,10 @@ Review the brainstorm list after the current milestone and pull the next stronge
 
 ## Suggested Pull Order
 
-1. Review funnel
-2. Follow-up sequences
-3. Lead quality score
-4. Notification center
-5. Team notes
+1. Follow-up sequences
+2. Lead quality score
+3. Notification center
+4. Team notes
 
 ## Completed From Backlog
 
@@ -41,6 +39,7 @@ Review the brainstorm list after the current milestone and pull the next stronge
 - Lost revenue tracker: shows likely revenue lost or at risk from lost leads, overdue follow-ups, and unanswered missed calls.
 - Business health score: combines setup completeness, reply speed, follow-up habits, revenue risk, and review activity into a simple score.
 - Lead intake form: gives each business a public form that creates Website leads in the CRM.
+- Review funnel: tracks won customers to review requested to review received, with status updates and a dedicated reviews page.
 
 ## Later Integrations
 
