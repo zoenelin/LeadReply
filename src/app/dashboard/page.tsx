@@ -310,6 +310,20 @@ export default async function DashboardPage() {
         <p className="mt-3 text-slate-600">
           Logged in as {session.user.email}
         </p>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/owner"
+            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            Open simple owner mode
+          </Link>
+          <Link
+            href="/analytics"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            View full analytics
+          </Link>
+        </div>
 
         <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6">
           <p className="text-sm font-medium text-slate-500">

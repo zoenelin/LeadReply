@@ -6,11 +6,20 @@ import { signOut } from "next-auth/react"
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/owner", label: "Today" },
   { href: "/leads", label: "Leads" },
   { href: "/missed-calls", label: "Inbox" },
   { href: "/analytics", label: "Analytics" },
   { href: "/settings/business", label: "Settings" },
   { href: "/settings/billing", label: "Billing" },
+]
+
+const mobileNavLinks = [
+  { href: "/owner", label: "Today" },
+  { href: "/leads", label: "Leads" },
+  { href: "/missed-calls", label: "Inbox" },
+  { href: "/analytics", label: "Stats" },
+  { href: "/settings/business", label: "Settings" },
 ]
 
 function isActiveLink(pathname: string, href: string) {
@@ -62,7 +71,7 @@ export function AppNav() {
 
       <nav className="fixed inset-x-3 bottom-3 z-50 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg md:hidden">
         <div className="grid grid-cols-5 gap-1 text-center text-xs font-semibold">
-          {navLinks.slice(0, 5).map((link) => {
+          {mobileNavLinks.map((link) => {
             const active =
               link.href === "/settings/business"
                 ? pathname.startsWith("/settings")

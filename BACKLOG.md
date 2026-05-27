@@ -6,7 +6,6 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 - Lost revenue tracker: show likely value of leads that were not converted.
 - Business health score: combine setup completeness, follow-up rate, and response habits.
-- Simple owner mode: a quieter daily view with only the most important actions.
 
 ## New Brainstorm Ideas
 
@@ -27,14 +26,14 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Suggested Pull Order
 
-1. Simple owner mode
-2. Response speed tracking
-3. Lost revenue tracker
-4. Business health score
-5. Lead intake form
-6. Review funnel
-7. Follow-up sequences
-8. Lead quality score
+1. Response speed tracking
+2. Lost revenue tracker
+3. Business health score
+4. Lead intake form
+5. Review funnel
+6. Follow-up sequences
+7. Lead quality score
+8. Notification center
 
 ## Completed From Backlog
 
@@ -43,6 +42,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - ROI card: shows recovered revenue from won missed-call leads.
 - Lead source breakdown: compares missed calls, website, manual entries, and referrals.
 - CSV export: downloads lead detail and revenue summary reports.
+- Simple owner mode: gives owners a quiet daily view with one priority action.
 
 ## Later Integrations
 
