@@ -5,9 +5,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 ## Current Backlog
 
 - Lost revenue tracker: show likely value of leads that were not converted.
-- Lead source breakdown: compare missed calls, website, manual entries, and referrals.
 - Business health score: combine setup completeness, follow-up rate, and response habits.
-- CSV export: download lead and revenue reports.
 - Simple owner mode: a quieter daily view with only the most important actions.
 
 ## New Brainstorm Ideas
@@ -29,20 +27,22 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Suggested Pull Order
 
-1. Lead source breakdown
-2. CSV export
-3. Simple owner mode
-4. Response speed tracking
-5. Lost revenue tracker
-6. Business health score
-7. Lead intake form
-8. Review funnel
+1. Simple owner mode
+2. Response speed tracking
+3. Lost revenue tracker
+4. Business health score
+5. Lead intake form
+6. Review funnel
+7. Follow-up sequences
+8. Lead quality score
 
 ## Completed From Backlog
 
 - Demo data reset button: restores sample leads, missed calls, and review workflow.
 - Missed-call to lead conversion: turns a missed call into a pipeline lead with one click.
 - ROI card: shows recovered revenue from won missed-call leads.
+- Lead source breakdown: compares missed calls, website, manual entries, and referrals.
+- CSV export: downloads lead detail and revenue summary reports.
 
 ## Later Integrations
 

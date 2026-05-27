@@ -6,6 +6,7 @@ import {
   planLabels,
   planOptions,
 } from "@/lib/business-options"
+import { buildRevenueSummaryRows } from "@/lib/reporting"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { AppNav } from "../components/AppNav"
@@ -193,6 +194,13 @@ export default async function DashboardPage() {
         },
       })
     : 0
+  const dashboardLeads = business
+    ? await prisma.lead.findMany({
+        where: {
+          businessId: business.id,
+        },
+      })
+    : []
   const todayEnd = new Date()
   todayEnd.setHours(23, 59, 59, 999)
   const followUpsDue = business
@@ -228,6 +236,22 @@ export default async function DashboardPage() {
     missedCallLeadCount === 0
       ? 0
       : Math.round((recoveredLeadCount / missedCallLeadCount) * 100)
+  const sourceRows = buildRevenueSummaryRows(dashboardLeads)
+  const bestSource = [...sourceRows]
+    .filter((source) => source.leadCount > 0)
+    .sort(
+      (left, right) =>
+        right.revenueCents - left.revenueCents ||
+        right.leadCount - left.leadCount
+    )[0]
+  const topSourceRows = [...sourceRows]
+    .filter((source) => source.leadCount > 0)
+    .sort(
+      (left, right) =>
+        right.revenueCents - left.revenueCents ||
+        right.leadCount - left.leadCount
+    )
+    .slice(0, 3)
 
   const dashboardContent =
     businessTypeContent[business?.businessType ?? ""] ??
@@ -435,6 +459,55 @@ export default async function DashboardPage() {
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div>
+              <p className="text-sm font-medium text-slate-500">
+                Best performing source
+              </p>
+              {bestSource ? (
+                <>
+                  <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                    {bestSource.label}
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                    {bestSource.label} has captured {bestSource.leadCount} leads
+                    and {formatMoney(bestSource.revenueCents)} in won revenue.
+                  </p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-slate-600">
+                  Add or convert a lead to see which source performs best.
+                </p>
+              )}
+            </div>
+            <Link
+              href="/analytics"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            >
+              View source report
+            </Link>
+          </div>
+
+          {topSourceRows.length > 0 && (
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {topSourceRows.map((source) => (
+                <div key={source.source} className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-950">
+                    {source.label}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-950">
+                    {formatMoney(source.revenueCents)}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {source.leadCount} leads, {source.conversionRate}% won
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-8 rounded-2xl border border-slate-200 p-5">

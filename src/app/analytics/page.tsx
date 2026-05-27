@@ -13,6 +13,7 @@ import {
   statusClassName,
 } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import { buildRevenueSummaryRows } from "@/lib/reporting"
 import { AppNav } from "../components/AppNav"
 
 function monthKey(date: Date) {
@@ -103,6 +104,31 @@ export default async function AnalyticsPage({
   const selectedStatus = filters.status ?? "ALL"
   const startDate = parseFilterDate(filters.start)
   const endDate = parseFilterDate(filters.end, true)
+  const exportParams = new URLSearchParams()
+
+  if (selectedSource !== "ALL") {
+    exportParams.set("source", selectedSource)
+  }
+
+  if (selectedStatus !== "ALL") {
+    exportParams.set("status", selectedStatus)
+  }
+
+  if (filters.start) {
+    exportParams.set("start", filters.start)
+  }
+
+  if (filters.end) {
+    exportParams.set("end", filters.end)
+  }
+
+  const exportQuery = exportParams.toString()
+  const leadExportHref = `/api/exports/leads${
+    exportQuery ? `?${exportQuery}` : ""
+  }`
+  const revenueExportHref = `/api/exports/revenue${
+    exportQuery ? `?${exportQuery}` : ""
+  }`
   const leads = business.leads.filter((lead) => {
     const sourceMatches =
       selectedSource === "ALL" || lead.source === selectedSource
@@ -141,6 +167,22 @@ export default async function AnalyticsPage({
     missedCallLeads.length === 0
       ? 0
       : Math.round((recoveredLeadCount / missedCallLeads.length) * 100)
+  const sourceRows = buildRevenueSummaryRows(leads)
+  const maxSourceLeads = Math.max(
+    ...sourceRows.map((source) => source.leadCount),
+    1
+  )
+  const maxSourceRevenue = Math.max(
+    ...sourceRows.map((source) => source.revenueCents),
+    1
+  )
+  const bestSource = [...sourceRows]
+    .filter((source) => source.leadCount > 0)
+    .sort(
+      (left, right) =>
+        right.revenueCents - left.revenueCents ||
+        right.leadCount - left.leadCount
+    )[0]
   const conversionRate =
     leads.length === 0 ? 0 : Math.round((wonLeads.length / leads.length) * 100)
   const monthRows = getLastSixMonths().map((month) => {
@@ -194,12 +236,26 @@ export default async function AnalyticsPage({
                 entries.
               </p>
             </div>
-            <Link
-              href="/leads"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              Open pipeline
-            </Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:justify-end">
+              <Link
+                href="/leads"
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                Open pipeline
+              </Link>
+              <a
+                href={leadExportHref}
+                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+              >
+                Export leads
+              </a>
+              <a
+                href={revenueExportHref}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                Export revenue
+              </a>
+            </div>
           </div>
 
           <form
@@ -304,6 +360,132 @@ export default async function AnalyticsPage({
                 <p className="mt-1 text-3xl font-bold text-slate-950">
                   {missedCallWinRate}%
                 </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+            <div className="rounded-2xl border border-slate-200 p-5">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Lead source breakdown
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-slate-950">
+                    Where leads and revenue come from
+                  </h2>
+                </div>
+                <span className="w-fit rounded-lg bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">
+                  {leads.length} leads
+                </span>
+              </div>
+              <div className="mt-5 space-y-4">
+                {sourceRows.map((source) => (
+                  <div
+                    key={source.source}
+                    className="rounded-xl bg-slate-50 p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-slate-950">
+                          {source.label}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          {source.wonCount} won of {source.leadCount} total
+                        </p>
+                      </div>
+                      <p className="text-right text-sm font-semibold text-slate-700">
+                        {source.conversionRate}% won
+                      </p>
+                    </div>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                      <div
+                        className="h-full rounded-full bg-indigo-500"
+                        style={{
+                          width:
+                            source.leadCount === 0
+                              ? "0%"
+                              : `${Math.max(
+                                  8,
+                                  (source.leadCount / maxSourceLeads) * 100
+                                )}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                      <div>
+                        <p className="text-slate-500">Revenue</p>
+                        <p className="font-semibold text-slate-950">
+                          {formatMoney(source.revenueCents)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Pipeline</p>
+                        <p className="font-semibold text-slate-950">
+                          {formatMoney(source.pipelineCents)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-500">Lost value</p>
+                        <p className="font-semibold text-slate-950">
+                          {formatMoney(source.lostOpportunityCents)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 p-5">
+              <p className="text-sm font-medium text-slate-500">
+                Best source insight
+              </p>
+              {bestSource ? (
+                <>
+                  <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                    {bestSource.label}
+                  </h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    This is currently the strongest source in the selected
+                    view, with {formatMoney(bestSource.revenueCents)} won and{" "}
+                    {bestSource.leadCount} leads captured.
+                  </p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-slate-600">
+                  No source has leads in the selected view yet.
+                </p>
+              )}
+
+              <div className="mt-6 space-y-4">
+                {sourceRows.map((source) => (
+                  <div key={source.source}>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-slate-700">
+                        {source.label}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-950">
+                        {formatMoney(source.revenueCents)}
+                      </p>
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-sky-500"
+                        style={{
+                          width:
+                            source.revenueCents === 0
+                              ? "0%"
+                              : `${Math.max(
+                                  8,
+                                  (source.revenueCents / maxSourceRevenue) *
+                                    100
+                                )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
