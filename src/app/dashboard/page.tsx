@@ -6,6 +6,12 @@ import {
   planLabels,
   planOptions,
 } from "@/lib/business-options"
+import { getAverageLeadValueCents } from "@/lib/demo-data"
+import {
+  getLostRevenueLabel,
+  getLostRevenueMessage,
+  getLostRevenueStats,
+} from "@/lib/lost-revenue"
 import {
   formatResponseDuration,
   getResponseSpeedLabel,
@@ -266,6 +272,13 @@ export default async function DashboardPage() {
     )
     .slice(0, 3)
   const responseStats = getResponseSpeedStats(responseCalls)
+  const lostRevenueStats = getLostRevenueStats({
+    leads: dashboardLeads,
+    missedCalls: responseCalls,
+    missedCallValueCents: getAverageLeadValueCents(
+      business?.businessType ?? "OTHER"
+    ),
+  })
 
   const dashboardContent =
     businessTypeContent[business?.businessType ?? ""] ??
@@ -461,6 +474,49 @@ export default async function DashboardPage() {
           <div className="rounded-2xl border border-slate-200 p-5">
             <p className="text-sm text-slate-500">Texts sent</p>
             <p className="mt-2 text-3xl font-bold">{repliedCalls}</p>
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-6">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-rose-800">
+                Lost revenue tracker
+              </p>
+              <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                {formatMoney(lostRevenueStats.totalLostAndAtRiskCents)} possible
+                leak
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                {getLostRevenueMessage(lostRevenueStats)}
+              </p>
+            </div>
+            <Link
+              href="/analytics"
+              className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
+            >
+              View tracker
+            </Link>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl bg-white p-4">
+              <p className="text-sm text-slate-500">At risk now</p>
+              <p className="mt-1 text-2xl font-bold text-slate-950">
+                {formatMoney(lostRevenueStats.totalAtRiskCents)}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white p-4">
+              <p className="text-sm text-slate-500">Already lost</p>
+              <p className="mt-1 text-2xl font-bold text-slate-950">
+                {formatMoney(lostRevenueStats.lostLeadValueCents)}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white p-4">
+              <p className="text-sm text-slate-500">Status</p>
+              <p className="mt-1 text-2xl font-bold text-slate-950">
+                {getLostRevenueLabel(lostRevenueStats)}
+              </p>
+            </div>
           </div>
         </div>
 

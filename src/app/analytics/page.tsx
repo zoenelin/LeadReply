@@ -3,7 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { businessCategoryLabels } from "@/lib/business-options"
-import { getStarterLeads } from "@/lib/demo-data"
+import { getAverageLeadValueCents, getStarterLeads } from "@/lib/demo-data"
 import {
   formatMoney,
   leadSourceLabels,
@@ -12,6 +12,11 @@ import {
   leadStatusOptions,
   statusClassName,
 } from "@/lib/lead-options"
+import {
+  getLostRevenueLabel,
+  getLostRevenueMessage,
+  getLostRevenueStats,
+} from "@/lib/lost-revenue"
 import { prisma } from "@/lib/prisma"
 import {
   formatResponseDuration,
@@ -157,6 +162,11 @@ export default async function AnalyticsPage({
     return startMatches && endMatches
   })
   const responseStats = getResponseSpeedStats(responseCalls)
+  const lostRevenueStats = getLostRevenueStats({
+    leads,
+    missedCalls: responseCalls,
+    missedCallValueCents: getAverageLeadValueCents(business.businessType),
+  })
   const wonLeads = leads.filter((lead) => lead.status === "WON")
   const lostLeads = leads.filter((lead) => lead.status === "LOST")
   const openLeads = leads.filter(
@@ -232,6 +242,10 @@ export default async function AnalyticsPage({
   const recentLeads = [...leads]
     .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
     .slice(0, 6)
+  const lostRevenuePreviewItems =
+    lostRevenueStats.actionItems.length > 0
+      ? lostRevenueStats.actionItems.slice(0, 3)
+      : lostRevenueStats.lostItems.slice(0, 3)
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -399,6 +413,91 @@ export default async function AnalyticsPage({
             <p className="mt-2 text-lg font-semibold text-slate-950">
               {getResponseSpeedMessage(responseStats)}
             </p>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-rose-800">
+                  Lost revenue tracker
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                  {formatMoney(lostRevenueStats.totalLostAndAtRiskCents)} in
+                  lost or at-risk value
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                  {getLostRevenueMessage(lostRevenueStats)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                <p className="text-sm font-medium text-slate-500">Status</p>
+                <p className="mt-1 text-xl font-bold text-slate-950">
+                  {getLostRevenueLabel(lostRevenueStats)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Overdue follow-ups</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {formatMoney(lostRevenueStats.overdueLeadValueCents)}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {lostRevenueStats.overdueLeadCount} lead
+                  {lostRevenueStats.overdueLeadCount === 1 ? "" : "s"}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Missed-call risk</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {formatMoney(lostRevenueStats.staleMissedCallValueCents)}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {lostRevenueStats.staleMissedCallCount} waiting too long
+                </p>
+              </div>
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Closed lost</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {formatMoney(lostRevenueStats.lostLeadValueCents)}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {lostRevenueStats.lostLeadCount} lead
+                  {lostRevenueStats.lostLeadCount === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {lostRevenuePreviewItems.length === 0 ? (
+                <div className="rounded-xl bg-white px-4 py-3 text-sm text-slate-600">
+                  Nothing is overdue or marked lost in the selected view.
+                </div>
+              ) : (
+                lostRevenuePreviewItems.map((item) => (
+                  <Link
+                    key={`${item.label}-${item.id}`}
+                    href={item.href}
+                    className="block rounded-xl bg-white px-4 py-3 hover:bg-rose-100"
+                  >
+                    <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                      <div>
+                        <p className="font-semibold text-slate-950">
+                          {item.name}
+                        </p>
+                        <p className="text-sm text-slate-600">
+                          {item.label}: {item.description}
+                        </p>
+                      </div>
+                      <p className="text-sm font-bold text-slate-950">
+                        {formatMoney(item.valueCents)}
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
           </div>
 
           <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">

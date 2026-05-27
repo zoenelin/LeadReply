@@ -4,7 +4,6 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Current Backlog
 
-- Lost revenue tracker: show likely value of leads that were not converted.
 - Business health score: combine setup completeness, follow-up rate, and response habits.
 
 ## New Brainstorm Ideas
@@ -25,14 +24,13 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Suggested Pull Order
 
-1. Lost revenue tracker
-2. Business health score
-3. Lead intake form
-4. Review funnel
-5. Follow-up sequences
-6. Lead quality score
-7. Notification center
-8. Team notes
+1. Business health score
+2. Lead intake form
+3. Review funnel
+4. Follow-up sequences
+5. Lead quality score
+6. Notification center
+7. Team notes
 
 ## Completed From Backlog
 
@@ -43,6 +41,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - CSV export: downloads lead detail and revenue summary reports.
 - Simple owner mode: gives owners a quiet daily view with one priority action.
 - Response speed tracking: shows how quickly missed calls get replied to.
+- Lost revenue tracker: shows likely revenue lost or at risk from lost leads, overdue follow-ups, and unanswered missed calls.
 
 ## Later Integrations
 

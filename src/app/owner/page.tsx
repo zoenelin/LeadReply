@@ -2,7 +2,12 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
+import { getAverageLeadValueCents } from "@/lib/demo-data"
 import { leadSourceLabels, formatMoney } from "@/lib/lead-options"
+import {
+  getLostRevenueMessage,
+  getLostRevenueStats,
+} from "@/lib/lost-revenue"
 import { prisma } from "@/lib/prisma"
 import {
   formatResponseDuration,
@@ -172,6 +177,11 @@ export default async function OwnerPage() {
     .reduce((total, lead) => total + lead.wonValueCents, 0)
   const sourceRows = buildRevenueSummaryRows(business.leads)
   const responseStats = getResponseSpeedStats(business.missedCalls)
+  const lostRevenueStats = getLostRevenueStats({
+    leads: business.leads,
+    missedCalls: business.missedCalls,
+    missedCallValueCents: getAverageLeadValueCents(business.businessType),
+  })
   const bestSource = [...sourceRows]
     .filter((source) => source.leadCount > 0)
     .sort(
@@ -269,6 +279,18 @@ export default async function OwnerPage() {
               </p>
               <p className="mt-3 text-sm font-medium text-slate-700">
                 Missed-call wins
+              </p>
+            </Link>
+            <Link
+              href="/analytics"
+              className="rounded-2xl border border-rose-200 bg-rose-50 p-5 hover:bg-rose-100"
+            >
+              <p className="text-sm text-rose-800">Money at risk</p>
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                {formatMoney(lostRevenueStats.totalAtRiskCents)}
+              </p>
+              <p className="mt-3 text-sm font-medium text-slate-700">
+                Recover next
               </p>
             </Link>
             <div className="rounded-2xl border border-slate-200 p-5">
@@ -384,6 +406,15 @@ export default async function OwnerPage() {
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
                     {responseStats.waitingCount} waiting for reply
+                  </p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Lost revenue tracker</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-950">
+                    {formatMoney(lostRevenueStats.totalLostAndAtRiskCents)}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {getLostRevenueMessage(lostRevenueStats)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
