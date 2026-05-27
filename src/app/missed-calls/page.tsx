@@ -1,5 +1,9 @@
 import Link from "next/link"
 import { authOptions } from "@/auth/auth"
+import {
+  normalizeConciergeAnswers,
+  normalizeConciergeTranscript,
+} from "@/lib/concierge-intake"
 import { getStarterMissedCalls } from "@/lib/demo-data"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
@@ -26,6 +30,9 @@ export default async function MissedCallsPage() {
         orderBy: {
           createdAt: "desc",
         },
+        include: {
+          conciergeIntake: true,
+        },
       },
     },
   })
@@ -47,6 +54,9 @@ export default async function MissedCallsPage() {
       },
       orderBy: {
         createdAt: "desc",
+      },
+      include: {
+        conciergeIntake: true,
       },
     })
   }
@@ -97,8 +107,32 @@ export default async function MissedCallsPage() {
               reason: call.reason,
               status: call.status,
               convertedLeadId: call.convertedLeadId,
+              conciergeIntake: call.conciergeIntake
+                ? {
+                    id: call.conciergeIntake.id,
+                    status: call.conciergeIntake.status,
+                    currentStep: call.conciergeIntake.currentStep,
+                    intent: call.conciergeIntake.intent,
+                    urgency: call.conciergeIntake.urgency,
+                    preferredTime: call.conciergeIntake.preferredTime,
+                    schedulingRequested:
+                      call.conciergeIntake.schedulingRequested,
+                    summary: call.conciergeIntake.summary,
+                    nextAction: call.conciergeIntake.nextAction,
+                    transcript: normalizeConciergeTranscript(
+                      call.conciergeIntake.transcript
+                    ),
+                    answers: normalizeConciergeAnswers(
+                      call.conciergeIntake.answers
+                    ),
+                    leadId: call.conciergeIntake.leadId,
+                  }
+                : null,
             }))}
             replyTemplate={replyTemplate}
+            businessName={business.name}
+            businessType={business.businessType}
+            bookingAutomationEnabled={business.bookingAutomationEnabled}
           />
         </section>
       </div>

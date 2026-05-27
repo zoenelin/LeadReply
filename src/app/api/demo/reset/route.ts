@@ -1,7 +1,18 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/auth/auth"
+import {
+  buildConciergeLeadNotes,
+  buildConciergeSummary,
+  createAssistantEntry,
+  createCustomerEntry,
+  getConciergePlan,
+} from "@/lib/concierge-intake"
 import { getSuggestedFollowUpSteps } from "@/lib/follow-up-sequences"
-import { getStarterLeads, getStarterMissedCalls } from "@/lib/demo-data"
+import {
+  getAverageLeadValueCents,
+  getStarterLeads,
+  getStarterMissedCalls,
+} from "@/lib/demo-data"
 import { prisma } from "@/lib/prisma"
 
 export async function POST() {
@@ -26,6 +37,11 @@ export async function POST() {
 
   try {
     await prisma.$transaction([
+      prisma.conciergeIntake.deleteMany({
+        where: {
+          businessId: business.id,
+        },
+      }),
       prisma.followUpStep.deleteMany({
         where: {
           businessId: business.id,
@@ -86,6 +102,89 @@ export async function POST() {
           sentAt: index <= 1 ? now : null,
           receivedAt: index === 0 ? now : null,
         })),
+      })
+    }
+
+    const newestMissedCall = await prisma.missedCall.findFirst({
+      where: {
+        businessId: business.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+
+    if (newestMissedCall) {
+      const plan = getConciergePlan({
+        businessName: business.name,
+        businessType: business.businessType,
+        callerName: newestMissedCall.callerName,
+        bookingAutomationEnabled: business.bookingAutomationEnabled,
+      })
+      const answers = Object.fromEntries(
+        plan.questions.map((question) => [question.key, question.sampleAnswer])
+      )
+      const summary = buildConciergeSummary({
+        answers,
+        businessType: business.businessType,
+        bookingAutomationEnabled: business.bookingAutomationEnabled,
+      })
+      const leadNotes = buildConciergeLeadNotes({
+        summary: summary.summary,
+        nextAction: summary.nextAction,
+        answers,
+      })
+      const conciergeLead = await prisma.lead.create({
+        data: {
+          businessId: business.id,
+          customerName: newestMissedCall.callerName,
+          customerPhone: newestMissedCall.callerPhone,
+          source: "MISSED_CALL",
+          status: "CONTACTED",
+          estimatedValueCents: getAverageLeadValueCents(business.businessType),
+          notes: leadNotes,
+          followUpAt: new Date(),
+          followUpNote: summary.nextAction,
+          createdAt: newestMissedCall.createdAt,
+        },
+      })
+
+      await prisma.missedCall.update({
+        where: {
+          id: newestMissedCall.id,
+        },
+        data: {
+          status: "REPLIED",
+          repliedAt: new Date(),
+          convertedLeadId: conciergeLead.id,
+        },
+      })
+
+      await prisma.conciergeIntake.create({
+        data: {
+          missedCallId: newestMissedCall.id,
+          businessId: business.id,
+          leadId: conciergeLead.id,
+          status: "READY_FOR_OWNER",
+          currentStep: plan.questions.length,
+          intent: summary.intent,
+          urgency: summary.urgency,
+          preferredTime: summary.preferredTime,
+          schedulingRequested: summary.schedulingRequested,
+          summary: summary.summary,
+          nextAction: summary.nextAction,
+          answers,
+          transcript: [
+            createAssistantEntry(plan.openingMessage),
+            ...plan.questions.flatMap((question) => [
+              createAssistantEntry(question.prompt),
+              createCustomerEntry(answers[question.key]),
+            ]),
+            createAssistantEntry(
+              "Thanks. I sent that to the team so they can follow up with the right next step."
+            ),
+          ],
+        },
       })
     }
 

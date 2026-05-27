@@ -1,4 +1,8 @@
 import { authOptions } from "@/auth/auth"
+import {
+  buildConciergeLeadNotes,
+  normalizeConciergeAnswers,
+} from "@/lib/concierge-intake"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
@@ -19,6 +23,7 @@ async function findUserMissedCall(id: string, userId: string) {
     include: {
       business: true,
       convertedLead: true,
+      conciergeIntake: true,
     },
   })
 }
@@ -100,6 +105,15 @@ export async function POST(
   followUpAt.setHours(9, 0, 0, 0)
 
   try {
+    const conciergeNotes = missedCall.conciergeIntake
+      ? buildConciergeLeadNotes({
+          summary: missedCall.conciergeIntake.summary || missedCall.reason,
+          nextAction:
+            missedCall.conciergeIntake.nextAction ||
+            `Follow up from missed call: ${missedCall.reason}`,
+          answers: normalizeConciergeAnswers(missedCall.conciergeIntake.answers),
+        })
+      : ""
     const lead = await prisma.$transaction(async (tx) => {
       const createdLead = await tx.lead.create({
         data: {
@@ -111,7 +125,7 @@ export async function POST(
           estimatedValueCents: getAverageLeadValueCents(
             missedCall.business.businessType
           ),
-          notes: missedCall.reason,
+          notes: conciergeNotes || missedCall.reason,
           followUpAt,
           followUpNote: `Follow up from missed call: ${missedCall.reason}`,
           createdAt: missedCall.createdAt,
@@ -126,6 +140,17 @@ export async function POST(
           convertedLeadId: createdLead.id,
         },
       })
+
+      if (missedCall.conciergeIntake) {
+        await tx.conciergeIntake.update({
+          where: {
+            id: missedCall.conciergeIntake.id,
+          },
+          data: {
+            leadId: createdLead.id,
+          },
+        })
+      }
 
       return createdLead
     })

@@ -40,11 +40,13 @@ Review the brainstorm list after the current milestone and pull the next stronge
 - Lead intake form: gives each business a public form that creates Website leads in the CRM.
 - Review funnel: tracks won customers to review requested to review received, with status updates and a dedicated reviews page.
 - Follow-up sequences: creates a three-step text follow-up plan for leads, tracks draft/sent/skipped steps, and surfaces due steps on the dashboard, owner view, analytics, and lead detail page.
+- AI missed-call concierge mock: simulates the automatic text conversation after a missed call, asks industry-specific questions, saves the transcript and answers, creates or updates the lead, and flags scheduling next steps.
 
 ## Later Integrations
 
 - Stripe billing
 - Twilio phone and texting
+- OpenAI-powered conversation handling
 - Google Business Profile and reviews
 - Apple Business Connect
 - Reservation systems

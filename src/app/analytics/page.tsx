@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { businessCategoryLabels } from "@/lib/business-options"
 import { getBusinessHealthStats } from "@/lib/business-health"
+import { getConciergeStats } from "@/lib/concierge-intake"
 import { getAverageLeadValueCents, getStarterLeads } from "@/lib/demo-data"
 import {
   getFollowUpSequenceMessage,
@@ -80,6 +81,11 @@ async function getBusinessWithLeads(userId: string) {
             stepOrder: "asc",
           },
         ],
+      },
+      conciergeIntakes: {
+        orderBy: {
+          updatedAt: "desc",
+        },
       },
       _count: {
         select: {
@@ -282,6 +288,7 @@ export default async function AnalyticsPage({
   const followUpSequenceStats = getFollowUpSequenceStats(
     business.followUpSteps.filter((step) => leadIdsInView.has(step.leadId))
   )
+  const conciergeStats = getConciergeStats(business.conciergeIntakes)
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -449,6 +456,56 @@ export default async function AnalyticsPage({
             <p className="mt-2 text-lg font-semibold text-slate-950">
               {getResponseSpeedMessage(responseStats)}
             </p>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-indigo-800">
+                  AI missed-call concierge
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                  {conciergeStats.totalCount} intake
+                  {conciergeStats.totalCount === 1 ? "" : "s"} started
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                  Tracks the mocked text intake flow that gathers customer
+                  details and flags scheduling needs after missed calls.
+                </p>
+              </div>
+              <Link
+                href="/missed-calls"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
+              >
+                Open inbox
+              </Link>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-4">
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">In progress</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {conciergeStats.inProgressCount}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Ready for owner</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {conciergeStats.readyCount}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Scheduling needed</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {conciergeStats.schedulingRequestedCount}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Completed</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {conciergeStats.completedCount}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 rounded-2xl border border-slate-200 p-5">

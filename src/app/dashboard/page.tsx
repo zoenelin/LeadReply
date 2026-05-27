@@ -9,6 +9,10 @@ import {
 import { getBusinessHealthStats } from "@/lib/business-health"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import {
+  getConciergeStats,
+  getConciergeStatusLabel,
+} from "@/lib/concierge-intake"
+import {
   getFollowUpSequenceMessage,
   getFollowUpSequenceStats,
 } from "@/lib/follow-up-sequences"
@@ -287,6 +291,24 @@ export default async function DashboardPage() {
         ],
       })
     : []
+  const conciergeIntakes = business
+    ? await prisma.conciergeIntake.findMany({
+        where: {
+          businessId: business.id,
+        },
+        include: {
+          missedCall: true,
+          lead: {
+            select: {
+              id: true,
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      })
+    : []
   const reviewRequestsCount = business
     ? await prisma.reviewRequest.count({
         where: {
@@ -322,6 +344,10 @@ export default async function DashboardPage() {
   const reviewFunnelStats = getReviewFunnelStats(dashboardLeads)
   const followUpSequenceStats =
     getFollowUpSequenceStats(followUpSequenceSteps)
+  const conciergeStats = getConciergeStats(conciergeIntakes)
+  const conciergeActionItems = conciergeIntakes
+    .filter((intake) => intake.status !== "COMPLETED")
+    .slice(0, 3)
   const dueSequenceSteps = followUpSequenceSteps
     .filter((step) => step.status === "DRAFT" && step.dueAt && step.dueAt <= todayEnd)
     .slice(0, 4)
@@ -715,6 +741,79 @@ export default async function DashboardPage() {
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-indigo-200 bg-indigo-50 p-6">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-indigo-800">
+                AI missed-call concierge
+              </p>
+              <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                {conciergeStats.readyCount} intake
+                {conciergeStats.readyCount === 1 ? "" : "s"} ready for review
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                Mocked AI conversations collect customer details after missed
+                calls and turn finished intakes into leads.
+              </p>
+            </div>
+            <Link
+              href="/missed-calls"
+              className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
+            >
+              Open concierge
+            </Link>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl bg-white p-4">
+              <p className="text-sm text-slate-500">In progress</p>
+              <p className="mt-1 text-2xl font-bold text-slate-950">
+                {conciergeStats.inProgressCount}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white p-4">
+              <p className="text-sm text-slate-500">Scheduling needed</p>
+              <p className="mt-1 text-2xl font-bold text-slate-950">
+                {conciergeStats.schedulingRequestedCount}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white p-4">
+              <p className="text-sm text-slate-500">Total intakes</p>
+              <p className="mt-1 text-2xl font-bold text-slate-950">
+                {conciergeStats.totalCount}
+              </p>
+            </div>
+          </div>
+          {conciergeActionItems.length > 0 && (
+            <div className="mt-5 space-y-3">
+              {conciergeActionItems.map((intake) => (
+                <Link
+                  key={intake.id}
+                  href={
+                    intake.lead?.id
+                      ? `/leads/${intake.lead.id}`
+                      : "/missed-calls"
+                  }
+                  className="block rounded-xl bg-white px-4 py-3 hover:bg-indigo-100"
+                >
+                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="font-semibold text-slate-950">
+                        {intake.missedCall.callerName}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {intake.summary || intake.missedCall.reason}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold text-indigo-800">
+                      {getConciergeStatusLabel(intake.status)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-8 rounded-2xl border border-slate-200 p-5">

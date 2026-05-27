@@ -41,6 +41,7 @@ model Business {
   leads                    Lead[]
   reviewRequests           ReviewRequest[]
   followUpSteps            FollowUpStep[]
+  conciergeIntakes         ConciergeIntake[]
 }
 
 model MissedCall {
@@ -55,6 +56,7 @@ model MissedCall {
   convertedLead   Lead?     @relation(fields: [convertedLeadId], references: [id], onDelete: SetNull)
   businessId      String
   business        Business  @relation(fields: [businessId], references: [id])
+  conciergeIntake ConciergeIntake?
 }
 
 model Lead {
@@ -76,6 +78,7 @@ model Lead {
   business            Business        @relation(fields: [businessId], references: [id])
   reviewRequests      ReviewRequest[]
   followUpSteps       FollowUpStep[]
+  conciergeIntakes    ConciergeIntake[]
   sourceMissedCall    MissedCall?
 
   @@index([businessId])
@@ -94,6 +97,31 @@ model ReviewRequest {
   lead          Lead?     @relation(fields: [leadId], references: [id])
   businessId    String
   business      Business  @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+  @@index([leadId])
+}
+
+model ConciergeIntake {
+  id                    String     @id @default(cuid())
+  status                String     @default("IN_PROGRESS")
+  currentStep           Int        @default(0)
+  intent                String     @default("")
+  urgency               String     @default("")
+  preferredTime         String     @default("")
+  schedulingRequested   Boolean    @default(false)
+  summary               String     @default("")
+  nextAction            String     @default("")
+  transcript            Json       @default("[]")
+  answers               Json       @default("{}")
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  missedCallId          String     @unique
+  missedCall            MissedCall @relation(fields: [missedCallId], references: [id], onDelete: Cascade)
+  businessId            String
+  business              Business   @relation(fields: [businessId], references: [id])
+  leadId                String?
+  lead                  Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
   @@index([businessId])
   @@index([leadId])

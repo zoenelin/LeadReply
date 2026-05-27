@@ -3,6 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { getBusinessHealthStats } from "@/lib/business-health"
+import { getConciergeStats } from "@/lib/concierge-intake"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import { getFollowUpSequenceStats } from "@/lib/follow-up-sequences"
 import { leadSourceLabels, formatMoney } from "@/lib/lead-options"
@@ -42,11 +43,23 @@ function formatTime(date: Date | null) {
 }
 
 function getPriorityAction({
+  conciergeIntake,
   sequenceStep,
   followUp,
   missedCall,
   newLead,
 }: {
+  conciergeIntake:
+    | {
+        summary: string
+        nextAction: string
+        leadId: string | null
+        missedCall: {
+          callerName: string
+          callerPhone: string
+        }
+      }
+    | null
   sequenceStep:
     | {
         title: string
@@ -86,6 +99,21 @@ function getPriorityAction({
       }
     | null
 }): PriorityAction {
+  if (conciergeIntake) {
+    return {
+      label: "Do this first",
+      title: `Review AI intake for ${conciergeIntake.missedCall.callerName}`,
+      description:
+        conciergeIntake.nextAction ||
+        conciergeIntake.summary ||
+        `${conciergeIntake.missedCall.callerPhone} completed the missed-call intake.`,
+      href: conciergeIntake.leadId
+        ? `/leads/${conciergeIntake.leadId}`
+        : "/missed-calls",
+      buttonLabel: conciergeIntake.leadId ? "Open lead" : "Open inbox",
+    }
+  }
+
   if (sequenceStep) {
     return {
       label: "Do this first",
@@ -191,6 +219,19 @@ export default async function OwnerPage() {
           },
         },
       },
+      conciergeIntakes: {
+        orderBy: {
+          updatedAt: "desc",
+        },
+        include: {
+          missedCall: {
+            select: {
+              callerName: true,
+              callerPhone: true,
+            },
+          },
+        },
+      },
       _count: {
         select: {
           reviewRequests: true,
@@ -226,6 +267,10 @@ export default async function OwnerPage() {
   )
   const followUpSequenceStats = getFollowUpSequenceStats(
     business.followUpSteps
+  )
+  const conciergeStats = getConciergeStats(business.conciergeIntakes)
+  const readyConciergeIntakes = business.conciergeIntakes.filter(
+    (intake) => intake.status === "READY_FOR_OWNER"
   )
   const dueSequenceSteps = business.followUpSteps.filter(
     (step) => step.status === "DRAFT" && step.dueAt && step.dueAt <= todayEnd
@@ -265,13 +310,18 @@ export default async function OwnerPage() {
         right.leadCount - left.leadCount
     )[0]
   const priorityAction = getPriorityAction({
+    conciergeIntake: readyConciergeIntakes[0] ?? null,
     sequenceStep: dueSequenceSteps[0] ?? null,
     followUp: followUpsDue[0] ?? null,
     missedCall: newMissedCalls[0] ?? null,
     newLead: newLeads[0] ?? null,
   })
   const openTaskCount =
-    dueSequenceSteps.length + followUpsDue.length + newMissedCalls.length + newLeads.length
+    readyConciergeIntakes.length +
+    dueSequenceSteps.length +
+    followUpsDue.length +
+    newMissedCalls.length +
+    newLeads.length
   const summaryText = bestSource
     ? `${business.leads.length} leads captured, ${wonLeads.length} became customers, and ${bestSource.label} is the strongest source right now.`
     : `${business.leads.length} leads captured and ${wonLeads.length} became customers so far.`
@@ -355,6 +405,18 @@ export default async function OwnerPage() {
               </p>
               <p className="mt-3 text-sm font-medium text-slate-700">
                 Open inbox
+              </p>
+            </Link>
+            <Link
+              href="/missed-calls"
+              className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 hover:bg-indigo-100"
+            >
+              <p className="text-sm text-indigo-800">AI intakes ready</p>
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                {conciergeStats.readyCount}
+              </p>
+              <p className="mt-3 text-sm font-medium text-slate-700">
+                {conciergeStats.inProgressCount} still chatting
               </p>
             </Link>
             <Link
@@ -464,6 +526,25 @@ export default async function OwnerPage() {
                         </p>
                       </Link>
                     ))}
+                    {readyConciergeIntakes.slice(0, 3).map((intake) => (
+                      <Link
+                        key={intake.id}
+                        href={intake.leadId ? `/leads/${intake.leadId}` : "/missed-calls"}
+                        className="grid gap-2 py-4 hover:bg-slate-50 sm:grid-cols-[1fr_7rem]"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-950">
+                            AI intake: {intake.missedCall.callerName}
+                          </p>
+                          <p className="text-sm text-slate-600">
+                            {intake.summary}
+                          </p>
+                        </div>
+                        <p className="text-sm font-medium text-slate-500 sm:text-right">
+                          Review
+                        </p>
+                      </Link>
+                    ))}
                     {followUpsDue.slice(0, 4).map((lead) => (
                       <Link
                         key={lead.id}
@@ -552,6 +633,15 @@ export default async function OwnerPage() {
                   <p className="mt-1 text-sm text-slate-600">
                     {followUpSequenceStats.dueTodayCount} due today,{" "}
                     {followUpSequenceStats.sentCount} sent
+                  </p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">AI concierge</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-950">
+                    {conciergeStats.readyCount} ready
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {conciergeStats.schedulingRequestedCount} need scheduling
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
