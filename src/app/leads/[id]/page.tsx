@@ -3,7 +3,12 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { ReviewRequestStatusButtons } from "@/app/components/ReviewRequestStatusButtons"
-import { formatMoney, leadSourceLabels, leadStatusLabels, statusClassName } from "@/lib/lead-options"
+import {
+  formatMoney,
+  leadSourceLabels,
+  leadStatusLabels,
+  statusClassName,
+} from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
 import {
   getReviewStatusLabel,
@@ -11,6 +16,7 @@ import {
 } from "@/lib/review-funnel"
 import { AppNav } from "../../components/AppNav"
 import { LeadDetailForm } from "./LeadDetailForm"
+import { LeadFollowUpSequence } from "./LeadFollowUpSequence"
 
 type LeadDetailPageProps = {
   params: Promise<{
@@ -50,6 +56,11 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
       reviewRequests: {
         orderBy: {
           createdAt: "desc",
+        },
+      },
+      followUpSteps: {
+        orderBy: {
+          stepOrder: "asc",
         },
       },
     },
@@ -143,6 +154,21 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
             />
 
             <aside className="space-y-5">
+              <LeadFollowUpSequence
+                leadId={lead.id}
+                customerName={lead.customerName}
+                steps={lead.followUpSteps.map((step) => ({
+                  id: step.id,
+                  title: step.title,
+                  message: step.message,
+                  channel: step.channel,
+                  status: step.status,
+                  stepOrder: step.stepOrder,
+                  dueAt: step.dueAt?.toISOString() ?? null,
+                  sentAt: step.sentAt?.toISOString() ?? null,
+                }))}
+              />
+
               <div className="rounded-2xl border border-slate-200 p-5">
                 <p className="text-sm font-medium text-slate-500">
                   Review funnel

@@ -8,7 +8,6 @@ Review the brainstorm list after the current milestone and pull the next stronge
 
 ## New Brainstorm Ideas
 
-- Follow-up sequences: draft a 2-step or 3-step text/email sequence for cold leads.
 - Lead quality score: estimate which leads are most likely to convert based on source, value, and activity.
 - Team notes: let staff leave internal notes on a lead without changing customer-facing messages.
 - Appointment outcome tracking: record booked, showed, no-show, rescheduled, or cancelled.
@@ -22,10 +21,10 @@ Review the brainstorm list after the current milestone and pull the next stronge
 
 ## Suggested Pull Order
 
-1. Follow-up sequences
-2. Lead quality score
-3. Notification center
-4. Team notes
+1. Lead quality score
+2. Notification center
+3. Team notes
+4. Appointment outcome tracking
 
 ## Completed From Backlog
 
@@ -40,6 +39,7 @@ Review the brainstorm list after the current milestone and pull the next stronge
 - Business health score: combines setup completeness, reply speed, follow-up habits, revenue risk, and review activity into a simple score.
 - Lead intake form: gives each business a public form that creates Website leads in the CRM.
 - Review funnel: tracks won customers to review requested to review received, with status updates and a dedicated reviews page.
+- Follow-up sequences: creates a three-step text follow-up plan for leads, tracks draft/sent/skipped steps, and surfaces due steps on the dashboard, owner view, analytics, and lead detail page.
 
 ## Later Integrations
 

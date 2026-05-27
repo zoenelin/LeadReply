@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/auth/auth"
+import { getSuggestedFollowUpSteps } from "@/lib/follow-up-sequences"
 import { getStarterLeads, getStarterMissedCalls } from "@/lib/demo-data"
 import { prisma } from "@/lib/prisma"
 
@@ -25,6 +26,11 @@ export async function POST() {
 
   try {
     await prisma.$transaction([
+      prisma.followUpStep.deleteMany({
+        where: {
+          businessId: business.id,
+        },
+      }),
       prisma.reviewRequest.deleteMany({
         where: {
           businessId: business.id,
@@ -80,6 +86,43 @@ export async function POST() {
           sentAt: index <= 1 ? now : null,
           receivedAt: index === 0 ? now : null,
         })),
+      })
+    }
+
+    const openLeads = await prisma.lead.findMany({
+      where: {
+        businessId: business.id,
+        status: {
+          in: ["NEW", "CONTACTED"],
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      take: 3,
+    })
+
+    if (openLeads.length > 0) {
+      const now = new Date()
+      await prisma.followUpStep.createMany({
+        data: openLeads.flatMap((lead, leadIndex) =>
+          getSuggestedFollowUpSteps({
+            businessName: business.name,
+            businessType: business.businessType,
+            customerName: lead.customerName,
+            requestContext: lead.followUpNote || lead.notes,
+          }).map((step, stepIndex) => ({
+            businessId: business.id,
+            leadId: lead.id,
+            title: step.title,
+            message: step.message,
+            channel: step.channel,
+            stepOrder: step.stepOrder,
+            dueAt: step.dueAt,
+            status: leadIndex === 0 && stepIndex === 0 ? "SENT" : "DRAFT",
+            sentAt: leadIndex === 0 && stepIndex === 0 ? now : null,
+          }))
+        ),
       })
     }
 

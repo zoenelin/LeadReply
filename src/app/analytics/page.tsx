@@ -6,6 +6,10 @@ import { businessCategoryLabels } from "@/lib/business-options"
 import { getBusinessHealthStats } from "@/lib/business-health"
 import { getAverageLeadValueCents, getStarterLeads } from "@/lib/demo-data"
 import {
+  getFollowUpSequenceMessage,
+  getFollowUpSequenceStats,
+} from "@/lib/follow-up-sequences"
+import {
   formatMoney,
   leadSourceLabels,
   leadSourceOptions,
@@ -66,6 +70,16 @@ async function getBusinessWithLeads(userId: string) {
         orderBy: {
           createdAt: "asc",
         },
+      },
+      followUpSteps: {
+        orderBy: [
+          {
+            dueAt: "asc",
+          },
+          {
+            stepOrder: "asc",
+          },
+        ],
       },
       _count: {
         select: {
@@ -264,6 +278,10 @@ export default async function AnalyticsPage({
       ? lostRevenueStats.actionItems.slice(0, 3)
       : lostRevenueStats.lostItems.slice(0, 3)
   const reviewFunnelStats = getReviewFunnelStats(leads)
+  const leadIdsInView = new Set(leads.map((lead) => lead.id))
+  const followUpSequenceStats = getFollowUpSequenceStats(
+    business.followUpSteps.filter((step) => leadIdsInView.has(step.leadId))
+  )
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -520,6 +538,54 @@ export default async function AnalyticsPage({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-5">
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-sky-800">
+                  Follow-up sequences
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                  {followUpSequenceStats.completionRate}% handled
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                  {getFollowUpSequenceMessage(followUpSequenceStats)}
+                </p>
+              </div>
+              <Link
+                href="/leads"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
+              >
+                Open leads
+              </Link>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-4">
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Active sequences</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {followUpSequenceStats.activeSequenceCount}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Due today</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {followUpSequenceStats.dueTodayCount}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Sent</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {followUpSequenceStats.sentCount}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">Skipped</p>
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {followUpSequenceStats.skippedCount}
+                </p>
+              </div>
             </div>
           </div>
 

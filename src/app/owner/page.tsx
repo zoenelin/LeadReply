@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { getBusinessHealthStats } from "@/lib/business-health"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
+import { getFollowUpSequenceStats } from "@/lib/follow-up-sequences"
 import { leadSourceLabels, formatMoney } from "@/lib/lead-options"
 import {
   getLostRevenueMessage,
@@ -41,10 +42,23 @@ function formatTime(date: Date | null) {
 }
 
 function getPriorityAction({
+  sequenceStep,
   followUp,
   missedCall,
   newLead,
 }: {
+  sequenceStep:
+    | {
+        title: string
+        message: string
+        dueAt: Date | null
+        lead: {
+          id: string
+          customerName: string
+          estimatedValueCents: number
+        }
+      }
+    | null
   followUp:
     | {
         id: string
@@ -72,6 +86,20 @@ function getPriorityAction({
       }
     | null
 }): PriorityAction {
+  if (sequenceStep) {
+    return {
+      label: "Do this first",
+      title: `${sequenceStep.title} for ${sequenceStep.lead.customerName}`,
+      description:
+        sequenceStep.message ||
+        `${sequenceStep.lead.customerName} is waiting on the next planned touch. Estimated value: ${formatMoney(
+          sequenceStep.lead.estimatedValueCents
+        )}.`,
+      href: `/leads/${sequenceStep.lead.id}`,
+      buttonLabel: "Open lead",
+    }
+  }
+
   if (followUp) {
     return {
       label: "Do this first",
@@ -143,6 +171,26 @@ export default async function OwnerPage() {
           createdAt: "desc",
         },
       },
+      followUpSteps: {
+        orderBy: [
+          {
+            dueAt: "asc",
+          },
+          {
+            stepOrder: "asc",
+          },
+        ],
+        include: {
+          lead: {
+            select: {
+              id: true,
+              customerName: true,
+              customerPhone: true,
+              estimatedValueCents: true,
+            },
+          },
+        },
+      },
       _count: {
         select: {
           reviewRequests: true,
@@ -175,6 +223,12 @@ export default async function OwnerPage() {
     )
   const newMissedCalls = business.missedCalls.filter(
     (call) => call.status === "NEW"
+  )
+  const followUpSequenceStats = getFollowUpSequenceStats(
+    business.followUpSteps
+  )
+  const dueSequenceSteps = business.followUpSteps.filter(
+    (step) => step.status === "DRAFT" && step.dueAt && step.dueAt <= todayEnd
   )
   const newLeads = business.leads.filter((lead) => lead.status === "NEW")
   const todaysLeads = business.leads.filter(
@@ -211,12 +265,13 @@ export default async function OwnerPage() {
         right.leadCount - left.leadCount
     )[0]
   const priorityAction = getPriorityAction({
+    sequenceStep: dueSequenceSteps[0] ?? null,
     followUp: followUpsDue[0] ?? null,
     missedCall: newMissedCalls[0] ?? null,
     newLead: newLeads[0] ?? null,
   })
   const openTaskCount =
-    followUpsDue.length + newMissedCalls.length + newLeads.length
+    dueSequenceSteps.length + followUpsDue.length + newMissedCalls.length + newLeads.length
   const summaryText = bestSource
     ? `${business.leads.length} leads captured, ${wonLeads.length} became customers, and ${bestSource.label} is the strongest source right now.`
     : `${business.leads.length} leads captured and ${wonLeads.length} became customers so far.`
@@ -303,6 +358,19 @@ export default async function OwnerPage() {
               </p>
             </Link>
             <Link
+              href="/leads"
+              className="rounded-2xl border border-sky-200 bg-sky-50 p-5 hover:bg-sky-100"
+            >
+              <p className="text-sm text-sky-800">Sequence steps due</p>
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                {followUpSequenceStats.dueTodayCount}
+              </p>
+              <p className="mt-3 text-sm font-medium text-slate-700">
+                {followUpSequenceStats.activeSequenceCount} active sequence
+                {followUpSequenceStats.activeSequenceCount === 1 ? "" : "s"}
+              </p>
+            </Link>
+            <Link
               href="/analytics"
               className="rounded-2xl border border-slate-200 p-5 hover:bg-slate-50"
             >
@@ -369,12 +437,33 @@ export default async function OwnerPage() {
               </div>
 
               <div className="mt-5 divide-y divide-slate-100">
-                {followUpsDue.length === 0 && newMissedCalls.length === 0 ? (
+                {dueSequenceSteps.length === 0 &&
+                followUpsDue.length === 0 &&
+                newMissedCalls.length === 0 ? (
                   <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
                     No follow-ups or new missed calls are waiting.
                   </div>
                 ) : (
                   <>
+                    {dueSequenceSteps.slice(0, 4).map((step) => (
+                      <Link
+                        key={step.id}
+                        href={`/leads/${step.lead.id}`}
+                        className="grid gap-2 py-4 hover:bg-slate-50 sm:grid-cols-[1fr_7rem]"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-950">
+                            {step.title}: {step.lead.customerName}
+                          </p>
+                          <p className="text-sm text-slate-600">
+                            {step.message}
+                          </p>
+                        </div>
+                        <p className="text-sm font-medium text-slate-500 sm:text-right">
+                          {formatTime(step.dueAt)}
+                        </p>
+                      </Link>
+                    ))}
                     {followUpsDue.slice(0, 4).map((lead) => (
                       <Link
                         key={lead.id}
@@ -451,6 +540,18 @@ export default async function OwnerPage() {
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
                     {responseStats.waitingCount} waiting for reply
+                  </p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">
+                    Follow-up sequences
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-950">
+                    {followUpSequenceStats.completionRate}% handled
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {followUpSequenceStats.dueTodayCount} due today,{" "}
+                    {followUpSequenceStats.sentCount} sent
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">

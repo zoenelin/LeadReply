@@ -9,6 +9,10 @@ import {
 import { getBusinessHealthStats } from "@/lib/business-health"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import {
+  getFollowUpSequenceMessage,
+  getFollowUpSequenceStats,
+} from "@/lib/follow-up-sequences"
+import {
   getLostRevenueLabel,
   getLostRevenueMessage,
   getLostRevenueStats,
@@ -150,6 +154,17 @@ function formatMoney(cents: number) {
   return currencyFormatter.format(cents / 100)
 }
 
+function formatShortDate(value: Date | null) {
+  if (!value) {
+    return "No date"
+  }
+
+  return value.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })
+}
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
 
@@ -248,6 +263,30 @@ export default async function DashboardPage() {
         take: 4,
       })
     : []
+  const followUpSequenceSteps = business
+    ? await prisma.followUpStep.findMany({
+        where: {
+          businessId: business.id,
+        },
+        include: {
+          lead: {
+            select: {
+              id: true,
+              customerName: true,
+              customerPhone: true,
+            },
+          },
+        },
+        orderBy: [
+          {
+            dueAt: "asc",
+          },
+          {
+            stepOrder: "asc",
+          },
+        ],
+      })
+    : []
   const reviewRequestsCount = business
     ? await prisma.reviewRequest.count({
         where: {
@@ -281,6 +320,11 @@ export default async function DashboardPage() {
     .slice(0, 3)
   const responseStats = getResponseSpeedStats(responseCalls)
   const reviewFunnelStats = getReviewFunnelStats(dashboardLeads)
+  const followUpSequenceStats =
+    getFollowUpSequenceStats(followUpSequenceSteps)
+  const dueSequenceSteps = followUpSequenceSteps
+    .filter((step) => step.status === "DRAFT" && step.dueAt && step.dueAt <= todayEnd)
+    .slice(0, 4)
   const lostRevenueStats = getLostRevenueStats({
     leads: dashboardLeads,
     missedCalls: responseCalls,
@@ -764,6 +808,60 @@ export default async function DashboardPage() {
                     <p className="text-sm font-medium text-slate-500">
                       {lead.customerPhone}
                     </p>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-sky-800">
+                Follow-up sequences
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                {followUpSequenceStats.dueTodayCount} step
+                {followUpSequenceStats.dueTodayCount === 1 ? "" : "s"} ready
+                today
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                {getFollowUpSequenceMessage(followUpSequenceStats)}
+              </p>
+            </div>
+            <Link
+              href="/leads"
+              className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
+            >
+              Open sequences
+            </Link>
+          </div>
+          <div className="mt-5 space-y-3">
+            {dueSequenceSteps.length === 0 ? (
+              <div className="rounded-xl bg-white px-4 py-3 text-sm text-slate-600">
+                No sequence steps are due today.
+              </div>
+            ) : (
+              dueSequenceSteps.map((step) => (
+                <Link
+                  key={step.id}
+                  href={`/leads/${step.lead.id}`}
+                  className="block rounded-xl bg-white px-4 py-3 hover:bg-sky-100"
+                >
+                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="font-semibold text-slate-950">
+                        {step.title} for {step.lead.customerName}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {step.message}
+                      </p>
+                    </div>
+                    <div className="text-sm font-medium text-slate-500 sm:text-right">
+                      <p>{formatShortDate(step.dueAt)}</p>
+                      <p>{step.lead.customerPhone}</p>
+                    </div>
                   </div>
                 </Link>
               ))
