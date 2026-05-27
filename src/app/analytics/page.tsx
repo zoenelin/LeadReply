@@ -13,6 +13,12 @@ import {
   statusClassName,
 } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import {
+  formatResponseDuration,
+  getResponseSpeedLabel,
+  getResponseSpeedMessage,
+  getResponseSpeedStats,
+} from "@/lib/response-speed"
 import { buildRevenueSummaryRows } from "@/lib/reporting"
 import { AppNav } from "../components/AppNav"
 
@@ -42,6 +48,11 @@ async function getBusinessWithLeads(userId: string) {
     },
     include: {
       leads: {
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
+      missedCalls: {
         orderBy: {
           createdAt: "asc",
         },
@@ -139,6 +150,13 @@ export default async function AnalyticsPage({
 
     return sourceMatches && statusMatches && startMatches && endMatches
   })
+  const responseCalls = business.missedCalls.filter((call) => {
+    const startMatches = !startDate || call.createdAt >= startDate
+    const endMatches = !endDate || call.createdAt <= endDate
+
+    return startMatches && endMatches
+  })
+  const responseStats = getResponseSpeedStats(responseCalls)
   const wonLeads = leads.filter((lead) => lead.status === "WON")
   const lostLeads = leads.filter((lead) => lead.status === "LOST")
   const openLeads = leads.filter(
@@ -337,6 +355,50 @@ export default async function AnalyticsPage({
                 {formatMoney(lostOpportunityCents)}
               </p>
             </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 p-5">
+              <p className="text-sm text-slate-500">Average response time</p>
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                {formatResponseDuration(responseStats.averageMinutes)}
+              </p>
+              <p className="mt-3 text-sm font-semibold text-slate-600">
+                {getResponseSpeedLabel(responseStats.averageMinutes)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 p-5">
+              <p className="text-sm text-slate-500">Same-day replies</p>
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                {responseStats.sameDayRate}%
+              </p>
+              <p className="mt-3 text-sm font-semibold text-slate-600">
+                {responseStats.repliedCount} replied missed call
+                {responseStats.repliedCount === 1 ? "" : "s"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 p-5">
+              <p className="text-sm text-slate-500">Waiting for reply</p>
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                {responseStats.waitingCount}
+              </p>
+              <p className="mt-3 text-sm font-semibold text-slate-600">
+                {responseStats.oldestWaitingMinutes === null
+                  ? "All clear"
+                  : `Oldest: ${formatResponseDuration(
+                      responseStats.oldestWaitingMinutes
+                    )}`}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-sm font-medium text-slate-500">
+              Response speed tracking
+            </p>
+            <p className="mt-2 text-lg font-semibold text-slate-950">
+              {getResponseSpeedMessage(responseStats)}
+            </p>
           </div>
 
           <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">

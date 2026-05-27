@@ -2,12 +2,14 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import { formatResponseDuration, minutesBetween } from "@/lib/response-speed"
 
 type MissedCall = {
   id: string
   callerName: string
   callerPhone: string
   createdAt: string
+  repliedAt: string | null
   reason: string
   status: string
   convertedLeadId: string | null
@@ -30,6 +32,18 @@ export function MissedCallsInbox({
       localCalls.find((call) => call.id === selectedCallId) ?? localCalls[0],
     [localCalls, selectedCallId]
   )
+
+  function getCallResponseText(call: MissedCall) {
+    if (call.repliedAt) {
+      return `Replied in ${formatResponseDuration(
+        minutesBetween(new Date(call.createdAt), new Date(call.repliedAt))
+      )}`
+    }
+
+    return `Waiting ${formatResponseDuration(
+      minutesBetween(new Date(call.createdAt), new Date())
+    )}`
+  }
 
   async function markAsReplied() {
     if (!selectedCall) {
@@ -55,7 +69,14 @@ export function MissedCallsInbox({
 
     setLocalCalls((currentCalls) =>
       currentCalls.map((call) =>
-        call.id === selectedCall.id ? { ...call, status: "REPLIED" } : call
+        call.id === selectedCall.id
+          ? {
+              ...call,
+              status: "REPLIED",
+              repliedAt:
+                data.missedCall.repliedAt ?? new Date().toISOString(),
+            }
+          : call
       )
     )
     setMessage("Call marked as replied.")
@@ -154,6 +175,9 @@ export function MissedCallsInbox({
                 )}
               </div>
               <p className="mt-3 text-sm text-slate-600">{call.reason}</p>
+              <p className="mt-3 text-xs font-semibold text-slate-500">
+                {getCallResponseText(call)}
+              </p>
             </button>
           ))}
         </div>
@@ -167,6 +191,9 @@ export function MissedCallsInbox({
         <p className="mt-1 text-slate-600">{selectedCall.callerPhone}</p>
         <p className="mt-1 text-sm text-slate-500">
           {new Date(selectedCall.createdAt).toLocaleString()}
+        </p>
+        <p className="mt-3 inline-flex rounded-lg bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
+          {getCallResponseText(selectedCall)}
         </p>
         <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
           {selectedCall.reason}

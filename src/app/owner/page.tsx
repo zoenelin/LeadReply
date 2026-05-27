@@ -4,6 +4,10 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { leadSourceLabels, formatMoney } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import {
+  formatResponseDuration,
+  getResponseSpeedStats,
+} from "@/lib/response-speed"
 import { buildRevenueSummaryRows } from "@/lib/reporting"
 import { AppNav } from "../components/AppNav"
 
@@ -167,6 +171,7 @@ export default async function OwnerPage() {
     .filter((lead) => lead.source === "MISSED_CALL")
     .reduce((total, lead) => total + lead.wonValueCents, 0)
   const sourceRows = buildRevenueSummaryRows(business.leads)
+  const responseStats = getResponseSpeedStats(business.missedCalls)
   const bestSource = [...sourceRows]
     .filter((source) => source.leadCount > 0)
     .sort(
@@ -371,6 +376,15 @@ export default async function OwnerPage() {
                       {formatMoney(bestSource.revenueCents)} won
                     </p>
                   )}
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Average reply time</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-950">
+                    {formatResponseDuration(responseStats.averageMinutes)}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {responseStats.waitingCount} waiting for reply
+                  </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Customers won</p>

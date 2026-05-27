@@ -10,7 +10,6 @@ This file is for ideas we like but are not pulling into the current build yet. A
 ## New Brainstorm Ideas
 
 - Lead intake form: a simple website form businesses can link to or embed.
-- Response speed tracking: show how quickly the business follows up with leads.
 - Follow-up sequences: draft a 2-step or 3-step text/email sequence for cold leads.
 - Lead quality score: estimate which leads are most likely to convert based on source, value, and activity.
 - Team notes: let staff leave internal notes on a lead without changing customer-facing messages.
@@ -26,14 +25,14 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Suggested Pull Order
 
-1. Response speed tracking
-2. Lost revenue tracker
-3. Business health score
-4. Lead intake form
-5. Review funnel
-6. Follow-up sequences
-7. Lead quality score
-8. Notification center
+1. Lost revenue tracker
+2. Business health score
+3. Lead intake form
+4. Review funnel
+5. Follow-up sequences
+6. Lead quality score
+7. Notification center
+8. Team notes
 
 ## Completed From Backlog
 
@@ -43,6 +42,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Lead source breakdown: compares missed calls, website, manual entries, and referrals.
 - CSV export: downloads lead detail and revenue summary reports.
 - Simple owner mode: gives owners a quiet daily view with one priority action.
+- Response speed tracking: shows how quickly missed calls get replied to.
 
 ## Later Integrations
 

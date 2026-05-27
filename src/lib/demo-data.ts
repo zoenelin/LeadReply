@@ -196,6 +196,18 @@ function closeDate(createdAt: Date, daysLater: number) {
   return date
 }
 
+function minutesAgo(minutes: number) {
+  const date = new Date()
+  date.setMinutes(date.getMinutes() - minutes)
+  return date
+}
+
+function replyDate(createdAt: Date, minutesLater: number) {
+  const date = new Date(createdAt)
+  date.setMinutes(date.getMinutes() + minutesLater)
+  return date
+}
+
 export function getAverageLeadValueCents(businessType: string) {
   return averageLeadValues[businessType] ?? averageLeadValues.OTHER
 }
@@ -205,10 +217,20 @@ export function getStarterMissedCalls(businessId: string, businessType: string) 
     seedCallsByType[businessType as keyof typeof seedCallsByType] ??
     seedCallsByType.PROFESSIONAL_SERVICES
 
-  return seedCalls.map((call) => ({
-    ...call,
-    businessId,
-  }))
+  return seedCalls.map((call, index) => {
+    const createdAt = minutesAgo([190, 75, 25][index] ?? 30)
+    const replyDelayMinutes = index === 0 ? 18 : null
+
+    return {
+      ...call,
+      businessId,
+      createdAt,
+      status: replyDelayMinutes ? "REPLIED" : "NEW",
+      repliedAt: replyDelayMinutes
+        ? replyDate(createdAt, replyDelayMinutes)
+        : null,
+    }
+  })
 }
 
 export function getStarterLeads(businessId: string, businessType: string) {

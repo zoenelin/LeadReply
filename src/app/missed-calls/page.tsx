@@ -93,6 +93,7 @@ export default async function MissedCallsPage() {
               callerName: call.callerName,
               callerPhone: call.callerPhone,
               createdAt: call.createdAt.toISOString(),
+              repliedAt: call.repliedAt?.toISOString() ?? null,
               reason: call.reason,
               status: call.status,
               convertedLeadId: call.convertedLeadId,

@@ -6,6 +6,12 @@ import {
   planLabels,
   planOptions,
 } from "@/lib/business-options"
+import {
+  formatResponseDuration,
+  getResponseSpeedLabel,
+  getResponseSpeedMessage,
+  getResponseSpeedStats,
+} from "@/lib/response-speed"
 import { buildRevenueSummaryRows } from "@/lib/reporting"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -201,6 +207,13 @@ export default async function DashboardPage() {
         },
       })
     : []
+  const responseCalls = business
+    ? await prisma.missedCall.findMany({
+        where: {
+          businessId: business.id,
+        },
+      })
+    : []
   const todayEnd = new Date()
   todayEnd.setHours(23, 59, 59, 999)
   const followUpsDue = business
@@ -252,6 +265,7 @@ export default async function DashboardPage() {
         right.leadCount - left.leadCount
     )
     .slice(0, 3)
+  const responseStats = getResponseSpeedStats(responseCalls)
 
   const dashboardContent =
     businessTypeContent[business?.businessType ?? ""] ??
@@ -470,6 +484,30 @@ export default async function DashboardPage() {
               </p>
               <p className="mt-1 text-3xl font-bold text-slate-950">
                 {missedCallWinRate}%
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div>
+              <p className="text-sm font-medium text-slate-500">
+                Response speed
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                {formatResponseDuration(responseStats.averageMinutes)}
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                {getResponseSpeedMessage(responseStats)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 px-5 py-4 text-center">
+              <p className="text-sm font-medium text-slate-500">
+                Speed rating
+              </p>
+              <p className="mt-1 text-xl font-bold text-slate-950">
+                {getResponseSpeedLabel(responseStats.averageMinutes)}
               </p>
             </div>
           </div>
