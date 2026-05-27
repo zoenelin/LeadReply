@@ -3,6 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { businessCategoryLabels } from "@/lib/business-options"
+import { getBusinessHealthStats } from "@/lib/business-health"
 import { getAverageLeadValueCents, getStarterLeads } from "@/lib/demo-data"
 import {
   formatMoney,
@@ -60,6 +61,11 @@ async function getBusinessWithLeads(userId: string) {
       missedCalls: {
         orderBy: {
           createdAt: "asc",
+        },
+      },
+      _count: {
+        select: {
+          reviewRequests: true,
         },
       },
     },
@@ -165,6 +171,13 @@ export default async function AnalyticsPage({
   const lostRevenueStats = getLostRevenueStats({
     leads,
     missedCalls: responseCalls,
+    missedCallValueCents: getAverageLeadValueCents(business.businessType),
+  })
+  const businessHealthStats = getBusinessHealthStats({
+    business,
+    leads,
+    missedCalls: responseCalls,
+    reviewRequestCount: business._count.reviewRequests,
     missedCallValueCents: getAverageLeadValueCents(business.businessType),
   })
   const wonLeads = leads.filter((lead) => lead.status === "WON")
@@ -413,6 +426,47 @@ export default async function AnalyticsPage({
             <p className="mt-2 text-lg font-semibold text-slate-950">
               {getResponseSpeedMessage(responseStats)}
             </p>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-slate-200 p-5">
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                  Business health score
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                  {businessHealthStats.score}/100 - {businessHealthStats.label}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                  {businessHealthStats.message}
+                </p>
+              </div>
+              <Link
+                href={businessHealthStats.weakestFactor.href}
+                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+              >
+                Improve score
+              </Link>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-5">
+              {businessHealthStats.factors.map((factor) => (
+                <Link
+                  key={factor.label}
+                  href={factor.href}
+                  className="rounded-xl bg-slate-50 p-4 hover:bg-slate-100"
+                >
+                  <p className="text-sm font-semibold text-slate-950">
+                    {factor.label}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-950">
+                    {factor.score}/{factor.maxScore}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    {factor.status}
+                  </p>
+                </Link>
+              ))}
+            </div>
           </div>
 
           <div className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-5">

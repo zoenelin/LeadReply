@@ -51,12 +51,21 @@ export default async function LeadsPage() {
                 Add leads, track their value, and keep follow-ups from slipping.
               </p>
             </div>
-            <Link
-              href="/analytics"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              View analytics
-            </Link>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href={`/intake/${business.id}`}
+                target="_blank"
+                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+              >
+                Open intake form
+              </Link>
+              <Link
+                href="/analytics"
+                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                View analytics
+              </Link>
+            </div>
           </div>
 
           <LeadPipeline

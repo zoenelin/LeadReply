@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
+import { getBusinessHealthStats } from "@/lib/business-health"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import { leadSourceLabels, formatMoney } from "@/lib/lead-options"
 import {
@@ -135,6 +136,11 @@ export default async function OwnerPage() {
           createdAt: "desc",
         },
       },
+      _count: {
+        select: {
+          reviewRequests: true,
+        },
+      },
     },
   })
 
@@ -180,6 +186,13 @@ export default async function OwnerPage() {
   const lostRevenueStats = getLostRevenueStats({
     leads: business.leads,
     missedCalls: business.missedCalls,
+    missedCallValueCents: getAverageLeadValueCents(business.businessType),
+  })
+  const businessHealthStats = getBusinessHealthStats({
+    business,
+    leads: business.leads,
+    missedCalls: business.missedCalls,
+    reviewRequestCount: business._count.reviewRequests,
     missedCallValueCents: getAverageLeadValueCents(business.businessType),
   })
   const bestSource = [...sourceRows]
@@ -245,6 +258,18 @@ export default async function OwnerPage() {
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href={businessHealthStats.weakestFactor.href}
+              className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 hover:bg-emerald-100"
+            >
+              <p className="text-sm text-emerald-800">Business health</p>
+              <p className="mt-2 text-3xl font-bold text-slate-950">
+                {businessHealthStats.score}/100
+              </p>
+              <p className="mt-3 text-sm font-medium text-slate-700">
+                {businessHealthStats.label}
+              </p>
+            </Link>
             <Link
               href="/leads"
               className="rounded-2xl border border-slate-200 p-5 hover:bg-slate-50"
@@ -406,6 +431,15 @@ export default async function OwnerPage() {
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
                     {responseStats.waitingCount} waiting for reply
+                  </p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Business health</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-950">
+                    {businessHealthStats.score}/100
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {businessHealthStats.message}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">

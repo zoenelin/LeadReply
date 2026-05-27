@@ -4,11 +4,10 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Current Backlog
 
-- Business health score: combine setup completeness, follow-up rate, and response habits.
+Review the brainstorm list after the current milestone and pull the next strongest item.
 
 ## New Brainstorm Ideas
 
-- Lead intake form: a simple website form businesses can link to or embed.
 - Follow-up sequences: draft a 2-step or 3-step text/email sequence for cold leads.
 - Lead quality score: estimate which leads are most likely to convert based on source, value, and activity.
 - Team notes: let staff leave internal notes on a lead without changing customer-facing messages.
@@ -24,13 +23,11 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Suggested Pull Order
 
-1. Business health score
-2. Lead intake form
-3. Review funnel
-4. Follow-up sequences
-5. Lead quality score
-6. Notification center
-7. Team notes
+1. Review funnel
+2. Follow-up sequences
+3. Lead quality score
+4. Notification center
+5. Team notes
 
 ## Completed From Backlog
 
@@ -42,6 +39,8 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Simple owner mode: gives owners a quiet daily view with one priority action.
 - Response speed tracking: shows how quickly missed calls get replied to.
 - Lost revenue tracker: shows likely revenue lost or at risk from lost leads, overdue follow-ups, and unanswered missed calls.
+- Business health score: combines setup completeness, reply speed, follow-up habits, revenue risk, and review activity into a simple score.
+- Lead intake form: gives each business a public form that creates Website leads in the CRM.
 
 ## Later Integrations
 

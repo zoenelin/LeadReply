@@ -6,6 +6,7 @@ import {
   planLabels,
   planOptions,
 } from "@/lib/business-options"
+import { getBusinessHealthStats } from "@/lib/business-health"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import {
   getLostRevenueLabel,
@@ -279,6 +280,15 @@ export default async function DashboardPage() {
       business?.businessType ?? "OTHER"
     ),
   })
+  const businessHealthStats = business
+    ? getBusinessHealthStats({
+        business,
+        leads: dashboardLeads,
+        missedCalls: responseCalls,
+        reviewRequestCount: reviewRequestsCount,
+        missedCallValueCents: getAverageLeadValueCents(business.businessType),
+      })
+    : null
 
   const dashboardContent =
     businessTypeContent[business?.businessType ?? ""] ??
@@ -291,6 +301,7 @@ export default async function DashboardPage() {
   const selectedPlan = business?.selectedPlan ?? "BASIC"
   const selectedPlanDetails =
     planOptions.find((plan) => plan.value === selectedPlan) ?? planOptions[0]
+  const intakeFormHref = business ? `/intake/${business.id}` : "/settings/business"
   const setupItems = [
     {
       label: "Business profile",
@@ -364,6 +375,54 @@ export default async function DashboardPage() {
           </p>
         </div>
 
+        {businessHealthStats && (
+          <div className="mt-8 rounded-2xl border border-slate-200 p-6">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                  Business health
+                </p>
+                <h2 className="mt-2 text-3xl font-bold text-slate-950">
+                  {businessHealthStats.score}/100 - {businessHealthStats.label}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                  {businessHealthStats.message}
+                </p>
+              </div>
+              <Link
+                href={businessHealthStats.weakestFactor.href}
+                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+              >
+                Improve score
+              </Link>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {businessHealthStats.factors.map((factor) => (
+                <Link
+                  key={factor.label}
+                  href={factor.href}
+                  className="rounded-xl bg-slate-50 p-4 hover:bg-slate-100"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-950">
+                      {factor.label}
+                    </p>
+                    <span className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-slate-700">
+                      {factor.status}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-2xl font-bold text-slate-950">
+                    {factor.score}/{factor.maxScore}
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    {factor.message}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {business && (
           <div className="mt-6 rounded-2xl border border-slate-200 p-5">
             <div className="flex items-start justify-between gap-4">
@@ -386,6 +445,43 @@ export default async function DashboardPage() {
             <p className="mt-3 ms-2 inline-flex rounded-lg bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
               {planLabels[business.selectedPlan] ?? "Basic"} plan
             </p>
+          </div>
+        )}
+
+        {business && (
+          <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-6">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-sky-800">
+                  Lead intake form
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                  Share a form that sends leads into your pipeline
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                  Add this link to a website, social profile, or message. New
+                  submissions become Website leads automatically.
+                </p>
+                <p className="mt-3 break-all rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+                  {intakeFormHref}
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
+                <Link
+                  href={intakeFormHref}
+                  target="_blank"
+                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+                >
+                  Open form
+                </Link>
+                <Link
+                  href="/leads"
+                  className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-sky-100"
+                >
+                  View leads
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 
