@@ -26,6 +26,23 @@ export async function POST() {
     where: {
       userId: session.user.id,
     },
+    include: {
+      serviceOfferings: {
+        orderBy: {
+          displayOrder: "asc",
+        },
+      },
+      availabilityWindows: {
+        orderBy: [
+          {
+            dayOfWeek: "asc",
+          },
+          {
+            startTime: "asc",
+          },
+        ],
+      },
+    },
   })
 
   if (!business) {
@@ -133,12 +150,18 @@ export async function POST() {
         quoteRules: business.quoteRules,
         quoteDisclaimer: business.quoteDisclaimer,
         callbackTimeframe: business.callbackTimeframe,
+        services: business.serviceOfferings,
+        availabilityWindows: business.availabilityWindows,
       })
       const leadNotes = buildConciergeLeadNotes({
         summary: summary.summary,
         nextAction: summary.nextAction,
         schedulingMode: summary.schedulingMode,
         quoteGuidance: summary.quoteGuidance,
+        matchedServiceName: summary.matchedServiceName,
+        serviceEstimate: summary.matchedServiceEstimate,
+        serviceDuration: summary.matchedServiceDuration,
+        availabilityGuidance: summary.availabilityGuidance,
         answers,
       })
       const conciergeLead = await prisma.lead.create({
@@ -152,6 +175,7 @@ export async function POST() {
           notes: leadNotes,
           followUpAt: new Date(),
           followUpNote: summary.nextAction,
+          serviceOfferingId: summary.matchedServiceId,
           createdAt: newestMissedCall.createdAt,
         },
       })
@@ -181,6 +205,13 @@ export async function POST() {
           schedulingMode: summary.schedulingMode,
           quoteRequested: summary.quoteRequested,
           quoteGuidance: summary.quoteGuidance,
+          matchedServiceId: summary.matchedServiceId,
+          matchedServiceName: summary.matchedServiceName,
+          matchedQuoteLowCents: summary.matchedQuoteLowCents,
+          matchedQuoteHighCents: summary.matchedQuoteHighCents,
+          matchedDurationMinutes: summary.matchedDurationMinutes,
+          serviceBookableOnline: summary.serviceBookableOnline,
+          availabilityGuidance: summary.availabilityGuidance,
           summary: summary.summary,
           nextAction: summary.nextAction,
           answers,

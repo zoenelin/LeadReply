@@ -22,6 +22,12 @@ type MissedCallConciergeIntake = {
   schedulingMode: string
   quoteRequested: boolean
   quoteGuidance: string
+  matchedServiceName: string
+  matchedQuoteLowCents: number
+  matchedQuoteHighCents: number
+  matchedDurationMinutes: number
+  serviceBookableOnline: boolean
+  availabilityGuidance: string
   summary: string
   nextAction: string
   transcript: ConciergeTranscriptEntry[]
@@ -542,6 +548,39 @@ export function MissedCallsInbox({
                       </p>
                       <p className="mt-1 text-sm text-slate-800">
                         {selectedCall.conciergeIntake.quoteGuidance}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mt-4 rounded-lg bg-white p-3">
+                    <p className="text-xs font-medium text-slate-500">
+                      Service match
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-950">
+                      {selectedCall.conciergeIntake.matchedServiceName ||
+                        "No configured service matched"}
+                    </p>
+                    {selectedCall.conciergeIntake.matchedServiceName && (
+                      <p className="mt-2 text-sm text-slate-700">
+                        {selectedCall.conciergeIntake.matchedDurationMinutes >
+                        0
+                          ? `${selectedCall.conciergeIntake.matchedDurationMinutes} minutes`
+                          : "Duration not set"}
+                        {" · "}
+                        {selectedCall.conciergeIntake.serviceBookableOnline
+                          ? "Bookable from connected schedule"
+                          : "Owner confirmation required"}
+                      </p>
+                    )}
+                  </div>
+
+                  {selectedCall.conciergeIntake.availabilityGuidance && (
+                    <div className="mt-4 rounded-lg bg-white p-3">
+                      <p className="text-xs font-medium text-slate-500">
+                        Availability guidance
+                      </p>
+                      <p className="mt-1 text-sm text-slate-700">
+                        {selectedCall.conciergeIntake.availabilityGuidance}
                       </p>
                     </div>
                   )}

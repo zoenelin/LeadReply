@@ -47,6 +47,45 @@ model Business {
   reviewRequests           ReviewRequest[]
   followUpSteps            FollowUpStep[]
   conciergeIntakes         ConciergeIntake[]
+  serviceOfferings         ServiceOffering[]
+  availabilityWindows      AvailabilityWindow[]
+}
+
+model ServiceOffering {
+  id                   String            @id @default(cuid())
+  name                 String
+  description          String            @default("")
+  category             String            @default("")
+  estimateLowCents     Int               @default(0)
+  estimateHighCents    Int               @default(0)
+  durationMinutes      Int               @default(60)
+  bookableOnline       Boolean           @default(false)
+  ownerConfirmRequired Boolean           @default(true)
+  active               Boolean           @default(true)
+  displayOrder         Int               @default(0)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  businessId           String
+  business             Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leads                Lead[]
+  conciergeIntakes     ConciergeIntake[]
+
+  @@index([businessId])
+}
+
+model AvailabilityWindow {
+  id                 String   @id @default(cuid())
+  dayOfWeek          Int
+  startTime          String
+  endTime            String
+  minimumNoticeHours Int      @default(4)
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  businessId         String
+  business           Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
 }
 
 model MissedCall {
@@ -79,14 +118,17 @@ model Lead {
   followUpCompletedAt DateTime?
   createdAt           DateTime        @default(now())
   closedAt            DateTime?
+  serviceOfferingId   String?
   businessId          String
   business            Business        @relation(fields: [businessId], references: [id])
+  serviceOffering     ServiceOffering? @relation(fields: [serviceOfferingId], references: [id], onDelete: SetNull)
   reviewRequests      ReviewRequest[]
   followUpSteps       FollowUpStep[]
   conciergeIntakes    ConciergeIntake[]
   sourceMissedCall    MissedCall?
 
   @@index([businessId])
+  @@index([serviceOfferingId])
 }
 
 model ReviewRequest {
@@ -118,6 +160,12 @@ model ConciergeIntake {
   schedulingMode        String     @default("OWNER_CONFIRM")
   quoteRequested        Boolean    @default(false)
   quoteGuidance         String     @default("")
+  matchedServiceName    String     @default("")
+  matchedQuoteLowCents  Int        @default(0)
+  matchedQuoteHighCents Int        @default(0)
+  matchedDurationMinutes Int       @default(0)
+  serviceBookableOnline Boolean    @default(false)
+  availabilityGuidance  String     @default("")
   summary               String     @default("")
   nextAction            String     @default("")
   transcript            Json       @default("[]")
@@ -128,10 +176,13 @@ model ConciergeIntake {
   missedCall            MissedCall @relation(fields: [missedCallId], references: [id], onDelete: Cascade)
   businessId            String
   business              Business   @relation(fields: [businessId], references: [id])
+  matchedServiceId      String?
+  matchedService        ServiceOffering? @relation(fields: [matchedServiceId], references: [id], onDelete: SetNull)
   leadId                String?
   lead                  Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
   @@index([businessId])
+  @@index([matchedServiceId])
   @@index([leadId])
 }
 

@@ -185,6 +185,8 @@ export default async function DashboardPage() {
         select: {
           missedCalls: true,
           leads: true,
+          serviceOfferings: true,
+          availabilityWindows: true,
         },
       },
     },
@@ -397,6 +399,14 @@ export default async function DashboardPage() {
       complete: Boolean(savedReplyTemplate),
     },
     {
+      label: "Service catalog",
+      complete: Boolean((business?._count.serviceOfferings ?? 0) > 0),
+    },
+    {
+      label: "Availability",
+      complete: Boolean((business?._count.availabilityWindows ?? 0) > 0),
+    },
+    {
       label: "Review request plan",
       complete: reviewRequestsCount > 0,
     },
@@ -452,6 +462,31 @@ export default async function DashboardPage() {
             {dashboardContent.description}
           </p>
         </div>
+
+        {business && business._count.serviceOfferings === 0 && (
+          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-amber-800">
+                  Service setup
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                  Add services so quotes and scheduling become specific.
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                  A service catalog lets the concierge match customer requests
+                  to estimate ranges, durations, and booking rules.
+                </p>
+              </div>
+              <Link
+                href="/settings/services"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
+              >
+                Add services
+              </Link>
+            </div>
+          </div>
+        )}
 
         {businessHealthStats && (
           <div className="mt-8 rounded-2xl border border-slate-200 p-6">
@@ -574,7 +609,11 @@ export default async function DashboardPage() {
               </h2>
             </div>
             <Link
-              href="/settings/automation"
+              href={
+                (business?._count.serviceOfferings ?? 0) === 0
+                  ? "/settings/services"
+                  : "/settings/automation"
+              }
               className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
             >
               Finish setup

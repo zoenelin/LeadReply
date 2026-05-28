@@ -4,6 +4,7 @@ import {
   normalizeConciergeAnswers,
 } from "@/lib/concierge-intake"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
+import { formatMoney } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { z } from "zod"
@@ -11,6 +12,22 @@ import { z } from "zod"
 const missedCallSchema = z.object({
   status: z.enum(["NEW", "REPLIED"]),
 })
+
+function formatServiceEstimate(lowCents: number, highCents: number) {
+  if (lowCents > 0 && highCents > 0 && lowCents !== highCents) {
+    return `${formatMoney(lowCents)}-${formatMoney(highCents)}`
+  }
+
+  if (lowCents > 0) {
+    return `Starts at ${formatMoney(lowCents)}`
+  }
+
+  if (highCents > 0) {
+    return `Up to ${formatMoney(highCents)}`
+  }
+
+  return ""
+}
 
 async function findUserMissedCall(id: string, userId: string) {
   return prisma.missedCall.findFirst({
@@ -113,6 +130,20 @@ export async function POST(
             `Follow up from missed call: ${missedCall.reason}`,
           schedulingMode: missedCall.conciergeIntake.schedulingMode,
           quoteGuidance: missedCall.conciergeIntake.quoteGuidance,
+          matchedServiceName: missedCall.conciergeIntake.matchedServiceName,
+          serviceEstimate:
+            missedCall.conciergeIntake.matchedQuoteLowCents > 0 ||
+            missedCall.conciergeIntake.matchedQuoteHighCents > 0
+              ? formatServiceEstimate(
+                  missedCall.conciergeIntake.matchedQuoteLowCents,
+                  missedCall.conciergeIntake.matchedQuoteHighCents
+                )
+              : "",
+          serviceDuration:
+            missedCall.conciergeIntake.matchedDurationMinutes > 0
+              ? `${missedCall.conciergeIntake.matchedDurationMinutes} minutes`
+              : "",
+          availabilityGuidance: missedCall.conciergeIntake.availabilityGuidance,
           answers: normalizeConciergeAnswers(missedCall.conciergeIntake.answers),
         })
       : ""
@@ -127,6 +158,7 @@ export async function POST(
           estimatedValueCents: getAverageLeadValueCents(
             missedCall.business.businessType
           ),
+          serviceOfferingId: missedCall.conciergeIntake?.matchedServiceId,
           notes: conciergeNotes || missedCall.reason,
           followUpAt,
           followUpNote: `Follow up from missed call: ${missedCall.reason}`,

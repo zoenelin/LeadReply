@@ -10,6 +10,7 @@ import {
   statusClassName,
 } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import { formatDuration, formatServiceEstimate } from "@/lib/service-catalog"
 import {
   getReviewStatusLabel,
   reviewStatusClassName,
@@ -36,6 +37,22 @@ function formatDate(value: Date | null) {
   })
 }
 
+function formatQuoteRange(lowCents: number, highCents: number) {
+  if (lowCents > 0 && highCents > 0 && lowCents !== highCents) {
+    return `${formatMoney(lowCents)}-${formatMoney(highCents)}`
+  }
+
+  if (lowCents > 0) {
+    return `Starts at ${formatMoney(lowCents)}`
+  }
+
+  if (highCents > 0) {
+    return `Up to ${formatMoney(highCents)}`
+  }
+
+  return "No estimate matched"
+}
+
 export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   const session = await getServerSession(authOptions)
 
@@ -53,6 +70,15 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     },
     include: {
       business: true,
+      serviceOffering: true,
+      conciergeIntakes: {
+        include: {
+          matchedService: true,
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      },
       reviewRequests: {
         orderBy: {
           createdAt: "desc",
@@ -69,6 +95,25 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   if (!lead) {
     notFound()
   }
+
+  const latestConciergeIntake = lead.conciergeIntakes[0]
+  const matchedService =
+    lead.serviceOffering ?? latestConciergeIntake?.matchedService ?? null
+  const matchedServiceName =
+    matchedService?.name ?? latestConciergeIntake?.matchedServiceName ?? ""
+  const quoteRange = matchedService
+    ? formatServiceEstimate(matchedService)
+    : latestConciergeIntake
+      ? formatQuoteRange(
+          latestConciergeIntake.matchedQuoteLowCents,
+          latestConciergeIntake.matchedQuoteHighCents
+        )
+      : "No estimate matched"
+  const durationLabel = matchedService
+    ? formatDuration(matchedService.durationMinutes)
+    : latestConciergeIntake?.matchedDurationMinutes
+      ? formatDuration(latestConciergeIntake.matchedDurationMinutes)
+      : "No duration matched"
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -154,6 +199,43 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
             />
 
             <aside className="space-y-5">
+              <div className="rounded-2xl border border-slate-200 p-5">
+                <p className="text-sm font-medium text-slate-500">
+                  Service and booking
+                </p>
+                <p className="mt-2 text-xl font-bold text-slate-950">
+                  {matchedServiceName || "No service matched yet"}
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-medium text-slate-500">
+                      Estimate range
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-950">
+                      {quoteRange}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-medium text-slate-500">
+                      Duration
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-950">
+                      {durationLabel}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  {latestConciergeIntake?.availabilityGuidance ||
+                    "Availability guidance will appear after a concierge intake or service setup."}
+                </p>
+                <Link
+                  href="/settings/services"
+                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  Manage services
+                </Link>
+              </div>
+
               <LeadFollowUpSequence
                 leadId={lead.id}
                 customerName={lead.customerName}

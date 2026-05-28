@@ -9,6 +9,7 @@ const navLinks = [
   { href: "/owner", label: "Today" },
   { href: "/leads", label: "Leads" },
   { href: "/missed-calls", label: "Inbox" },
+  { href: "/settings/services", label: "Services" },
   { href: "/analytics", label: "Analytics" },
   { href: "/reviews", label: "Reviews" },
   { href: "/settings/business", label: "Settings" },
@@ -26,7 +27,13 @@ const mobileNavLinks = [
 
 function isActiveLink(pathname: string, href: string) {
   if (href === "/settings/business") {
-    return pathname.startsWith("/settings") && pathname !== "/settings/billing"
+    return (
+      pathname === "/settings/business" || pathname === "/settings/automation"
+    )
+  }
+
+  if (href === "/settings/services") {
+    return pathname.startsWith("/settings/services")
   }
 
   return pathname === href || (href !== "/dashboard" && pathname.startsWith(href))

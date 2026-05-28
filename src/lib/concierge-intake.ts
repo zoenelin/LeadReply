@@ -1,3 +1,12 @@
+import {
+  buildAvailabilityGuidance,
+  formatDuration,
+  formatServiceEstimate,
+  matchServiceFromAnswers,
+  type AvailabilityWindowItem,
+  type ServiceCatalogItem,
+} from "@/lib/service-catalog"
+
 export type ConciergeTranscriptEntry = {
   role: "assistant" | "customer" | "system"
   text: string
@@ -41,6 +50,8 @@ type ConciergeSummaryInput = {
   quoteRules: string
   quoteDisclaimer: string
   callbackTimeframe: string
+  services?: ServiceCatalogItem[]
+  availabilityWindows?: AvailabilityWindowItem[]
 }
 
 const genericQuestions: ConciergeQuestion[] = [
@@ -371,10 +382,20 @@ function cleanSummaryPhrase(value: string) {
 function getSchedulingMode({
   bookingAutomationEnabled,
   autoSchedulingEnabled,
+  matchedService,
 }: {
   bookingAutomationEnabled: boolean
   autoSchedulingEnabled: boolean
+  matchedService: ServiceCatalogItem | null
 }) {
+  if (
+    bookingAutomationEnabled &&
+    matchedService &&
+    (!matchedService.bookableOnline || matchedService.ownerConfirmRequired)
+  ) {
+    return "SERVICE_OWNER_CONFIRM"
+  }
+
   if (bookingAutomationEnabled && autoSchedulingEnabled) {
     return "CONFIRMED_SLOT_ONLY"
   }
@@ -392,19 +413,37 @@ function getSchedulingAction({
   bookingAutomationEnabled,
   autoSchedulingEnabled,
   callbackTimeframe,
+  matchedService,
+  availabilityGuidance,
 }: {
   preferredTime: string
   industryContext: string
   bookingAutomationEnabled: boolean
   autoSchedulingEnabled: boolean
   callbackTimeframe: string
+  matchedService: ServiceCatalogItem | null
+  availabilityGuidance: string
 }) {
+  const serviceContext = matchedService
+    ? `${matchedService.name} (${formatDuration(
+        matchedService.durationMinutes
+      )})`
+    : industryContext
+
+  if (
+    bookingAutomationEnabled &&
+    matchedService &&
+    (!matchedService.bookableOnline || matchedService.ownerConfirmRequired)
+  ) {
+    return `Collect preferred times for ${serviceContext}, but owner confirmation is required before promising a slot. ${availabilityGuidance}`
+  }
+
   if (bookingAutomationEnabled && autoSchedulingEnabled) {
-    return `Offer only confirmed open slots from the connected schedule for this ${industryContext}. Do not invent availability. If no slot matches ${preferredTime}, collect alternate times.`
+    return `Offer only confirmed open slots from the connected schedule for this ${serviceContext}. Do not invent availability. If no slot matches ${preferredTime}, collect alternate times. ${availabilityGuidance}`
   }
 
   if (bookingAutomationEnabled) {
-    return `Check connected availability for this ${industryContext}, but owner confirmation is required before promising a slot. Preferred time: ${preferredTime}.`
+    return `Check connected availability for this ${serviceContext}, but owner confirmation is required before promising a slot. Preferred time: ${preferredTime}. ${availabilityGuidance}`
   }
 
   return `Scheduling is not connected yet. Text or call the customer ${callbackTimeframe} to confirm ${preferredTime}.`
@@ -415,14 +454,28 @@ function getQuoteGuidance({
   quoteEstimateEnabled,
   quoteRules,
   quoteDisclaimer,
+  matchedService,
 }: {
   quoteRequested: boolean
   quoteEstimateEnabled: boolean
   quoteRules: string
   quoteDisclaimer: string
+  matchedService: ServiceCatalogItem | null
 }) {
   if (!quoteRequested) {
     return ""
+  }
+
+  if (
+    quoteEstimateEnabled &&
+    matchedService &&
+    (matchedService.estimateLowCents > 0 || matchedService.estimateHighCents > 0)
+  ) {
+    return `Quote request detected. Matched service: ${
+      matchedService.name
+    }. Share only this configured range: ${formatServiceEstimate(
+      matchedService
+    )}. Disclaimer: ${quoteDisclaimer.trim()}`
   }
 
   if (quoteEstimateEnabled && quoteRules.trim()) {
@@ -530,6 +583,8 @@ export function buildConciergeSummary({
   quoteRules,
   quoteDisclaimer,
   callbackTimeframe,
+  services = [],
+  availabilityWindows = [],
 }: ConciergeSummaryInput) {
   const intent = cleanSummaryPhrase(
     pickFirstAnswer(answers, [
@@ -554,6 +609,11 @@ export function buildConciergeSummary({
   const urgency = detectUrgency(answers)
   const quoteRequested = detectQuoteRequest(answers)
   const schedulingRequested = Boolean(preferredTime)
+  const matchedService = matchServiceFromAnswers({
+    answers,
+    services,
+  })
+  const availabilityGuidance = buildAvailabilityGuidance(availabilityWindows)
   const industryContext =
     businessType === "FOOD_SERVICES"
       ? "reservation/order"
@@ -565,14 +625,19 @@ export function buildConciergeSummary({
   const schedulingMode = getSchedulingMode({
     bookingAutomationEnabled,
     autoSchedulingEnabled,
+    matchedService,
   })
   const quoteGuidance = getQuoteGuidance({
     quoteRequested,
     quoteEstimateEnabled,
     quoteRules,
     quoteDisclaimer,
+    matchedService,
   })
-  const summary = `${intent}. Timing: ${preferredTime}. Urgency: ${urgency}.${
+  const serviceSummary = matchedService
+    ? ` Matched service: ${matchedService.name}.`
+    : ""
+  const summary = `${intent}. Timing: ${preferredTime}. Urgency: ${urgency}.${serviceSummary}${
     quoteRequested ? " Quote requested." : ""
   }`
   const schedulingAction = schedulingRequested
@@ -582,6 +647,8 @@ export function buildConciergeSummary({
         bookingAutomationEnabled,
         autoSchedulingEnabled,
         callbackTimeframe,
+        matchedService,
+        availabilityGuidance,
       })
     : `Review the intake and reply ${callbackTimeframe}.`
   const nextAction = quoteGuidance
@@ -596,6 +663,19 @@ export function buildConciergeSummary({
     schedulingMode,
     quoteRequested,
     quoteGuidance,
+    matchedServiceId: matchedService?.id ?? null,
+    matchedServiceName: matchedService?.name ?? "",
+    matchedQuoteLowCents: matchedService?.estimateLowCents ?? 0,
+    matchedQuoteHighCents: matchedService?.estimateHighCents ?? 0,
+    matchedDurationMinutes: matchedService?.durationMinutes ?? 0,
+    matchedServiceEstimate: matchedService
+      ? formatServiceEstimate(matchedService)
+      : "",
+    matchedServiceDuration: matchedService
+      ? formatDuration(matchedService.durationMinutes)
+      : "",
+    serviceBookableOnline: matchedService?.bookableOnline ?? false,
+    availabilityGuidance,
     summary,
     nextAction,
   }
@@ -606,12 +686,20 @@ export function buildConciergeLeadNotes({
   nextAction,
   schedulingMode,
   quoteGuidance,
+  matchedServiceName,
+  serviceEstimate,
+  serviceDuration,
+  availabilityGuidance,
   answers,
 }: {
   summary: string
   nextAction: string
   schedulingMode?: string
   quoteGuidance?: string
+  matchedServiceName?: string
+  serviceEstimate?: string
+  serviceDuration?: string
+  availabilityGuidance?: string
   answers: ConciergeAnswerMap
 }) {
   const answerLines = Object.entries(answers)
@@ -622,6 +710,14 @@ export function buildConciergeLeadNotes({
     schedulingMode || "OWNER_CONFIRM"
   }\n\nQuote guard rail:\n${
     quoteGuidance || "No quote requested or owner confirmation required."
+  }\n\nMatched service:\n${
+    matchedServiceName || "No configured service matched."
+  }\n\nService estimate:\n${
+    serviceEstimate || "No configured service estimate."
+  }\n\nService duration:\n${
+    serviceDuration || "No configured duration."
+  }\n\nAvailability:\n${
+    availabilityGuidance || "No configured availability."
   }\n\nAnswers:\n${answerLines}`
 }
 

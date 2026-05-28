@@ -26,7 +26,25 @@ async function findUserMissedCall(id: string, userId: string) {
       },
     },
     include: {
-      business: true,
+      business: {
+        include: {
+          serviceOfferings: {
+            orderBy: {
+              displayOrder: "asc",
+            },
+          },
+          availabilityWindows: {
+            orderBy: [
+              {
+                dayOfWeek: "asc",
+              },
+              {
+                startTime: "asc",
+              },
+            ],
+          },
+        },
+      },
       convertedLead: true,
       conciergeIntake: true,
     },
@@ -195,6 +213,8 @@ export async function PATCH(
       quoteRules: missedCall.business.quoteRules,
       quoteDisclaimer: missedCall.business.quoteDisclaimer,
       callbackTimeframe: missedCall.business.callbackTimeframe,
+      services: missedCall.business.serviceOfferings,
+      availabilityWindows: missedCall.business.availabilityWindows,
     })
     const completedTranscript = [
       ...transcript,
@@ -207,6 +227,10 @@ export async function PATCH(
       nextAction: summary.nextAction,
       schedulingMode: summary.schedulingMode,
       quoteGuidance: summary.quoteGuidance,
+      matchedServiceName: summary.matchedServiceName,
+      serviceEstimate: summary.matchedServiceEstimate,
+      serviceDuration: summary.matchedServiceDuration,
+      availabilityGuidance: summary.availabilityGuidance,
       answers,
     })
     const followUpAt = new Date()
@@ -227,6 +251,9 @@ export async function PATCH(
                   : missedCall.convertedLead.status,
               followUpAt: missedCall.convertedLead.followUpAt ?? followUpAt,
               followUpNote: summary.nextAction,
+              serviceOfferingId:
+                summary.matchedServiceId ??
+                missedCall.convertedLead.serviceOfferingId,
             },
           })
         : await tx.lead.create({
@@ -242,6 +269,7 @@ export async function PATCH(
               notes: leadNotes,
               followUpAt,
               followUpNote: summary.nextAction,
+              serviceOfferingId: summary.matchedServiceId,
               createdAt: missedCall.createdAt,
             },
           })
@@ -271,6 +299,13 @@ export async function PATCH(
           schedulingMode: summary.schedulingMode,
           quoteRequested: summary.quoteRequested,
           quoteGuidance: summary.quoteGuidance,
+          matchedServiceId: summary.matchedServiceId,
+          matchedServiceName: summary.matchedServiceName,
+          matchedQuoteLowCents: summary.matchedQuoteLowCents,
+          matchedQuoteHighCents: summary.matchedQuoteHighCents,
+          matchedDurationMinutes: summary.matchedDurationMinutes,
+          serviceBookableOnline: summary.serviceBookableOnline,
+          availabilityGuidance: summary.availabilityGuidance,
           summary: summary.summary,
           nextAction: summary.nextAction,
           transcript: completedTranscript,
