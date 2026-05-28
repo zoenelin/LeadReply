@@ -7,6 +7,11 @@ type AutomationSettingsFormProps = {
   initialSettings: {
     phoneAutomationEnabled: boolean
     bookingAutomationEnabled: boolean
+    autoSchedulingEnabled: boolean
+    quoteEstimateEnabled: boolean
+    quoteRules: string
+    quoteDisclaimer: string
+    callbackTimeframe: string
     reviewAutomationEnabled: boolean
     preferredContactMethod: string
     bookingNotes: string
@@ -24,6 +29,19 @@ export function AutomationSettingsForm({
   )
   const [bookingAutomationEnabled, setBookingAutomationEnabled] = useState(
     initialSettings.bookingAutomationEnabled
+  )
+  const [autoSchedulingEnabled, setAutoSchedulingEnabled] = useState(
+    initialSettings.autoSchedulingEnabled
+  )
+  const [quoteEstimateEnabled, setQuoteEstimateEnabled] = useState(
+    initialSettings.quoteEstimateEnabled
+  )
+  const [quoteRules, setQuoteRules] = useState(initialSettings.quoteRules)
+  const [quoteDisclaimer, setQuoteDisclaimer] = useState(
+    initialSettings.quoteDisclaimer
+  )
+  const [callbackTimeframe, setCallbackTimeframe] = useState(
+    initialSettings.callbackTimeframe
   )
   const [reviewAutomationEnabled, setReviewAutomationEnabled] = useState(
     initialSettings.reviewAutomationEnabled
@@ -57,6 +75,11 @@ export function AutomationSettingsForm({
         body: JSON.stringify({
           phoneAutomationEnabled,
           bookingAutomationEnabled,
+          autoSchedulingEnabled,
+          quoteEstimateEnabled,
+          quoteRules,
+          quoteDisclaimer,
+          callbackTimeframe,
           reviewAutomationEnabled,
           preferredContactMethod,
           bookingNotes,
@@ -158,6 +181,86 @@ export function AutomationSettingsForm({
           className="mt-4 min-h-28 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
           placeholder="Example: ask party size, preferred time, and phone number before confirming."
         />
+        <label className="mt-4 flex items-start gap-3 rounded-xl bg-slate-50 p-4">
+          <input
+            type="checkbox"
+            checked={autoSchedulingEnabled}
+            onChange={(e) => setAutoSchedulingEnabled(e.target.checked)}
+            className="mt-1 h-4 w-4"
+          />
+          <span>
+            <span className="block font-semibold text-slate-950">
+              Allow confirmed self-scheduling
+            </span>
+            <span className="mt-1 block text-sm text-slate-600">
+              Only confirm a time when a connected calendar or booking system
+              verifies the slot. Otherwise collect preferred times for owner
+              approval.
+            </span>
+          </span>
+        </label>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 p-5">
+        <h2 className="text-xl font-bold text-slate-950">
+          Quote and callback guard rails
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Keep customer-facing estimates clear, limited, and easy for the owner
+          to confirm.
+        </p>
+        <div className="mt-5 space-y-4">
+          <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-4">
+            <input
+              type="checkbox"
+              checked={quoteEstimateEnabled}
+              onChange={(e) => setQuoteEstimateEnabled(e.target.checked)}
+              className="mt-1 h-4 w-4"
+            />
+            <span>
+              <span className="block font-semibold text-slate-950">
+                Allow estimated quote ranges
+              </span>
+              <span className="mt-1 block text-sm text-slate-600">
+                The concierge can mention estimated ranges only from the rules
+                below and must say final pricing is confirmed by the business.
+              </span>
+            </span>
+          </label>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Estimate rules
+            </label>
+            <textarea
+              value={quoteRules}
+              onChange={(e) => setQuoteRules(e.target.value)}
+              className="min-h-32 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              placeholder="Example: Brake pads usually $250-$450. Oil changes usually $45-$90. Diagnostic fee starts at $95."
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Estimate disclaimer
+            </label>
+            <textarea
+              value={quoteDisclaimer}
+              onChange={(e) => setQuoteDisclaimer(e.target.value)}
+              className="min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Callback expectation
+            </label>
+            <input
+              type="text"
+              value={callbackTimeframe}
+              onChange={(e) => setCallbackTimeframe(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              placeholder="within one business day"
+            />
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-5 md:grid-cols-2">

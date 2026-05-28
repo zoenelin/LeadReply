@@ -642,6 +642,7 @@ export default async function OwnerPage() {
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
                     {conciergeStats.schedulingRequestedCount} need scheduling
+                    , {conciergeStats.quoteRequestedCount} need quote review
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">

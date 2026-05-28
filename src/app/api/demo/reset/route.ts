@@ -128,10 +128,17 @@ export async function POST() {
         answers,
         businessType: business.businessType,
         bookingAutomationEnabled: business.bookingAutomationEnabled,
+        autoSchedulingEnabled: business.autoSchedulingEnabled,
+        quoteEstimateEnabled: business.quoteEstimateEnabled,
+        quoteRules: business.quoteRules,
+        quoteDisclaimer: business.quoteDisclaimer,
+        callbackTimeframe: business.callbackTimeframe,
       })
       const leadNotes = buildConciergeLeadNotes({
         summary: summary.summary,
         nextAction: summary.nextAction,
+        schedulingMode: summary.schedulingMode,
+        quoteGuidance: summary.quoteGuidance,
         answers,
       })
       const conciergeLead = await prisma.lead.create({
@@ -171,6 +178,9 @@ export async function POST() {
           urgency: summary.urgency,
           preferredTime: summary.preferredTime,
           schedulingRequested: summary.schedulingRequested,
+          schedulingMode: summary.schedulingMode,
+          quoteRequested: summary.quoteRequested,
+          quoteGuidance: summary.quoteGuidance,
           summary: summary.summary,
           nextAction: summary.nextAction,
           answers,

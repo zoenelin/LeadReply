@@ -190,6 +190,11 @@ export async function PATCH(
       answers,
       businessType: missedCall.business.businessType,
       bookingAutomationEnabled: missedCall.business.bookingAutomationEnabled,
+      autoSchedulingEnabled: missedCall.business.autoSchedulingEnabled,
+      quoteEstimateEnabled: missedCall.business.quoteEstimateEnabled,
+      quoteRules: missedCall.business.quoteRules,
+      quoteDisclaimer: missedCall.business.quoteDisclaimer,
+      callbackTimeframe: missedCall.business.callbackTimeframe,
     })
     const completedTranscript = [
       ...transcript,
@@ -200,6 +205,8 @@ export async function PATCH(
     const leadNotes = buildConciergeLeadNotes({
       summary: summary.summary,
       nextAction: summary.nextAction,
+      schedulingMode: summary.schedulingMode,
+      quoteGuidance: summary.quoteGuidance,
       answers,
     })
     const followUpAt = new Date()
@@ -261,6 +268,9 @@ export async function PATCH(
           urgency: summary.urgency,
           preferredTime: summary.preferredTime,
           schedulingRequested: summary.schedulingRequested,
+          schedulingMode: summary.schedulingMode,
+          quoteRequested: summary.quoteRequested,
+          quoteGuidance: summary.quoteGuidance,
           summary: summary.summary,
           nextAction: summary.nextAction,
           transcript: completedTranscript,

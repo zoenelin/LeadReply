@@ -22,6 +22,7 @@ export type ConciergePlan = {
 export type ConciergeIntakeStatsItem = {
   status: string
   schedulingRequested: boolean
+  quoteRequested?: boolean
 }
 
 type ConciergePlanInput = {
@@ -35,6 +36,11 @@ type ConciergeSummaryInput = {
   answers: ConciergeAnswerMap
   businessType: string
   bookingAutomationEnabled: boolean
+  autoSchedulingEnabled: boolean
+  quoteEstimateEnabled: boolean
+  quoteRules: string
+  quoteDisclaimer: string
+  callbackTimeframe: string
 }
 
 const genericQuestions: ConciergeQuestion[] = [
@@ -352,6 +358,80 @@ function detectUrgency(answers: ConciergeAnswerMap) {
   return "Flexible"
 }
 
+function detectQuoteRequest(answers: ConciergeAnswerMap) {
+  const answerText = Object.values(answers).join(" ").toLowerCase()
+
+  return /(quote|estimate|price|pricing|cost|how much|\$)/.test(answerText)
+}
+
+function cleanSummaryPhrase(value: string) {
+  return value.trim().replace(/[.!?]+$/, "")
+}
+
+function getSchedulingMode({
+  bookingAutomationEnabled,
+  autoSchedulingEnabled,
+}: {
+  bookingAutomationEnabled: boolean
+  autoSchedulingEnabled: boolean
+}) {
+  if (bookingAutomationEnabled && autoSchedulingEnabled) {
+    return "CONFIRMED_SLOT_ONLY"
+  }
+
+  if (bookingAutomationEnabled) {
+    return "CHECK_AVAILABILITY_OWNER_CONFIRM"
+  }
+
+  return "OWNER_CONFIRM"
+}
+
+function getSchedulingAction({
+  preferredTime,
+  industryContext,
+  bookingAutomationEnabled,
+  autoSchedulingEnabled,
+  callbackTimeframe,
+}: {
+  preferredTime: string
+  industryContext: string
+  bookingAutomationEnabled: boolean
+  autoSchedulingEnabled: boolean
+  callbackTimeframe: string
+}) {
+  if (bookingAutomationEnabled && autoSchedulingEnabled) {
+    return `Offer only confirmed open slots from the connected schedule for this ${industryContext}. Do not invent availability. If no slot matches ${preferredTime}, collect alternate times.`
+  }
+
+  if (bookingAutomationEnabled) {
+    return `Check connected availability for this ${industryContext}, but owner confirmation is required before promising a slot. Preferred time: ${preferredTime}.`
+  }
+
+  return `Scheduling is not connected yet. Text or call the customer ${callbackTimeframe} to confirm ${preferredTime}.`
+}
+
+function getQuoteGuidance({
+  quoteRequested,
+  quoteEstimateEnabled,
+  quoteRules,
+  quoteDisclaimer,
+}: {
+  quoteRequested: boolean
+  quoteEstimateEnabled: boolean
+  quoteRules: string
+  quoteDisclaimer: string
+}) {
+  if (!quoteRequested) {
+    return ""
+  }
+
+  if (quoteEstimateEnabled && quoteRules.trim()) {
+    return `Quote request detected. Share estimated ranges only from these configured rules: ${quoteRules.trim()} Disclaimer: ${quoteDisclaimer.trim()}`
+  }
+
+  return "Quote request detected. Do not give a price yet; the owner should confirm the estimate before replying."
+}
+
 export function getConciergePlan({
   businessName,
   businessType,
@@ -445,8 +525,13 @@ export function buildConciergeSummary({
   answers,
   businessType,
   bookingAutomationEnabled,
+  autoSchedulingEnabled,
+  quoteEstimateEnabled,
+  quoteRules,
+  quoteDisclaimer,
+  callbackTimeframe,
 }: ConciergeSummaryInput) {
-  const intent =
+  const intent = cleanSummaryPhrase(
     pickFirstAnswer(answers, [
       "serviceNeed",
       "requestType",
@@ -456,7 +541,8 @@ export function buildConciergeSummary({
       "interest",
       "request",
     ]) || "Needs follow-up"
-  const preferredTime =
+  )
+  const preferredTime = cleanSummaryPhrase(
     pickFirstAnswer(answers, [
       "preferredTime",
       "timing",
@@ -464,7 +550,9 @@ export function buildConciergeSummary({
       "timeline",
       "urgency",
     ]) || "No preferred time collected"
+  )
   const urgency = detectUrgency(answers)
+  const quoteRequested = detectQuoteRequest(answers)
   const schedulingRequested = Boolean(preferredTime)
   const industryContext =
     businessType === "FOOD_SERVICES"
@@ -474,18 +562,40 @@ export function buildConciergeSummary({
         : businessType === "AUTOMOTIVE"
           ? "service appointment"
           : "customer request"
-  const summary = `${intent}. Timing: ${preferredTime}. Urgency: ${urgency}.`
-  const nextAction = schedulingRequested
-    ? bookingAutomationEnabled
-      ? `Mock scheduling is ready: check connected availability for this ${industryContext} and offer the best matching time.`
-      : `Scheduling not connected yet: text or call the customer to confirm ${preferredTime}.`
-    : "Review the intake and send a specific next-step reply."
+  const schedulingMode = getSchedulingMode({
+    bookingAutomationEnabled,
+    autoSchedulingEnabled,
+  })
+  const quoteGuidance = getQuoteGuidance({
+    quoteRequested,
+    quoteEstimateEnabled,
+    quoteRules,
+    quoteDisclaimer,
+  })
+  const summary = `${intent}. Timing: ${preferredTime}. Urgency: ${urgency}.${
+    quoteRequested ? " Quote requested." : ""
+  }`
+  const schedulingAction = schedulingRequested
+    ? getSchedulingAction({
+        preferredTime,
+        industryContext,
+        bookingAutomationEnabled,
+        autoSchedulingEnabled,
+        callbackTimeframe,
+      })
+    : `Review the intake and reply ${callbackTimeframe}.`
+  const nextAction = quoteGuidance
+    ? `${schedulingAction} ${quoteGuidance}`
+    : schedulingAction
 
   return {
     intent,
     urgency,
     preferredTime,
     schedulingRequested,
+    schedulingMode,
+    quoteRequested,
+    quoteGuidance,
     summary,
     nextAction,
   }
@@ -494,17 +604,25 @@ export function buildConciergeSummary({
 export function buildConciergeLeadNotes({
   summary,
   nextAction,
+  schedulingMode,
+  quoteGuidance,
   answers,
 }: {
   summary: string
   nextAction: string
+  schedulingMode?: string
+  quoteGuidance?: string
   answers: ConciergeAnswerMap
 }) {
   const answerLines = Object.entries(answers)
     .map(([key, value]) => `${key}: ${value}`)
     .join("\n")
 
-  return `AI missed-call concierge summary:\n${summary}\n\nRecommended next action:\n${nextAction}\n\nAnswers:\n${answerLines}`
+  return `AI missed-call concierge summary:\n${summary}\n\nRecommended next action:\n${nextAction}\n\nScheduling guard rail:\n${
+    schedulingMode || "OWNER_CONFIRM"
+  }\n\nQuote guard rail:\n${
+    quoteGuidance || "No quote requested or owner confirmation required."
+  }\n\nAnswers:\n${answerLines}`
 }
 
 export function getConciergeStats(intakes: ConciergeIntakeStatsItem[]) {
@@ -520,6 +638,9 @@ export function getConciergeStats(intakes: ConciergeIntakeStatsItem[]) {
   const schedulingRequestedCount = intakes.filter(
     (intake) => intake.schedulingRequested
   ).length
+  const quoteRequestedCount = intakes.filter(
+    (intake) => intake.quoteRequested
+  ).length
 
   return {
     totalCount: intakes.length,
@@ -527,5 +648,6 @@ export function getConciergeStats(intakes: ConciergeIntakeStatsItem[]) {
     readyCount,
     completedCount,
     schedulingRequestedCount,
+    quoteRequestedCount,
   }
 }

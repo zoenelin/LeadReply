@@ -49,6 +49,11 @@ export default async function AutomationSettingsPage() {
           initialSettings={{
             phoneAutomationEnabled: business.phoneAutomationEnabled,
             bookingAutomationEnabled: business.bookingAutomationEnabled,
+            autoSchedulingEnabled: business.autoSchedulingEnabled,
+            quoteEstimateEnabled: business.quoteEstimateEnabled,
+            quoteRules: business.quoteRules,
+            quoteDisclaimer: business.quoteDisclaimer,
+            callbackTimeframe: business.callbackTimeframe,
             reviewAutomationEnabled: business.reviewAutomationEnabled,
             preferredContactMethod: business.preferredContactMethod,
             bookingNotes: business.bookingNotes,

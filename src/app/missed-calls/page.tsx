@@ -117,6 +117,9 @@ export default async function MissedCallsPage() {
                     preferredTime: call.conciergeIntake.preferredTime,
                     schedulingRequested:
                       call.conciergeIntake.schedulingRequested,
+                    schedulingMode: call.conciergeIntake.schedulingMode,
+                    quoteRequested: call.conciergeIntake.quoteRequested,
+                    quoteGuidance: call.conciergeIntake.quoteGuidance,
                     summary: call.conciergeIntake.summary,
                     nextAction: call.conciergeIntake.nextAction,
                     transcript: normalizeConciergeTranscript(

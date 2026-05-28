@@ -765,7 +765,7 @@ export default async function DashboardPage() {
               Open concierge
             </Link>
           </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-4">
             <div className="rounded-xl bg-white p-4">
               <p className="text-sm text-slate-500">In progress</p>
               <p className="mt-1 text-2xl font-bold text-slate-950">
@@ -776,6 +776,12 @@ export default async function DashboardPage() {
               <p className="text-sm text-slate-500">Scheduling needed</p>
               <p className="mt-1 text-2xl font-bold text-slate-950">
                 {conciergeStats.schedulingRequestedCount}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white p-4">
+              <p className="text-sm text-slate-500">Quotes requested</p>
+              <p className="mt-1 text-2xl font-bold text-slate-950">
+                {conciergeStats.quoteRequestedCount}
               </p>
             </div>
             <div className="rounded-xl bg-white p-4">

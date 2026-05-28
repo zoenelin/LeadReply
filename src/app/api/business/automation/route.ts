@@ -6,6 +6,18 @@ import { prisma } from "@/lib/prisma"
 const automationSchema = z.object({
   phoneAutomationEnabled: z.boolean(),
   bookingAutomationEnabled: z.boolean(),
+  autoSchedulingEnabled: z.boolean(),
+  quoteEstimateEnabled: z.boolean(),
+  quoteRules: z.string().trim().optional().default(""),
+  quoteDisclaimer: z
+    .string()
+    .trim()
+    .optional()
+    .default("Prices are estimates only. Final pricing is confirmed by the business."),
+  callbackTimeframe: z
+    .string()
+    .trim()
+    .min(1, "Please enter a callback expectation."),
   reviewAutomationEnabled: z.boolean(),
   preferredContactMethod: z.enum(["TEXT", "CALL", "EMAIL"]),
   bookingNotes: z.string().trim().optional().default(""),

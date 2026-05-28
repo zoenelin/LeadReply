@@ -19,6 +19,9 @@ type MissedCallConciergeIntake = {
   urgency: string
   preferredTime: string
   schedulingRequested: boolean
+  schedulingMode: string
+  quoteRequested: boolean
+  quoteGuidance: string
   summary: string
   nextAction: string
   transcript: ConciergeTranscriptEntry[]
@@ -510,6 +513,38 @@ export function MissedCallsInbox({
                       </p>
                     </div>
                   </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="text-xs font-medium text-slate-500">
+                        Scheduling rule
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-950">
+                        {selectedCall.conciergeIntake.schedulingMode}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="text-xs font-medium text-slate-500">
+                        Quote request
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-950">
+                        {selectedCall.conciergeIntake.quoteRequested
+                          ? "Detected"
+                          : "Not detected"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedCall.conciergeIntake.quoteGuidance && (
+                    <div className="mt-4 rounded-lg bg-amber-50 p-3">
+                      <p className="text-xs font-medium text-amber-800">
+                        Quote guard rail
+                      </p>
+                      <p className="mt-1 text-sm text-slate-800">
+                        {selectedCall.conciergeIntake.quoteGuidance}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

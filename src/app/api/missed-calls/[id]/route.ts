@@ -111,6 +111,8 @@ export async function POST(
           nextAction:
             missedCall.conciergeIntake.nextAction ||
             `Follow up from missed call: ${missedCall.reason}`,
+          schedulingMode: missedCall.conciergeIntake.schedulingMode,
+          quoteGuidance: missedCall.conciergeIntake.quoteGuidance,
           answers: normalizeConciergeAnswers(missedCall.conciergeIntake.answers),
         })
       : ""
