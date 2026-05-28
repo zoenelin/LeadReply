@@ -16,6 +16,41 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Production email: password reset, owner alerts, and weekly CRM summaries.
 - Dependency security follow-up: revisit remaining moderate transitive advisories in Next/NextAuth/Prisma when non-breaking patched versions are available.
 
+## Business, Legal, And Launch Operations
+
+- Choose business structure, likely LLC, and confirm with a CPA or attorney.
+- Register the business with the state.
+- Get an EIN from the IRS.
+- Open a business bank account.
+- Set up bookkeeping/accounting.
+- Decide final pricing and package details for Basic, Growth, and Complete.
+- Create client onboarding agreement or master service agreement.
+- Create Terms of Service.
+- Create Privacy Policy.
+- Create cancellation, refund, and support policies.
+- Add SMS consent and opt-out language for missed-call follow-up texting.
+- Add email marketing compliance language before sending marketing emails.
+- Define data security, data deletion, access, backup, and incident response practices.
+- Confirm HIPAA/medical-data boundaries before selling to medical or wellness businesses.
+- Look into cyber liability and errors/omissions insurance.
+- Choose and buy the production domain.
+- Pick production hosting for the Next.js app.
+- Pick managed PostgreSQL hosting and enable backups.
+- Set up production environment variables and secret storage.
+- Set up Stripe live subscriptions and customer portal.
+- Set up Twilio business verification, toll-free or A2P 10DLC registration, and SMS opt-out handling.
+- Set up OpenAI production API billing and usage limits.
+- Set up production email provider for password resets, owner alerts, and summaries.
+- Set up monitoring, error logging, uptime alerts, and backup checks.
+- Create a support email and simple client support process.
+
+## Brand And Design
+
+- Create the LeadReply logo.
+- Pick the company color palette.
+- Define basic brand typography and button/UI style rules.
+- Create simple social/profile assets from the final logo and colors.
+
 ## New Brainstorm Ideas
 
 - Weekly owner email: summarize leads, revenue, follow-ups, and missed opportunities.
