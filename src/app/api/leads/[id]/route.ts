@@ -8,6 +8,7 @@ import {
   leadStatusValues,
 } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const leadUpdateSchema = z.object({
   customerName: z.string().min(1, "Please enter the lead name."),
@@ -68,6 +69,12 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

@@ -14,6 +14,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Stripe customer portal: let businesses manage cards, invoices, and cancellations.
 - Calendar integrations: Google Calendar, Square, Toast, Mindbody, Jane, and other booking systems.
 - Production email: password reset, owner alerts, and weekly CRM summaries.
+- Dependency security follow-up: revisit remaining moderate transitive advisories in Next/NextAuth/Prisma when non-breaking patched versions are available.
 
 ## New Brainstorm Ideas
 
@@ -73,3 +74,4 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Reservation systems
 - Website embed script
 - Native mobile app packaging
+- Dependency security follow-up for remaining moderate transitive advisories

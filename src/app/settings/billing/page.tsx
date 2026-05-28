@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -7,6 +8,15 @@ import { getIntegrationStatuses } from "@/lib/integration-status"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../../components/AppNav"
 import { BillingPlanForm } from "./BillingPlanForm"
+
+export const metadata: Metadata = {
+  title: "Billing",
+  description: "Choose a LeadReply plan and start Stripe checkout when billing is configured.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default async function BillingSettingsPage() {
   const session = await getServerSession(authOptions)

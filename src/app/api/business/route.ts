@@ -1,6 +1,7 @@
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
 import { businessCategoryLabels, planLabels } from "@/lib/business-options"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 import { getServerSession } from "next-auth"
 import { z } from "zod"
 
@@ -27,6 +28,12 @@ const businessSchema = z.object({
 })
 
 export async function PUT(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

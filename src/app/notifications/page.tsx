@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -5,6 +6,15 @@ import { authOptions } from "@/auth/auth"
 import { buildNotifications } from "@/lib/notifications"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../components/AppNav"
+
+export const metadata: Metadata = {
+  title: "Alerts",
+  description: "LeadReply alerts for new leads, overdue follow-ups, and review tasks.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 function formatNotificationDate(value: Date | string) {
   return new Date(value).toLocaleString("en-US", {

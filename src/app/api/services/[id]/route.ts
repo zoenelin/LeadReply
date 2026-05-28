@@ -3,6 +3,7 @@ import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { dollarsToCents } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const serviceSchema = z.object({
   name: z.string().trim().min(1, "Please enter a service name."),
@@ -31,6 +32,12 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -98,6 +105,12 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(_req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

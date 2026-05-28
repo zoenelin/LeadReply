@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -11,6 +12,15 @@ import {
   reviewStatusClassName,
 } from "@/lib/review-funnel"
 import { AppNav } from "../components/AppNav"
+
+export const metadata: Metadata = {
+  title: "Reviews",
+  description: "Track LeadReply review requests from won customers to received reviews.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 function formatDate(value: Date | null) {
   if (!value) {

@@ -2,12 +2,19 @@ import { getServerSession } from "next-auth"
 import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const clearSchema = z.object({
   confirmation: z.literal("CLEAR"),
 })
 
 export async function POST(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

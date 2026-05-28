@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
@@ -5,6 +6,15 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { AppNav } from "../../components/AppNav"
 import { BusinessSettingsForm } from "./BusinessSettingsForm"
+
+export const metadata: Metadata = {
+  title: "Business Settings",
+  description: "Update the LeadReply business profile, plan, and reply template.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default async function BusinessSettingsPage() {
   const session = await getServerSession(authOptions)

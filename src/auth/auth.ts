@@ -2,6 +2,25 @@ import NextAuth, { type NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt"
 import { prisma } from "@/lib/prisma"
+import { checkRateLimit } from "@/lib/rate-limit"
+
+function readHeaderValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function getLoginRateLimitKey({
+  email,
+  headers,
+}: {
+  email: string
+  headers?: Record<string, string | string[] | undefined>
+}) {
+  const forwardedFor = readHeaderValue(headers?.["x-forwarded-for"])
+  const realIp = readHeaderValue(headers?.["x-real-ip"])
+  const ip = forwardedFor?.split(",")[0]?.trim() || realIp || "unknown"
+
+  return `login:${ip}:${email.toLowerCase().trim()}`
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,13 +30,27 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
 
+        const email = credentials.email.toLowerCase().trim()
+        const rateLimit = checkRateLimit({
+          key: getLoginRateLimitKey({
+            email,
+            headers: req.headers,
+          }),
+          limit: 10,
+          windowMs: 15 * 60 * 1000,
+        })
+
+        if (!rateLimit.allowed) {
+          return null
+        }
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email }
         })
 
         if (!user) {

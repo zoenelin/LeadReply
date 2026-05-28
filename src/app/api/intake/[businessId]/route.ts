@@ -2,6 +2,7 @@ import { z } from "zod"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import { prisma } from "@/lib/prisma"
 import { checkRequestRateLimit, rateLimitResponse } from "@/lib/rate-limit"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const intakeSchema = z.object({
   customerName: z.string().min(1, "Please enter your name."),
@@ -52,6 +53,12 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ businessId: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const { businessId } = await params
   const rateLimit = checkRequestRateLimit(req, `intake:${businessId}`, {
     limit: 10,

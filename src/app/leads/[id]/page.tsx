@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
@@ -22,6 +23,15 @@ import { AppNav } from "../../components/AppNav"
 import { LeadDetailForm } from "./LeadDetailForm"
 import { LeadFollowUpSequence } from "./LeadFollowUpSequence"
 import { LeadTeamNotes } from "./LeadTeamNotes"
+
+export const metadata: Metadata = {
+  title: "Lead Detail",
+  description: "Review and update a LeadReply CRM lead.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 type LeadDetailPageProps = {
   params: Promise<{

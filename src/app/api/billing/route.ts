@@ -3,6 +3,7 @@ import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { planLabels } from "@/lib/business-options"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const planValues = Object.keys(planLabels) as [string, ...string[]]
 
@@ -11,6 +12,12 @@ const billingSchema = z.object({
 })
 
 export async function PUT(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

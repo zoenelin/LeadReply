@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -5,6 +6,15 @@ import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../components/AppNav"
 import { LeadPipeline } from "./LeadPipeline"
+
+export const metadata: Metadata = {
+  title: "Leads",
+  description: "Manage LeadReply CRM leads, values, status, and follow-up timing.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default async function LeadsPage() {
   const session = await getServerSession(authOptions)

@@ -3,6 +3,7 @@ import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { dollarsToCents } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const serviceSchema = z.object({
   name: z.string().trim().min(1, "Please enter a service name."),
@@ -17,6 +18,12 @@ const serviceSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

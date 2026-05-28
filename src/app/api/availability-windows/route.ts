@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const availabilitySchema = z.object({
   dayOfWeek: z.coerce.number().int().min(0).max(6),
@@ -12,6 +13,12 @@ const availabilitySchema = z.object({
 })
 
 export async function POST(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

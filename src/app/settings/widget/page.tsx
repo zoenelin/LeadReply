@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import { headers } from "next/headers"
 import Link from "next/link"
@@ -6,6 +7,15 @@ import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../../components/AppNav"
 import { WidgetSettingsForm } from "./WidgetSettingsForm"
+
+export const metadata: Metadata = {
+  title: "Website Widget",
+  description: "Configure the LeadReply callback and text widget for a business website.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default async function WidgetSettingsPage() {
   const session = await getServerSession(authOptions)

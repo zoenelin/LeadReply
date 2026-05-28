@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -33,6 +34,15 @@ import {
 import { getReviewFunnelStats } from "@/lib/review-funnel"
 import { buildRevenueSummaryRows } from "@/lib/reporting"
 import { AppNav } from "../components/AppNav"
+
+export const metadata: Metadata = {
+  title: "Analytics",
+  description: "Review LeadReply lead, revenue, response, and review analytics.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`

@@ -5,8 +5,15 @@ import {
   getIndustryServicePresets,
 } from "@/lib/industry-presets"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
-export async function POST() {
+export async function POST(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

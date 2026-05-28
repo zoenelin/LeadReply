@@ -1,4 +1,5 @@
 import { env } from "@/lib/env"
+import { getSiteUrl } from "@/lib/site"
 
 export type IntegrationKey =
   | "database"
@@ -45,11 +46,7 @@ function missingEnv(keys: string[]) {
 }
 
 export function getAppBaseUrl() {
-  return (
-    env.APP_BASE_URL?.trim() ||
-    env.NEXTAUTH_URL?.trim() ||
-    "http://localhost:3000"
-  )
+  return getSiteUrl()
 }
 
 export function getStripePriceId(plan: string) {

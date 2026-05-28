@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -22,6 +23,15 @@ import {
 } from "@/lib/review-funnel"
 import { buildRevenueSummaryRows } from "@/lib/reporting"
 import { AppNav } from "../components/AppNav"
+
+export const metadata: Metadata = {
+  title: "Today",
+  description: "A simple owner view for the most important LeadReply action today.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 type PriorityAction = {
   label: string

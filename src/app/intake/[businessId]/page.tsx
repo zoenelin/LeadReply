@@ -1,12 +1,39 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { businessCategoryLabels } from "@/lib/business-options"
 import { prisma } from "@/lib/prisma"
+import { absoluteUrl, noIndexRobots } from "@/lib/site"
 import { LeadIntakeForm } from "./LeadIntakeForm"
 
 type LeadIntakePageProps = {
   params: Promise<{
     businessId: string
   }>
+}
+
+export async function generateMetadata({
+  params,
+}: LeadIntakePageProps): Promise<Metadata> {
+  const { businessId } = await params
+  const business = await prisma.business.findUnique({
+    where: {
+      id: businessId,
+    },
+    select: {
+      name: true,
+    },
+  })
+
+  return {
+    title: business ? `Contact ${business.name}` : "Contact Business",
+    description: business
+      ? `Send a request to ${business.name} through LeadReply.`
+      : "Send a request through LeadReply.",
+    alternates: {
+      canonical: absoluteUrl(`/intake/${businessId}`),
+    },
+    robots: noIndexRobots,
+  }
 }
 
 export default async function LeadIntakePage({ params }: LeadIntakePageProps) {

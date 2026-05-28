@@ -5,6 +5,7 @@ import {
   getIndustryServicePresets,
 } from "@/lib/industry-presets"
 import { checkRequestRateLimit, rateLimitResponse } from "@/lib/rate-limit"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 import bcrypt from "bcrypt"
 import { z } from "zod"
 
@@ -35,6 +36,12 @@ const signupSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const rateLimit = checkRequestRateLimit(req, "signup", {
     limit: 5,
     windowMs: 60 * 60 * 1000,
@@ -57,7 +64,6 @@ export async function POST(req: Request) {
     }
 
     const {
-      email,
       password,
       businessName,
       businessPhone,
@@ -70,6 +76,7 @@ export async function POST(req: Request) {
       selectedPlan,
       bookingNotes,
     } = result.data
+    const email = result.data.email.toLowerCase().trim()
 
     const existingUser = await prisma.user.findUnique({
       where: { email },

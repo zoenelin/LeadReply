@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -5,6 +6,15 @@ import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../../components/AppNav"
 import { ServiceCatalogForm } from "./ServiceCatalogForm"
+
+export const metadata: Metadata = {
+  title: "Services And Availability",
+  description: "Configure LeadReply service catalog, quote ranges, and availability windows.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default async function ServicesSettingsPage() {
   const session = await getServerSession(authOptions)

@@ -13,6 +13,7 @@ import {
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import { refineConciergeSummary } from "@/lib/openai-concierge"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const conciergeAnswerSchema = z.object({
   answer: z.string().trim().min(1, "Please enter the customer's answer."),
@@ -56,6 +57,12 @@ export async function POST(
   _req: Request,
   { params }: { params: Promise<{ missedCallId: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(_req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -131,6 +138,12 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ missedCallId: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

@@ -2,11 +2,18 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/auth/auth"
 import { getSuggestedFollowUpSteps } from "@/lib/follow-up-sequences"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

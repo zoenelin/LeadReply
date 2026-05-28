@@ -1,4 +1,23 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { absoluteUrl, siteDescription, siteName } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: `${siteName} | Missed Call Recovery CRM for Local Businesses`,
+  description: siteDescription,
+  alternates: {
+    canonical: absoluteUrl("/"),
+  },
+  openGraph: {
+    title: `${siteName} | Missed Call Recovery CRM`,
+    description: siteDescription,
+    url: absoluteUrl("/"),
+  },
+  twitter: {
+    title: `${siteName} | Missed Call Recovery CRM`,
+    description: siteDescription,
+  },
+};
 
 const stats = [
   { label: "Missed calls", value: "0" },
@@ -72,7 +91,9 @@ export default function Home() {
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <div>
-              <p className="text-sm font-semibold text-slate-950">Dashboard</p>
+              <h2 className="text-sm font-semibold text-slate-950">
+                Dashboard preview
+              </h2>
               <p className="mt-1 text-sm text-slate-500">Today</p>
             </div>
             <span className="rounded-lg bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -95,7 +116,7 @@ export default function Home() {
           </div>
 
           <div className="mt-5 rounded-lg bg-slate-50 p-4">
-            <p className="text-sm font-semibold text-slate-950">Workflow</p>
+            <h2 className="text-sm font-semibold text-slate-950">Workflow</h2>
             <ol className="mt-3 space-y-2">
               {steps.map((step, index) => (
                 <li key={step} className="flex items-center gap-3 text-sm">

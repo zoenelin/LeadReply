@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { authOptions } from "@/auth/auth"
 import {
@@ -10,6 +11,15 @@ import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { AppNav } from "../components/AppNav"
 import { MissedCallsInbox } from "./MissedCallsInbox"
+
+export const metadata: Metadata = {
+  title: "Missed Call Inbox",
+  description: "Review missed calls and run the LeadReply concierge intake.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 const fallbackReply =
   "Thanks for calling. Sorry we missed you. How can we help?"

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -5,6 +6,15 @@ import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../../components/AppNav"
 import { AutomationSettingsForm } from "./AutomationSettingsForm"
+
+export const metadata: Metadata = {
+  title: "Automation Setup",
+  description: "Configure LeadReply phone, booking, quote, review, SEO, and marketing guard rails.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export default async function AutomationSettingsPage() {
   const session = await getServerSession(authOptions)

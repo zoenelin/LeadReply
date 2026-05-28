@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
@@ -10,6 +11,15 @@ import {
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../../components/AppNav"
 import { LaunchActionPanel } from "./LaunchActionPanel"
+
+export const metadata: Metadata = {
+  title: "Launch Readiness",
+  description: "Check LeadReply provider setup, business setup, deployment notes, and launch cleanup.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 function statusClassName(ready: boolean) {
   return ready

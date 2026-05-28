@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
@@ -38,6 +39,15 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { AppNav } from "../components/AppNav"
 import { DemoResetButton } from "../components/DemoResetButton"
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "LeadReply dashboard for leads, missed calls, reviews, and setup progress.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 const businessTypeContent: Record<
   string,

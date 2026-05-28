@@ -3,6 +3,7 @@ import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { planLabels } from "@/lib/business-options"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 import { createStripeCheckoutSession } from "@/lib/stripe"
 
 const planValues = Object.keys(planLabels) as [string, ...string[]]
@@ -12,6 +13,12 @@ const checkoutSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

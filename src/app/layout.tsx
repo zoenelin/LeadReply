@@ -1,19 +1,46 @@
 import type { Metadata, Viewport } from "next";
+import { absoluteUrl, getSiteUrl, siteDescription, siteName } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  applicationName: "LeadReply",
-  title: "LeadReply",
-  description: "Missed call recovery for local businesses.",
+  applicationName: siteName,
+  metadataBase: new URL(getSiteUrl()),
+  title: {
+    default: `${siteName} | Missed Call Recovery CRM`,
+    template: `%s | ${siteName}`,
+  },
+  description: siteDescription,
   manifest: "/manifest.webmanifest",
+  formatDetection: {
+    telephone: true,
+    email: false,
+    address: false,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "LeadReply",
+    title: siteName,
   },
   icons: {
     icon: "/favicon.ico",
     apple: "/favicon.ico",
+  },
+  openGraph: {
+    type: "website",
+    siteName,
+    title: `${siteName} | Missed Call Recovery CRM`,
+    description: siteDescription,
+    url: absoluteUrl("/"),
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: `${siteName} | Missed Call Recovery CRM`,
+    description: siteDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

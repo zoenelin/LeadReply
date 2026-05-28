@@ -6,6 +6,7 @@ import {
 import { getAverageLeadValueCents } from "@/lib/demo-data"
 import { formatMoney } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 import { getServerSession } from "next-auth"
 import { z } from "zod"
 
@@ -49,6 +50,12 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -97,6 +104,12 @@ export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const crossSite = rejectCrossSiteRequest(_req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {

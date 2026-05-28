@@ -8,6 +8,7 @@ import {
   leadStatusValues,
 } from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
+import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const leadSchema = z.object({
   customerName: z.string().min(1, "Please enter the lead name."),
@@ -64,6 +65,12 @@ function parseAppointmentDate(value: string) {
 }
 
 export async function POST(req: Request) {
+  const crossSite = rejectCrossSiteRequest(req)
+
+  if (crossSite) {
+    return crossSite
+  }
+
   const session = await getServerSession(authOptions)
 
   if (!session) {
