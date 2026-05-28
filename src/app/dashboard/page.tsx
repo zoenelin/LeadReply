@@ -881,7 +881,7 @@ export default async function DashboardPage() {
                 {conciergeStats.readyCount === 1 ? "" : "s"} ready for review
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                Mocked AI conversations collect customer details after missed
+                Guard-railed AI conversations collect customer details after missed
                 calls and turn finished intakes into leads.
               </p>
             </div>

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
+import { isTwilioConfigured, sendSms } from "@/lib/twilio"
 
 const followUpStepUpdateSchema = z.object({
   status: z.enum(["DRAFT", "SENT", "SKIPPED"]),
@@ -25,6 +26,9 @@ export async function PATCH(
         userId: session.user.id,
       },
     },
+    include: {
+      lead: true,
+    },
   })
 
   if (!existingStep) {
@@ -43,6 +47,22 @@ export async function PATCH(
     }
 
     const { status } = result.data
+    const shouldSendSms =
+      status === "SENT" &&
+      existingStep.status !== "SENT" &&
+      existingStep.channel === "TEXT"
+    const delivery = shouldSendSms
+      ? isTwilioConfigured()
+        ? await sendSms({
+            to: existingStep.lead.customerPhone,
+            body: existingStep.message,
+          })
+        : {
+            ok: false as const,
+            provider: "TWILIO" as const,
+            reason: "Twilio is not configured; follow-up was marked sent manually.",
+          }
+      : null
     const followUpStep = await prisma.followUpStep.update({
       where: {
         id,
@@ -50,10 +70,20 @@ export async function PATCH(
       data: {
         status,
         sentAt: status === "SENT" ? existingStep.sentAt ?? new Date() : null,
+        deliveryProvider: delivery?.ok ? delivery.provider : "",
+        providerMessageId: delivery?.ok ? delivery.messageId : "",
+        deliveryError: delivery && !delivery.ok ? delivery.reason : "",
       },
     })
 
-    return Response.json({ followUpStep })
+    return Response.json({
+      followUpStep,
+      deliveryMessage: delivery
+        ? delivery.ok
+          ? "Follow-up text sent."
+          : delivery.reason
+        : "Follow-up step updated.",
+    })
   } catch {
     return Response.json(
       { error: "Something went wrong updating the follow-up step." },

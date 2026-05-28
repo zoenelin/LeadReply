@@ -34,7 +34,7 @@ export async function PUT(req: Request) {
       },
       data: {
         selectedPlan: result.data.selectedPlan,
-        billingStatus: "MOCK_ACTIVE",
+        billingStatus: "PLAN_SELECTED",
       },
     })
 

@@ -59,6 +59,9 @@ export default async function AutomationSettingsPage() {
             bookingNotes: business.bookingNotes,
             seoSetupNotes: business.seoSetupNotes,
             marketingSetupNotes: business.marketingSetupNotes,
+            googleReviewUrl: business.googleReviewUrl,
+            googleBusinessProfileUrl: business.googleBusinessProfileUrl,
+            launchNotes: business.launchNotes,
           }}
         />
       </section>

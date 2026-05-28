@@ -32,6 +32,9 @@ type MissedCallConciergeIntake = {
   nextAction: string
   transcript: ConciergeTranscriptEntry[]
   answers: ConciergeAnswerMap
+  aiProvider: string
+  aiModel: string
+  aiError: string
   leadId: string | null
 }
 
@@ -207,7 +210,7 @@ export function MissedCallsInbox({
       setMessage(
         data.alreadyStarted
           ? "Concierge intake already started."
-          : "Mock concierge started and first reply drafted."
+          : "Concierge intake started and first reply drafted."
       )
     } catch {
       setMessage("Something went wrong.")
@@ -378,15 +381,17 @@ export function MissedCallsInbox({
               <h3 className="mt-2 text-xl font-bold text-slate-950">
                 {selectedCall.conciergeIntake
                   ? getConciergeStatusLabel(selectedCall.conciergeIntake.status)
-                  : "Mock intake ready"}
+                  : "Intake ready"}
               </h3>
               <p className="mt-2 text-sm text-slate-700">
-                Simulate the automatic text conversation before real phone and
-                calendar integrations are connected.
+                Run the missed-call text intake, then review the summary before
+                promising a time or quote.
               </p>
             </div>
             <span className="w-fit rounded-lg bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-              Mock mode
+              {selectedCall.conciergeIntake?.aiProvider === "OPENAI"
+                ? "OpenAI enhanced"
+                : "Guard rails on"}
             </span>
           </div>
 
@@ -407,7 +412,7 @@ export function MissedCallsInbox({
                 onClick={startConcierge}
                 className="mt-4 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
               >
-                {conciergeLoading ? "Starting..." : "Start mock concierge"}
+                {conciergeLoading ? "Starting..." : "Start concierge intake"}
               </button>
             </div>
           )}
@@ -566,13 +571,24 @@ export function MissedCallsInbox({
                         0
                           ? `${selectedCall.conciergeIntake.matchedDurationMinutes} minutes`
                           : "Duration not set"}
-                        {" · "}
+                        {" - "}
                         {selectedCall.conciergeIntake.serviceBookableOnline
                           ? "Bookable from connected schedule"
                           : "Owner confirmation required"}
                       </p>
                     )}
                   </div>
+
+                  {selectedCall.conciergeIntake.aiError && (
+                    <div className="mt-4 rounded-lg bg-amber-50 p-3">
+                      <p className="text-xs font-medium text-amber-800">
+                        AI fallback
+                      </p>
+                      <p className="mt-1 text-sm text-slate-800">
+                        {selectedCall.conciergeIntake.aiError}
+                      </p>
+                    </div>
+                  )}
 
                   {selectedCall.conciergeIntake.availabilityGuidance && (
                     <div className="mt-4 rounded-lg bg-white p-3">

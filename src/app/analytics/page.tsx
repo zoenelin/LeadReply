@@ -469,7 +469,7 @@ export default async function AnalyticsPage({
                   {conciergeStats.totalCount === 1 ? "" : "s"} started
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                  Tracks the mocked text intake flow that gathers customer
+                  Tracks the missed-call text intake flow that gathers customer
                   details and flags scheduling needs after missed calls.
                 </p>
               </div>

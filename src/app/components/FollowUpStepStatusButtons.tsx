@@ -37,7 +37,7 @@ export function FollowUpStepStatusButtons({
         return
       }
 
-      setMessage("Follow-up step updated.")
+      setMessage(data.deliveryMessage || "Follow-up step updated.")
       router.refresh()
     } catch {
       setMessage("Something went wrong.")

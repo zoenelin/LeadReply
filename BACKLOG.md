@@ -9,6 +9,11 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Export for accountant/bookkeeper: cleaner revenue report with date ranges.
 - Staff permissions: owner/admin/staff roles for later multi-user accounts.
 - Website embed script: replace the iframe snippet with a lightweight install script.
+- Twilio delivery webhooks: update review and follow-up delivery status from carrier callbacks.
+- Google Business Profile OAuth: pull profile and review data instead of only saving review links.
+- Stripe customer portal: let businesses manage cards, invoices, and cancellations.
+- Calendar integrations: Google Calendar, Square, Toast, Mindbody, Jane, and other booking systems.
+- Production email: password reset, owner alerts, and weekly CRM summaries.
 
 ## New Brainstorm Ideas
 
@@ -20,6 +25,8 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Saved automation rules: reusable rules for follow-up timing by business type.
 - Call outcome tags: categorize why calls were missed and which ones convert best.
 - Review response assistant: draft owner replies to good and bad reviews.
+- Multi-location support: one account can manage several business locations.
+- Launch wizard: convert the checklist into a guided stepper for first client onboarding.
 
 ## Suggested Pull Order
 
@@ -49,14 +56,19 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Lead intake form: gives each business a public form that creates Website leads in the CRM.
 - Review funnel: tracks won customers to review requested to review received, with status updates and a dedicated reviews page.
 - Follow-up sequences: creates a three-step text follow-up plan for leads, tracks draft/sent/skipped steps, and surfaces due steps on the dashboard, owner view, analytics, and lead detail page.
-- AI missed-call concierge mock: simulates the automatic text conversation after a missed call, asks industry-specific questions, saves the transcript and answers, creates or updates the lead, and flags scheduling next steps.
+- AI missed-call concierge: runs the automatic text intake after a missed call, asks industry-specific questions, saves the transcript and answers, creates or updates the lead, and flags scheduling next steps.
+- Launch readiness dashboard: checks required env providers, business setup, sample data cleanup, Stripe checkout readiness, and deployment notes.
+- OpenAI concierge provider seam: can refine owner summaries while keeping deterministic scheduling and quote guard rails.
+- Twilio SMS provider seam: sends review and follow-up texts when credentials are configured and falls back to manual tracking when not.
+- Stripe checkout provider seam: creates subscription checkout sessions when live price IDs are configured.
+- Public form rate limits: protects signup, public intake, and widget lead capture from simple abuse.
+- Google review links: stores a business review link and appends it to review request messages.
 
 ## Later Integrations
 
-- Stripe billing
-- Twilio phone and texting
-- OpenAI-powered conversation handling
-- Google Business Profile and reviews
+- Twilio delivery webhooks
+- Google Business Profile OAuth and review sync
+- Stripe billing portal and invoice management
 - Apple Business Connect
 - Reservation systems
 - Website embed script

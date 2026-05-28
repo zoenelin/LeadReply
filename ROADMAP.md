@@ -2,6 +2,8 @@
 
 ## Active Build Order
 
+The original eight-item CRM foundation is now implemented. The current near-launch work is provider setup, production deployment, real-client onboarding, and safety testing.
+
 1. Lead Pipeline
    - Add a leads page.
    - Let users add leads manually.
@@ -29,7 +31,7 @@
 
 7. Billing Plans
    - Add a billing/settings page.
-   - Keep billing mocked until Stripe is added.
+   - Connect Stripe checkout once production price IDs are added.
    - Show plan capabilities clearly.
 
 8. Mobile Polish And PWA
@@ -42,4 +44,4 @@ See `BACKLOG.md` for the full backlog and brainstorm list.
 
 ## Review Plan
 
-After the eight active items are implemented, review the product again, choose the strongest backlog items, and brainstorm the next milestone from what the app needs most.
+After launch-readiness checks pass, review the product again, choose the strongest backlog items, and brainstorm the next milestone from what the app needs most.

@@ -5,6 +5,7 @@ import { useState } from "react"
 
 type BillingPlanFormProps = {
   initialPlan: string
+  stripeConfigured: boolean
   plans: {
     value: string
     label: string
@@ -13,7 +14,11 @@ type BillingPlanFormProps = {
   }[]
 }
 
-export function BillingPlanForm({ initialPlan, plans }: BillingPlanFormProps) {
+export function BillingPlanForm({
+  initialPlan,
+  stripeConfigured,
+  plans,
+}: BillingPlanFormProps) {
   const router = useRouter()
   const [selectedPlan, setSelectedPlan] = useState(initialPlan)
   const [message, setMessage] = useState("")
@@ -50,16 +55,44 @@ export function BillingPlanForm({ initialPlan, plans }: BillingPlanFormProps) {
     }
   }
 
+  async function startCheckout(plan: string) {
+    setSelectedPlan(plan)
+    setLoading(true)
+    setMessage("")
+
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          selectedPlan: plan,
+        }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMessage(data.error || "Stripe checkout is not ready yet.")
+        router.refresh()
+        return
+      }
+
+      window.location.href = data.checkoutUrl
+    } catch {
+      setMessage("Something went wrong.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="mt-8">
       <div className="grid gap-5 lg:grid-cols-3">
         {plans.map((plan) => (
-          <button
+          <div
             key={plan.value}
-            type="button"
-            onClick={() => savePlan(plan.value)}
-            disabled={loading}
-            className={`rounded-2xl border p-5 text-left disabled:opacity-60 ${
+            className={`rounded-2xl border p-5 text-left ${
               selectedPlan === plan.value
                 ? "border-slate-950 bg-slate-50"
                 : "border-slate-200 bg-white hover:bg-slate-50"
@@ -73,7 +106,7 @@ export function BillingPlanForm({ initialPlan, plans }: BillingPlanFormProps) {
                 <p className="mt-2 text-sm text-slate-600">{plan.tagline}</p>
               </div>
               <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
-                Soon
+                {stripeConfigured ? "Checkout" : "Setup"}
               </span>
             </div>
             <ul className="mt-5 space-y-2 text-sm text-slate-700">
@@ -82,9 +115,29 @@ export function BillingPlanForm({ initialPlan, plans }: BillingPlanFormProps) {
               ))}
             </ul>
             <p className="mt-5 text-sm font-semibold text-slate-500">
-              Pricing coming soon
+              {stripeConfigured ? "Stripe checkout ready" : "Pricing coming soon"}
             </p>
-          </button>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => savePlan(plan.value)}
+                disabled={loading}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+              >
+                {loading && selectedPlan === plan.value ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => startCheckout(plan.value)}
+                disabled={loading}
+                className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+              >
+                {loading && selectedPlan === plan.value
+                  ? "Starting..."
+                  : "Start checkout"}
+              </button>
+            </div>
+          </div>
         ))}
       </div>
 

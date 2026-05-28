@@ -17,6 +17,9 @@ type AutomationSettingsFormProps = {
     bookingNotes: string
     seoSetupNotes: string
     marketingSetupNotes: string
+    googleReviewUrl: string
+    googleBusinessProfileUrl: string
+    launchNotes: string
   }
 }
 
@@ -58,6 +61,13 @@ export function AutomationSettingsForm({
   const [marketingSetupNotes, setMarketingSetupNotes] = useState(
     initialSettings.marketingSetupNotes
   )
+  const [googleReviewUrl, setGoogleReviewUrl] = useState(
+    initialSettings.googleReviewUrl
+  )
+  const [googleBusinessProfileUrl, setGoogleBusinessProfileUrl] = useState(
+    initialSettings.googleBusinessProfileUrl
+  )
+  const [launchNotes, setLaunchNotes] = useState(initialSettings.launchNotes)
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -85,6 +95,9 @@ export function AutomationSettingsForm({
           bookingNotes,
           seoSetupNotes,
           marketingSetupNotes,
+          googleReviewUrl,
+          googleBusinessProfileUrl,
+          launchNotes,
         }),
       })
       const data = await res.json()
@@ -284,6 +297,45 @@ export function AutomationSettingsForm({
             placeholder="Social platforms, promotions, content ideas, seasonal campaigns."
           />
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 p-5">
+        <h2 className="text-xl font-bold text-slate-950">
+          Google and launch notes
+        </h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Google review link
+            </label>
+            <input
+              type="url"
+              value={googleReviewUrl}
+              onChange={(e) => setGoogleReviewUrl(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              placeholder="https://g.page/r/..."
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Google Business Profile link
+            </label>
+            <input
+              type="url"
+              value={googleBusinessProfileUrl}
+              onChange={(e) => setGoogleBusinessProfileUrl(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              placeholder="https://business.google.com/..."
+            />
+          </div>
+        </div>
+        <label className="mt-4 block text-sm font-medium">Launch notes</label>
+        <textarea
+          value={launchNotes}
+          onChange={(e) => setLaunchNotes(e.target.value)}
+          className="mt-1 min-h-28 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+          placeholder="Anything the business needs before launch: phone number porting, Stripe products, review links, calendar access, staff training."
+        />
       </section>
 
       <button

@@ -4,6 +4,7 @@ import {
   getIndustryAvailabilityPresets,
   getIndustryServicePresets,
 } from "@/lib/industry-presets"
+import { checkRequestRateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import bcrypt from "bcrypt"
 import { z } from "zod"
 
@@ -34,6 +35,15 @@ const signupSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  const rateLimit = checkRequestRateLimit(req, "signup", {
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+  })
+
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.resetAt)
+  }
+
   try {
     const body = await req.json()
 

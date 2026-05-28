@@ -1,6 +1,6 @@
 # LeadReply
 
-LeadReply is a small Next.js SaaS prototype for missed-call follow-up. It has account signup, business onboarding, a tailored dashboard, editable business settings, saved reply templates, and a missed-call inbox.
+LeadReply is a Next.js SaaS CRM for missed-call follow-up, lead capture, reviews, analytics, and business optimization. It has account signup, guided onboarding, a tailored dashboard, lead pipeline, missed-call concierge intake, service setup, review workflow, billing setup, and launch-readiness checks.
 
 ## Run locally
 
@@ -28,8 +28,16 @@ If the dev server gets stale after adding routes, schema changes, or migrations,
 /signup
 /login
 /dashboard
+/owner
+/leads
 /missed-calls
+/analytics
+/reviews
 /settings/business
+/settings/automation
+/settings/services
+/settings/billing
+/settings/launch
 ```
 
 ## Local database
@@ -57,15 +65,46 @@ npx prisma migrate deploy
 
 ## Current product flow
 
-- A user signs up with business name, phone, and category.
-- The dashboard adapts copy for home services, beauty services, or food/restaurants.
-- Business settings let the user update business details and save a missed-call reply template.
-- The missed-call inbox stores call records in the database and lets the user copy a reply or mark a call as replied.
+- A user signs up, selects a business category and plan, and gets starter services and availability.
+- The dashboard adapts setup prompts, analytics, and next actions by category and plan.
+- The CRM tracks leads, missed calls, follow-ups, appointment outcomes, won revenue, reviews, team notes, and lead quality.
+- The missed-call concierge asks industry-specific questions, applies scheduling and quote guard rails, and can use OpenAI when configured.
+- Twilio and Stripe provider paths are wired with safe fallbacks until production credentials are added.
+
+## Launch integrations
+
+Add these values in production env settings:
+
+```text
+APP_BASE_URL
+NEXTAUTH_URL
+OPENAI_API_KEY
+OPENAI_MODEL
+TWILIO_ACCOUNT_SID
+TWILIO_AUTH_TOKEN
+TWILIO_PHONE_NUMBER or TWILIO_MESSAGING_SERVICE_SID
+STRIPE_SECRET_KEY
+STRIPE_PRICE_BASIC
+STRIPE_PRICE_GROWTH
+STRIPE_PRICE_COMPLETE
+STRIPE_WEBHOOK_SECRET
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+```
+
+Stripe webhooks should point to:
+
+```text
+/api/webhooks/stripe
+```
+
+Use `/settings/launch` to see missing provider keys, business setup gaps, CRM activity counts, and launch cleanup controls.
 
 ## Before production
 
 - Point `DATABASE_URL` at a hosted Postgres database.
-- Use a strong production `NEXTAUTH_SECRET`.
-- Keep Twilio credentials in environment variables only.
-- Add a preview step before sending real SMS messages.
+- Use strong production values for `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, and `APP_BASE_URL`.
+- Add Twilio, OpenAI, Stripe, and Google env values in the deployment host.
+- Run `npx prisma migrate deploy` against production before sending traffic.
+- Use `/settings/launch` to clear CRM activity before onboarding a real client.
 - Run `npm run build` in the same environment where dependencies were installed.

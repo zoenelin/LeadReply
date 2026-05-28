@@ -2,12 +2,25 @@ import { getServerSession } from "next-auth"
 import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
+import { isTwilioConfigured, sendSms } from "@/lib/twilio"
 
 const reviewRequestSchema = z.object({
   leadId: z.string().min(1, "Lead is required."),
   message: z.string().trim().optional().default(""),
   markSent: z.boolean().optional().default(false),
 })
+
+function buildReviewMessage(message: string, googleReviewUrl: string) {
+  if (!googleReviewUrl.trim()) {
+    return message
+  }
+
+  if (message.includes(googleReviewUrl)) {
+    return message
+  }
+
+  return `${message}\n\nReview link: ${googleReviewUrl.trim()}`
+}
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -43,9 +56,22 @@ export async function POST(req: Request) {
       return Response.json({ error: "Lead not found." }, { status: 404 })
     }
 
-    const message =
+    const baseMessage =
       result.data.message ||
       `Thanks for choosing ${lead.business.name}. Would you mind leaving us a quick review?`
+    const message = buildReviewMessage(baseMessage, lead.business.googleReviewUrl)
+    const delivery = result.data.markSent
+      ? isTwilioConfigured()
+        ? await sendSms({
+            to: lead.customerPhone,
+            body: message,
+          })
+        : {
+            ok: false as const,
+            provider: "TWILIO" as const,
+            reason: "Twilio is not configured; request was marked sent manually.",
+          }
+      : null
 
     const reviewRequest = await prisma.reviewRequest.create({
       data: {
@@ -56,10 +82,23 @@ export async function POST(req: Request) {
         message,
         status: result.data.markSent ? "SENT" : "DRAFT",
         sentAt: result.data.markSent ? new Date() : null,
+        deliveryProvider: delivery?.ok ? delivery.provider : "",
+        providerMessageId: delivery?.ok ? delivery.messageId : "",
+        deliveryError: delivery && !delivery.ok ? delivery.reason : "",
       },
     })
 
-    return Response.json({ reviewRequest }, { status: 201 })
+    return Response.json(
+      {
+        reviewRequest,
+        deliveryMessage: delivery
+          ? delivery.ok
+            ? "Review request sent by SMS."
+            : delivery.reason
+          : "Review request saved as a draft.",
+      },
+      { status: 201 }
+    )
   } catch {
     return Response.json(
       { error: "Something went wrong creating the review request." },

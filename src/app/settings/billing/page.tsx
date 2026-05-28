@@ -3,6 +3,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { planOptions } from "@/lib/business-options"
+import { getIntegrationStatuses } from "@/lib/integration-status"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../../components/AppNav"
 import { BillingPlanForm } from "./BillingPlanForm"
@@ -23,6 +24,10 @@ export default async function BillingSettingsPage() {
   if (!business) {
     redirect("/settings/business")
   }
+
+  const stripeStatus = getIntegrationStatuses().find(
+    (status) => status.key === "stripe"
+  )
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-8 pb-28 md:pb-8">
@@ -46,22 +51,26 @@ export default async function BillingSettingsPage() {
                 Plan selection
               </h1>
               <p className="mt-3 max-w-2xl text-slate-600">
-                Pricing is still coming soon, but the selected plan already
-                controls the setup prompts LeadReply shows.
+                Save the plan now, then connect Stripe checkout when the live
+                price IDs are ready.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 p-4">
               <p className="text-sm text-slate-500">Billing status</p>
               <p className="mt-1 font-bold text-slate-950">
-                {business.billingStatus === "MOCK_ACTIVE"
-                  ? "Mock active"
-                  : business.billingStatus}
+                {business.billingStatus.replaceAll("_", " ")}
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                {stripeStatus?.configured
+                  ? "Stripe env keys are configured."
+                  : "Stripe env keys are still needed."}
               </p>
             </div>
           </div>
 
           <BillingPlanForm
             initialPlan={business.selectedPlan}
+            stripeConfigured={Boolean(stripeStatus?.configured)}
             plans={planOptions}
           />
         </section>

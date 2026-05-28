@@ -150,7 +150,10 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
         return
       }
 
-      setMessage(markSent ? "Review request marked sent." : "Review request drafted.")
+      setMessage(
+        data.deliveryMessage ||
+          (markSent ? "Review request marked sent." : "Review request drafted.")
+      )
       router.refresh()
     } catch {
       setMessage("Something went wrong.")
@@ -335,8 +338,8 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
             Ask for a review
           </h2>
           <p className="mt-2 text-sm text-slate-700">
-            This keeps the review workflow simple until we connect real Google
-            review automation.
+            If Twilio is configured, LeadReply can text this review request.
+            Otherwise it stays trackable for manual sending.
           </p>
           <textarea
             value={reviewMessage}

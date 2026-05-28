@@ -37,7 +37,12 @@ model Business {
   seoSetupNotes            String               @default("")
   marketingSetupNotes      String               @default("")
   preferredContactMethod   String               @default("TEXT")
-  billingStatus            String               @default("MOCK_ACTIVE")
+  billingStatus            String               @default("PLAN_SELECTED")
+  stripeCustomerId         String               @default("")
+  stripeSubscriptionId     String               @default("")
+  googleReviewUrl          String               @default("")
+  googleBusinessProfileUrl String               @default("")
+  launchNotes              String               @default("")
   onboardingComplete       Boolean              @default(false)
   replyTemplate            String               @default("")
   widgetGreeting           String               @default("Need help? Send us your info and we will follow up soon.")
@@ -155,18 +160,21 @@ model TeamNote {
 }
 
 model ReviewRequest {
-  id            String    @id @default(cuid())
-  customerName  String
-  customerPhone String
-  message       String    @default("")
-  status        String    @default("DRAFT")
-  createdAt     DateTime  @default(now())
-  sentAt        DateTime?
-  receivedAt    DateTime?
-  leadId        String?
-  lead          Lead?     @relation(fields: [leadId], references: [id])
-  businessId    String
-  business      Business  @relation(fields: [businessId], references: [id])
+  id                String    @id @default(cuid())
+  customerName      String
+  customerPhone     String
+  message           String    @default("")
+  status            String    @default("DRAFT")
+  deliveryProvider  String    @default("")
+  providerMessageId String    @default("")
+  deliveryError     String    @default("")
+  createdAt         DateTime  @default(now())
+  sentAt            DateTime?
+  receivedAt        DateTime?
+  leadId            String?
+  lead              Lead?     @relation(fields: [leadId], references: [id])
+  businessId        String
+  business          Business  @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
   @@index([leadId])
@@ -193,6 +201,9 @@ model ConciergeIntake {
   nextAction             String           @default("")
   transcript             Json             @default("[]")
   answers                Json             @default("{}")
+  aiProvider             String           @default("RULES")
+  aiModel                String           @default("")
+  aiError                String           @default("")
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
   missedCallId           String           @unique
@@ -210,19 +221,22 @@ model ConciergeIntake {
 }
 
 model FollowUpStep {
-  id         String    @id @default(cuid())
-  title      String
-  message    String    @default("")
-  channel    String    @default("TEXT")
-  status     String    @default("DRAFT")
-  stepOrder  Int
-  dueAt      DateTime?
-  sentAt     DateTime?
-  createdAt  DateTime  @default(now())
-  leadId     String
-  lead       Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  businessId String
-  business   Business  @relation(fields: [businessId], references: [id])
+  id                String    @id @default(cuid())
+  title             String
+  message           String    @default("")
+  channel           String    @default("TEXT")
+  status            String    @default("DRAFT")
+  deliveryProvider  String    @default("")
+  providerMessageId String    @default("")
+  deliveryError     String    @default("")
+  stepOrder         Int
+  dueAt             DateTime?
+  sentAt            DateTime?
+  createdAt         DateTime  @default(now())
+  leadId            String
+  lead              Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  businessId        String
+  business          Business  @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
   @@index([leadId])

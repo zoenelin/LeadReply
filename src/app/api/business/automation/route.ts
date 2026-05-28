@@ -23,6 +23,9 @@ const automationSchema = z.object({
   bookingNotes: z.string().trim().optional().default(""),
   seoSetupNotes: z.string().trim().optional().default(""),
   marketingSetupNotes: z.string().trim().optional().default(""),
+  googleReviewUrl: z.string().trim().optional().default(""),
+  googleBusinessProfileUrl: z.string().trim().optional().default(""),
+  launchNotes: z.string().trim().optional().default(""),
 })
 
 export async function PUT(req: Request) {

@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
+import { checkRequestRateLimit, rateLimitResponse } from "@/lib/rate-limit"
 
 const widgetLeadSchema = z.object({
   customerName: z.string().trim().min(1, "Please enter your name."),
@@ -19,6 +20,15 @@ export async function POST(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   const { businessId } = await params
+  const rateLimit = checkRequestRateLimit(req, `widget:${businessId}`, {
+    limit: 20,
+    windowMs: 60 * 60 * 1000,
+  })
+
+  if (!rateLimit.allowed) {
+    return rateLimitResponse(rateLimit.resetAt)
+  }
+
   const business = await prisma.business.findUnique({
     where: {
       id: businessId,

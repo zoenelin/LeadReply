@@ -11,6 +11,7 @@ import {
   normalizeConciergeTranscript,
 } from "@/lib/concierge-intake"
 import { getAverageLeadValueCents } from "@/lib/demo-data"
+import { refineConciergeSummary } from "@/lib/openai-concierge"
 import { prisma } from "@/lib/prisma"
 
 const conciergeAnswerSchema = z.object({
@@ -204,7 +205,7 @@ export async function PATCH(
       return Response.json({ intake: updatedIntake })
     }
 
-    const summary = buildConciergeSummary({
+    const baseSummary = buildConciergeSummary({
       answers,
       businessType: missedCall.business.businessType,
       bookingAutomationEnabled: missedCall.business.bookingAutomationEnabled,
@@ -216,6 +217,13 @@ export async function PATCH(
       services: missedCall.business.serviceOfferings,
       availabilityWindows: missedCall.business.availabilityWindows,
     })
+    const refinedSummary = await refineConciergeSummary({
+      baseSummary,
+      businessName: missedCall.business.name,
+      businessType: missedCall.business.businessType,
+      answers,
+    })
+    const summary = refinedSummary.summary
     const completedTranscript = [
       ...transcript,
       createAssistantEntry(
@@ -310,6 +318,9 @@ export async function PATCH(
           nextAction: summary.nextAction,
           transcript: completedTranscript,
           answers,
+          aiProvider: refinedSummary.aiProvider,
+          aiModel: refinedSummary.aiModel,
+          aiError: refinedSummary.aiError,
           leadId: lead.id,
         },
       })

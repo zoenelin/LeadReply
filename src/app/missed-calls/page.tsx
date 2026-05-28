@@ -140,6 +140,9 @@ export default async function MissedCallsPage() {
                     answers: normalizeConciergeAnswers(
                       call.conciergeIntake.answers
                     ),
+                    aiProvider: call.conciergeIntake.aiProvider,
+                    aiModel: call.conciergeIntake.aiModel,
+                    aiError: call.conciergeIntake.aiError,
                     leadId: call.conciergeIntake.leadId,
                   }
                 : null,

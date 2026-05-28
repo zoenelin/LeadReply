@@ -14,6 +14,7 @@ const navLinks = [
   { href: "/analytics", label: "Analytics" },
   { href: "/reviews", label: "Reviews" },
   { href: "/settings/business", label: "Settings" },
+  { href: "/settings/launch", label: "Launch" },
   { href: "/settings/billing", label: "Billing" },
 ]
 
@@ -33,6 +34,10 @@ function isActiveLink(pathname: string, href: string) {
       pathname === "/settings/automation" ||
       pathname === "/settings/widget"
     )
+  }
+
+  if (href === "/settings/launch") {
+    return pathname === "/settings/launch"
   }
 
   if (href === "/settings/services") {
