@@ -4,11 +4,14 @@ import { notFound, redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { ReviewRequestStatusButtons } from "@/app/components/ReviewRequestStatusButtons"
 import {
+  appointmentStatusClassName,
+  appointmentStatusLabels,
   formatMoney,
   leadSourceLabels,
   leadStatusLabels,
   statusClassName,
 } from "@/lib/lead-options"
+import { getLeadQualityScore } from "@/lib/lead-quality"
 import { prisma } from "@/lib/prisma"
 import { formatDuration, formatServiceEstimate } from "@/lib/service-catalog"
 import {
@@ -18,6 +21,7 @@ import {
 import { AppNav } from "../../components/AppNav"
 import { LeadDetailForm } from "./LeadDetailForm"
 import { LeadFollowUpSequence } from "./LeadFollowUpSequence"
+import { LeadTeamNotes } from "./LeadTeamNotes"
 
 type LeadDetailPageProps = {
   params: Promise<{
@@ -89,6 +93,11 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
           stepOrder: "asc",
         },
       },
+      teamNotes: {
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
     },
   })
 
@@ -114,6 +123,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     : latestConciergeIntake?.matchedDurationMinutes
       ? formatDuration(latestConciergeIntake.matchedDurationMinutes)
       : "No duration matched"
+  const qualityScore = getLeadQualityScore(lead)
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -192,6 +202,9 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                 followUpNote: lead.followUpNote,
                 followUpCompletedAt:
                   lead.followUpCompletedAt?.toISOString() ?? null,
+                appointmentStatus: lead.appointmentStatus,
+                appointmentAt: lead.appointmentAt?.toISOString() ?? null,
+                appointmentNotes: lead.appointmentNotes,
                 reviewRequests: lead.reviewRequests.map((request) => ({
                   id: request.id,
                 })),
@@ -199,6 +212,63 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
             />
 
             <aside className="space-y-5">
+              <div className="rounded-2xl border border-slate-200 p-5">
+                <p className="text-sm font-medium text-slate-500">
+                  Lead quality
+                </p>
+                <p className="mt-2 text-3xl font-bold text-slate-950">
+                  {qualityScore.score}/100
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-700">
+                  {qualityScore.label}
+                </p>
+                <p className="mt-3 text-sm text-slate-600">
+                  {qualityScore.reason}
+                </p>
+                <div className="mt-4 space-y-2">
+                  {qualityScore.factors.slice(0, 4).map((factor) => (
+                    <div
+                      key={factor.label}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                    >
+                      <span className="text-sm font-medium text-slate-700">
+                        {factor.label}
+                      </span>
+                      <span className="text-sm font-bold text-slate-950">
+                        {factor.points > 0 ? "+" : ""}
+                        {factor.points}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 p-5">
+                <p className="text-sm font-medium text-slate-500">
+                  Appointment outcome
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span
+                    className={`rounded-lg px-2 py-1 text-xs font-bold ${appointmentStatusClassName(
+                      lead.appointmentStatus
+                    )}`}
+                  >
+                    {appointmentStatusLabels[lead.appointmentStatus] ??
+                      lead.appointmentStatus}
+                  </span>
+                  <span className="text-sm text-slate-600">
+                    {lead.appointmentAt
+                      ? formatDate(lead.appointmentAt)
+                      : "No appointment time"}
+                  </span>
+                </div>
+                {lead.appointmentNotes && (
+                  <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    {lead.appointmentNotes}
+                  </p>
+                )}
+              </div>
+
               <div className="rounded-2xl border border-slate-200 p-5">
                 <p className="text-sm font-medium text-slate-500">
                   Service and booking
@@ -248,6 +318,16 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                   stepOrder: step.stepOrder,
                   dueAt: step.dueAt?.toISOString() ?? null,
                   sentAt: step.sentAt?.toISOString() ?? null,
+                }))}
+              />
+
+              <LeadTeamNotes
+                leadId={lead.id}
+                notes={lead.teamNotes.map((note) => ({
+                  id: note.id,
+                  body: note.body,
+                  authorName: note.authorName,
+                  createdAt: note.createdAt.toISOString(),
                 }))}
               />
 

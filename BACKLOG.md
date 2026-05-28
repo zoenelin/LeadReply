@@ -4,30 +4,39 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Current Backlog
 
-Review the brainstorm list after the current milestone and pull the next strongest item.
-
-## New Brainstorm Ideas
-
-- Lead quality score: estimate which leads are most likely to convert based on source, value, and activity.
-- Team notes: let staff leave internal notes on a lead without changing customer-facing messages.
-- Appointment outcome tracking: record booked, showed, no-show, rescheduled, or cancelled.
-- Website widget concept: a small LeadReply button for "Text us" or "Request a call back."
 - Weekly owner email: summarize leads, revenue, follow-ups, and missed opportunities.
-- Industry presets: starter templates for automotive, home services, restaurants, beauty, legal, and medical/wellness.
 - Import leads: upload a CSV from another CRM or spreadsheet.
 - Export for accountant/bookkeeper: cleaner revenue report with date ranges.
 - Staff permissions: owner/admin/staff roles for later multi-user accounts.
-- Notification center: a single place for overdue follow-ups, new leads, and review prompts.
+- Website embed script: replace the iframe snippet with a lightweight install script.
+
+## New Brainstorm Ideas
+
+- Weekly owner email: summarize leads, revenue, follow-ups, and missed opportunities.
+- Import leads: upload a CSV from another CRM or spreadsheet.
+- Export for accountant/bookkeeper: cleaner revenue report with date ranges.
+- Staff permissions: owner/admin/staff roles for later multi-user accounts.
+- Client portal: let a business customer confirm appointments, upload details, and see request status.
+- Saved automation rules: reusable rules for follow-up timing by business type.
+- Call outcome tags: categorize why calls were missed and which ones convert best.
+- Review response assistant: draft owner replies to good and bad reviews.
 
 ## Suggested Pull Order
 
-1. Lead quality score
-2. Notification center
-3. Team notes
-4. Appointment outcome tracking
+1. Weekly owner email
+2. Import leads
+3. Staff permissions
+4. Accountant/bookkeeper export
+5. Website embed script
 
 ## Completed From Backlog
 
+- Lead quality score: estimates which leads are most likely to convert based on source, value, activity, AI intake, and appointment outcome.
+- Notification center: shows new leads, missed calls, overdue follow-ups, AI intakes, sequence steps, and review prompts.
+- Team notes: lets staff leave internal notes on a lead without changing customer-facing messages.
+- Appointment outcome tracking: records booked, showed, no-show, rescheduled, or cancelled.
+- Industry presets: adds starter services and availability for common business types.
+- Website widget concept: adds a public "Text us" or "Request a callback" widget that creates Website leads.
 - Demo data reset button: restores sample leads, missed calls, and review workflow.
 - Missed-call to lead conversion: turns a missed call into a pipeline lead with one click.
 - ROI card: shows recovered revenue from won missed-call leads.

@@ -1,7 +1,12 @@
 import { getServerSession } from "next-auth"
 import { z } from "zod"
 import { authOptions } from "@/auth/auth"
-import { dollarsToCents, leadSourceValues, leadStatusValues } from "@/lib/lead-options"
+import {
+  appointmentStatusValues,
+  dollarsToCents,
+  leadSourceValues,
+  leadStatusValues,
+} from "@/lib/lead-options"
 import { prisma } from "@/lib/prisma"
 
 const leadUpdateSchema = z.object({
@@ -20,6 +25,15 @@ const leadUpdateSchema = z.object({
   followUpAt: z.string().optional().default(""),
   followUpNote: z.string().trim().optional().default(""),
   followUpCompleted: z.boolean().optional().default(false),
+  appointmentStatus: z
+    .string()
+    .optional()
+    .default("NOT_BOOKED")
+    .refine((value) => appointmentStatusValues.includes(value), {
+      message: "Please choose an appointment status.",
+    }),
+  appointmentAt: z.string().optional().default(""),
+  appointmentNotes: z.string().trim().optional().default(""),
 })
 
 function parseFollowUpDate(value: string) {
@@ -28,6 +42,20 @@ function parseFollowUpDate(value: string) {
   }
 
   const parsedDate = new Date(`${value}T09:00:00`)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null
+  }
+
+  return parsedDate
+}
+
+function parseAppointmentDate(value: string) {
+  if (!value) {
+    return null
+  }
+
+  const parsedDate = new Date(value)
 
   if (Number.isNaN(parsedDate.getTime())) {
     return null
@@ -84,6 +112,9 @@ export async function PATCH(
       followUpAt,
       followUpNote,
       followUpCompleted,
+      appointmentStatus,
+      appointmentAt,
+      appointmentNotes,
     } = result.data
     const shouldClose = status === "WON" || status === "LOST"
     const lead = await prisma.lead.update({
@@ -102,6 +133,9 @@ export async function PATCH(
         followUpAt: parseFollowUpDate(followUpAt),
         followUpNote,
         followUpCompletedAt: followUpCompleted ? new Date() : null,
+        appointmentStatus,
+        appointmentAt: parseAppointmentDate(appointmentAt),
+        appointmentNotes,
         closedAt: shouldClose ? existingLead.closedAt ?? new Date() : null,
       },
     })

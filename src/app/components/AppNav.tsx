@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react"
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/owner", label: "Today" },
+  { href: "/notifications", label: "Alerts" },
   { href: "/leads", label: "Leads" },
   { href: "/missed-calls", label: "Inbox" },
   { href: "/settings/services", label: "Services" },
@@ -18,17 +19,19 @@ const navLinks = [
 
 const mobileNavLinks = [
   { href: "/owner", label: "Today" },
+  { href: "/notifications", label: "Alerts" },
   { href: "/leads", label: "Leads" },
   { href: "/missed-calls", label: "Inbox" },
   { href: "/analytics", label: "Stats" },
-  { href: "/reviews", label: "Reviews" },
   { href: "/settings/business", label: "Settings" },
 ]
 
 function isActiveLink(pathname: string, href: string) {
   if (href === "/settings/business") {
     return (
-      pathname === "/settings/business" || pathname === "/settings/automation"
+      pathname === "/settings/business" ||
+      pathname === "/settings/automation" ||
+      pathname === "/settings/widget"
     )
   }
 

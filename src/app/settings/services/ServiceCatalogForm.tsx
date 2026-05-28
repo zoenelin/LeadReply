@@ -269,8 +269,63 @@ export function ServiceCatalogForm({
     }
   }
 
+  async function addIndustryPresets() {
+    setLoading(true)
+    setMessage("")
+
+    try {
+      const res = await fetch("/api/services/presets", {
+        method: "POST",
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMessage(data.error || "Something went wrong.")
+        return
+      }
+
+      setMessage(
+        `Added ${data.addedServices} service preset${
+          data.addedServices === 1 ? "" : "s"
+        } and ${data.addedAvailabilityWindows} availability window${
+          data.addedAvailabilityWindows === 1 ? "" : "s"
+        }.`
+      )
+      router.refresh()
+    } catch {
+      setMessage("Something went wrong.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="mt-8 space-y-8">
+      <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-sky-800">
+              Industry presets
+            </p>
+            <h2 className="mt-2 text-xl font-bold text-slate-950">
+              Add starter services for this business type
+            </h2>
+            <p className="mt-2 text-sm text-slate-700">
+              Presets give the AI concierge clean examples for matching quote
+              and scheduling requests.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addIndustryPresets}
+            disabled={loading}
+            className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-sky-100 disabled:opacity-60"
+          >
+            {loading ? "Adding..." : "Add presets"}
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 p-5">
           <p className="text-sm text-slate-500">Active services</p>
@@ -751,7 +806,7 @@ export function ServiceCatalogForm({
               <div key={service.id} className="rounded-xl bg-white p-4">
                 <p className="font-semibold text-slate-950">{service.name}</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  {formatServiceEstimate(service)} ·{" "}
+                  {formatServiceEstimate(service)} -{" "}
                   {formatDuration(service.durationMinutes)}
                 </p>
               </div>

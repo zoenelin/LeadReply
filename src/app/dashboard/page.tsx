@@ -21,6 +21,8 @@ import {
   getLostRevenueMessage,
   getLostRevenueStats,
 } from "@/lib/lost-revenue"
+import { getLeadQualityScore } from "@/lib/lead-quality"
+import { buildNotifications } from "@/lib/notifications"
 import {
   formatResponseDuration,
   getResponseSpeedLabel,
@@ -239,6 +241,17 @@ export default async function DashboardPage() {
         },
         include: {
           reviewRequests: true,
+          conciergeIntakes: {
+            orderBy: {
+              updatedAt: "desc",
+            },
+            select: {
+              status: true,
+              quoteRequested: true,
+              schedulingRequested: true,
+              matchedServiceName: true,
+            },
+          },
         },
       })
     : []
@@ -311,13 +324,14 @@ export default async function DashboardPage() {
         },
       })
     : []
-  const reviewRequestsCount = business
-    ? await prisma.reviewRequest.count({
+  const reviewRequests = business
+    ? await prisma.reviewRequest.findMany({
         where: {
           businessId: business.id,
         },
       })
-    : 0
+    : []
+  const reviewRequestsCount = reviewRequests.length
   const revenueWonCents = leadAnalytics?._sum.wonValueCents ?? 0
   const recoveredRevenueCents =
     recoveredLeadAnalytics?._sum.wonValueCents ?? 0
@@ -353,6 +367,17 @@ export default async function DashboardPage() {
   const dueSequenceSteps = followUpSequenceSteps
     .filter((step) => step.status === "DRAFT" && step.dueAt && step.dueAt <= todayEnd)
     .slice(0, 4)
+  const notifications = buildNotifications({
+    leads: dashboardLeads,
+    missedCalls: responseCalls,
+    conciergeIntakes,
+    reviewRequests,
+    followUpSteps: followUpSequenceSteps,
+    now: todayEnd,
+  })
+  const urgentNotificationCount = notifications.filter(
+    (notification) => notification.priority === "HIGH"
+  ).length
   const lostRevenueStats = getLostRevenueStats({
     leads: dashboardLeads,
     missedCalls: responseCalls,
@@ -369,6 +394,18 @@ export default async function DashboardPage() {
         missedCallValueCents: getAverageLeadValueCents(business.businessType),
       })
     : null
+  const topQualityLeads = dashboardLeads
+    .map((lead) => ({
+      lead,
+      qualityScore: getLeadQualityScore(lead),
+    }))
+    .filter((item) => item.lead.status !== "LOST")
+    .sort(
+      (left, right) =>
+        right.qualityScore.score - left.qualityScore.score ||
+        right.lead.estimatedValueCents - left.lead.estimatedValueCents
+    )
+    .slice(0, 3)
 
   const dashboardContent =
     businessTypeContent[business?.businessType ?? ""] ??
@@ -488,6 +525,51 @@ export default async function DashboardPage() {
           </div>
         )}
 
+        {business && (
+          <div className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-6">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-rose-800">
+                  Notification center
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                  {notifications.length} alert
+                  {notifications.length === 1 ? "" : "s"} to review
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                  {urgentNotificationCount} high-priority item
+                  {urgentNotificationCount === 1 ? "" : "s"} across leads,
+                  missed calls, AI intakes, follow-ups, and reviews.
+                </p>
+              </div>
+              <Link
+                href="/notifications"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-rose-100"
+              >
+                Open alerts
+              </Link>
+            </div>
+            {notifications.length > 0 && (
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+                {notifications.slice(0, 3).map((notification) => (
+                  <Link
+                    key={notification.id}
+                    href={notification.href}
+                    className="rounded-xl bg-white px-4 py-3 hover:bg-rose-100"
+                  >
+                    <p className="text-sm font-semibold text-slate-950">
+                      {notification.title}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs text-slate-600">
+                      {notification.message}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {businessHealthStats && (
           <div className="mt-8 rounded-2xl border border-slate-200 p-6">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
@@ -592,6 +674,12 @@ export default async function DashboardPage() {
                   className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-sky-100"
                 >
                   View leads
+                </Link>
+                <Link
+                  href="/settings/widget"
+                  className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-sky-100"
+                >
+                  Website widget
                 </Link>
               </div>
             </div>
@@ -859,6 +947,58 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-violet-200 bg-violet-50 p-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-violet-800">
+                Lead quality
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                Prioritize the warmest opportunities
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                Scores combine source, value, follow-up timing, service match,
+                AI intake signals, and appointment outcomes.
+              </p>
+            </div>
+            <Link
+              href="/leads"
+              className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-violet-100"
+            >
+              Open leads
+            </Link>
+          </div>
+          <div className="mt-5 space-y-3">
+            {topQualityLeads.length === 0 ? (
+              <div className="rounded-xl bg-white px-4 py-3 text-sm text-slate-600">
+                Add leads to see quality scores.
+              </div>
+            ) : (
+              topQualityLeads.map(({ lead, qualityScore }) => (
+                <Link
+                  key={lead.id}
+                  href={`/leads/${lead.id}`}
+                  className="block rounded-xl bg-white px-4 py-3 hover:bg-violet-100"
+                >
+                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                    <div>
+                      <p className="font-semibold text-slate-950">
+                        {lead.customerName}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {qualityScore.reason}
+                      </p>
+                    </div>
+                    <p className="text-sm font-bold text-violet-800">
+                      {qualityScore.label} {qualityScore.score}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="mt-8 rounded-2xl border border-slate-200 p-5">

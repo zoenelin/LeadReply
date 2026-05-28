@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma"
 import { businessCategoryLabels, planLabels } from "@/lib/business-options"
+import {
+  getIndustryAvailabilityPresets,
+  getIndustryServicePresets,
+} from "@/lib/industry-presets"
 import bcrypt from "bcrypt"
 import { z } from "zod"
 
@@ -87,6 +91,12 @@ export async function POST(req: Request) {
             selectedPlan,
             bookingNotes,
             onboardingComplete: true,
+            serviceOfferings: {
+              create: getIndustryServicePresets(businessType),
+            },
+            availabilityWindows: {
+              create: getIndustryAvailabilityPresets(businessType),
+            },
           },
         },
       },

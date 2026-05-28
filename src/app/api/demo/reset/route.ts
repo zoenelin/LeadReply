@@ -69,6 +69,11 @@ export async function POST() {
           businessId: business.id,
         },
       }),
+      prisma.teamNote.deleteMany({
+        where: {
+          businessId: business.id,
+        },
+      }),
       prisma.missedCall.deleteMany({
         where: {
           businessId: business.id,
@@ -263,6 +268,30 @@ export async function POST() {
             sentAt: leadIndex === 0 && stepIndex === 0 ? now : null,
           }))
         ),
+      })
+    }
+
+    const teamNoteLeads = await prisma.lead.findMany({
+      where: {
+        businessId: business.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 4,
+    })
+
+    if (teamNoteLeads.length > 0) {
+      await prisma.teamNote.createMany({
+        data: teamNoteLeads.map((lead, index) => ({
+          businessId: business.id,
+          leadId: lead.id,
+          authorName: index % 2 === 0 ? "Owner" : "Front desk",
+          body:
+            index % 2 === 0
+              ? "Customer details reviewed. Next step is ready."
+              : "Left an internal note so the next teammate has context.",
+        })),
       })
     }
 

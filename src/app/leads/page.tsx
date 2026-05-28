@@ -24,6 +24,17 @@ export default async function LeadsPage() {
         },
         include: {
           reviewRequests: true,
+          conciergeIntakes: {
+            orderBy: {
+              updatedAt: "desc",
+            },
+            select: {
+              status: true,
+              quoteRequested: true,
+              schedulingRequested: true,
+              matchedServiceName: true,
+            },
+          },
         },
       },
     },
@@ -76,6 +87,7 @@ export default async function LeadsPage() {
               followUpAt: lead.followUpAt?.toISOString() ?? null,
               followUpCompletedAt:
                 lead.followUpCompletedAt?.toISOString() ?? null,
+              appointmentAt: lead.appointmentAt?.toISOString() ?? null,
             }))}
           />
         </section>

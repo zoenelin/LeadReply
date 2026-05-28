@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
+  appointmentStatusOptions,
   centsToDollars,
   leadSourceOptions,
   leadStatusOptions,
@@ -21,6 +22,9 @@ type LeadDetailFormLead = {
   followUpAt: Date | string | null
   followUpNote: string
   followUpCompletedAt: Date | string | null
+  appointmentStatus: string
+  appointmentAt: Date | string | null
+  appointmentNotes: string
   reviewRequests: {
     id: string
   }[]
@@ -38,6 +42,14 @@ function dateInputValue(value: Date | string | null) {
   return new Date(value).toISOString().slice(0, 10)
 }
 
+function dateTimeInputValue(value: Date | string | null) {
+  if (!value) {
+    return ""
+  }
+
+  return new Date(value).toISOString().slice(0, 16)
+}
+
 export function LeadDetailForm({ lead }: LeadDetailFormProps) {
   const router = useRouter()
   const [customerName, setCustomerName] = useState(lead.customerName)
@@ -53,6 +65,15 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
   const [followUpNote, setFollowUpNote] = useState(lead.followUpNote)
   const [followUpCompleted, setFollowUpCompleted] = useState(
     Boolean(lead.followUpCompletedAt)
+  )
+  const [appointmentStatus, setAppointmentStatus] = useState(
+    lead.appointmentStatus
+  )
+  const [appointmentAt, setAppointmentAt] = useState(
+    dateTimeInputValue(lead.appointmentAt)
+  )
+  const [appointmentNotes, setAppointmentNotes] = useState(
+    lead.appointmentNotes
   )
   const [notes, setNotes] = useState(lead.notes)
   const [reviewMessage, setReviewMessage] = useState(
@@ -85,6 +106,9 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
           followUpAt,
           followUpNote,
           followUpCompleted,
+          appointmentStatus,
+          appointmentAt,
+          appointmentNotes,
         }),
       })
       const data = await res.json()
@@ -239,6 +263,33 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
             />
             Follow-up complete
           </label>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Appointment status
+            </label>
+            <select
+              value={appointmentStatus}
+              onChange={(e) => setAppointmentStatus(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
+            >
+              {appointmentStatusOptions.map((statusOption) => (
+                <option key={statusOption.value} value={statusOption.value}>
+                  {statusOption.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Appointment time
+            </label>
+            <input
+              type="datetime-local"
+              value={appointmentAt}
+              onChange={(e) => setAppointmentAt(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            />
+          </div>
         </div>
         <div className="mt-4">
           <label className="mb-1 block text-sm font-medium">
@@ -248,6 +299,17 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
             value={followUpNote}
             onChange={(e) => setFollowUpNote(e.target.value)}
             className="min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+          />
+        </div>
+        <div className="mt-4">
+          <label className="mb-1 block text-sm font-medium">
+            Appointment notes
+          </label>
+          <textarea
+            value={appointmentNotes}
+            onChange={(e) => setAppointmentNotes(e.target.value)}
+            className="min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            placeholder="Booked time, showed/no-show notes, reschedule reason, or callback outcome."
           />
         </div>
         <div className="mt-4">

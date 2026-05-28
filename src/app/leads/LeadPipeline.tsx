@@ -4,6 +4,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import {
+  appointmentStatusClassName,
+  appointmentStatusLabels,
   centsToDollars,
   formatMoney,
   leadSourceLabels,
@@ -12,6 +14,7 @@ import {
   leadStatusOptions,
   statusClassName,
 } from "@/lib/lead-options"
+import { getLeadQualityScore } from "@/lib/lead-quality"
 
 type LeadPipelineLead = {
   id: string
@@ -26,8 +29,18 @@ type LeadPipelineLead = {
   followUpAt: Date | string | null
   followUpNote: string
   followUpCompletedAt: Date | string | null
+  appointmentStatus: string
+  appointmentAt: Date | string | null
+  appointmentNotes: string
   createdAt: Date | string
   closedAt: Date | string | null
+  serviceOfferingId: string | null
+  conciergeIntakes: {
+    status: string
+    quoteRequested: boolean
+    schedulingRequested: boolean
+    matchedServiceName: string
+  }[]
   reviewRequests: {
     id: string
   }[]
@@ -152,6 +165,11 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
           followUpAt: dateInputValue(lead.followUpAt),
           followUpNote: lead.followUpNote,
           followUpCompleted: Boolean(lead.followUpCompletedAt),
+          appointmentStatus: lead.appointmentStatus,
+          appointmentAt: lead.appointmentAt
+            ? new Date(lead.appointmentAt).toISOString().slice(0, 16)
+            : "",
+          appointmentNotes: lead.appointmentNotes,
         }),
       })
       const data = await res.json()
@@ -343,11 +361,14 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
               </p>
             </div>
           ) : (
-            filteredLeads.map((lead) => (
-              <article
-                key={lead.id}
-                className="rounded-2xl border border-slate-200 p-5"
-              >
+            filteredLeads.map((lead) => {
+              const qualityScore = getLeadQualityScore(lead)
+
+              return (
+                <article
+                  key={lead.id}
+                  className="rounded-2xl border border-slate-200 p-5"
+                >
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -360,6 +381,17 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
                         )}`}
                       >
                         {leadStatusLabels[lead.status] ?? lead.status}
+                      </span>
+                      <span className="rounded-lg bg-violet-50 px-2 py-1 text-xs font-bold text-violet-700">
+                        {qualityScore.label} {qualityScore.score}
+                      </span>
+                      <span
+                        className={`rounded-lg px-2 py-1 text-xs font-bold ${appointmentStatusClassName(
+                          lead.appointmentStatus
+                        )}`}
+                      >
+                        {appointmentStatusLabels[lead.appointmentStatus] ??
+                          lead.appointmentStatus}
                       </span>
                     </div>
                     <p className="mt-1 text-sm text-slate-600">
@@ -413,7 +445,8 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
                   </Link>
                 </div>
               </article>
-            ))
+              )
+            })
           )}
         </div>
       </div>

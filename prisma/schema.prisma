@@ -15,33 +15,36 @@ model User {
 }
 
 model Business {
-  id                       String          @id @default(cuid())
+  id                       String               @id @default(cuid())
   name                     String
   phone                    String
-  website                  String          @default("")
-  address                  String          @default("")
-  city                     String          @default("")
-  state                    String          @default("")
-  zip                      String          @default("")
-  businessType             String          @default("HOME_SERVICES")
-  selectedPlan             String          @default("BASIC")
-  bookingNotes             String          @default("")
-  phoneAutomationEnabled   Boolean         @default(false)
-  bookingAutomationEnabled Boolean         @default(false)
-  autoSchedulingEnabled    Boolean         @default(false)
-  quoteEstimateEnabled     Boolean         @default(false)
-  quoteRules               String          @default("")
-  quoteDisclaimer          String          @default("Prices are estimates only. Final pricing is confirmed by the business.")
-  callbackTimeframe        String          @default("within one business day")
-  reviewAutomationEnabled  Boolean         @default(true)
-  seoSetupNotes            String          @default("")
-  marketingSetupNotes      String          @default("")
-  preferredContactMethod   String          @default("TEXT")
-  billingStatus            String          @default("MOCK_ACTIVE")
-  onboardingComplete       Boolean         @default(false)
-  replyTemplate            String          @default("")
-  userId                   String          @unique
-  user                     User            @relation(fields: [userId], references: [id])
+  website                  String               @default("")
+  address                  String               @default("")
+  city                     String               @default("")
+  state                    String               @default("")
+  zip                      String               @default("")
+  businessType             String               @default("HOME_SERVICES")
+  selectedPlan             String               @default("BASIC")
+  bookingNotes             String               @default("")
+  phoneAutomationEnabled   Boolean              @default(false)
+  bookingAutomationEnabled Boolean              @default(false)
+  autoSchedulingEnabled    Boolean              @default(false)
+  quoteEstimateEnabled     Boolean              @default(false)
+  quoteRules               String               @default("")
+  quoteDisclaimer          String               @default("Prices are estimates only. Final pricing is confirmed by the business.")
+  callbackTimeframe        String               @default("within one business day")
+  reviewAutomationEnabled  Boolean              @default(true)
+  seoSetupNotes            String               @default("")
+  marketingSetupNotes      String               @default("")
+  preferredContactMethod   String               @default("TEXT")
+  billingStatus            String               @default("MOCK_ACTIVE")
+  onboardingComplete       Boolean              @default(false)
+  replyTemplate            String               @default("")
+  widgetGreeting           String               @default("Need help? Send us your info and we will follow up soon.")
+  widgetPrimaryAction      String               @default("CALLBACK")
+  widgetAccentColor        String               @default("#0f172a")
+  userId                   String               @unique
+  user                     User                 @relation(fields: [userId], references: [id])
   missedCalls              MissedCall[]
   leads                    Lead[]
   reviewRequests           ReviewRequest[]
@@ -49,6 +52,7 @@ model Business {
   conciergeIntakes         ConciergeIntake[]
   serviceOfferings         ServiceOffering[]
   availabilityWindows      AvailabilityWindow[]
+  teamNotes                TeamNote[]
 }
 
 model ServiceOffering {
@@ -89,46 +93,65 @@ model AvailabilityWindow {
 }
 
 model MissedCall {
-  id              String    @id @default(cuid())
+  id              String           @id @default(cuid())
   callerName      String
   callerPhone     String
   reason          String
-  status          String    @default("NEW")
-  createdAt       DateTime  @default(now())
+  status          String           @default("NEW")
+  createdAt       DateTime         @default(now())
   repliedAt       DateTime?
-  convertedLeadId String?   @unique
-  convertedLead   Lead?     @relation(fields: [convertedLeadId], references: [id], onDelete: SetNull)
+  convertedLeadId String?          @unique
+  convertedLead   Lead?            @relation(fields: [convertedLeadId], references: [id], onDelete: SetNull)
   businessId      String
-  business        Business  @relation(fields: [businessId], references: [id])
+  business        Business         @relation(fields: [businessId], references: [id])
   conciergeIntake ConciergeIntake?
 }
 
 model Lead {
-  id                  String          @id @default(cuid())
+  id                  String            @id @default(cuid())
   customerName        String
   customerPhone       String
-  customerEmail       String          @default("")
-  source              String          @default("MISSED_CALL")
-  status              String          @default("NEW")
-  estimatedValueCents Int             @default(0)
-  wonValueCents       Int             @default(0)
-  notes               String          @default("")
+  customerEmail       String            @default("")
+  source              String            @default("MISSED_CALL")
+  status              String            @default("NEW")
+  estimatedValueCents Int               @default(0)
+  wonValueCents       Int               @default(0)
+  notes               String            @default("")
   followUpAt          DateTime?
-  followUpNote        String          @default("")
+  followUpNote        String            @default("")
   followUpCompletedAt DateTime?
-  createdAt           DateTime        @default(now())
+  appointmentStatus   String            @default("NOT_BOOKED")
+  appointmentAt       DateTime?
+  appointmentNotes    String            @default("")
+  createdAt           DateTime          @default(now())
   closedAt            DateTime?
   serviceOfferingId   String?
   businessId          String
-  business            Business        @relation(fields: [businessId], references: [id])
-  serviceOffering     ServiceOffering? @relation(fields: [serviceOfferingId], references: [id], onDelete: SetNull)
+  business            Business          @relation(fields: [businessId], references: [id])
+  serviceOffering     ServiceOffering?  @relation(fields: [serviceOfferingId], references: [id], onDelete: SetNull)
   reviewRequests      ReviewRequest[]
   followUpSteps       FollowUpStep[]
   conciergeIntakes    ConciergeIntake[]
+  teamNotes           TeamNote[]
   sourceMissedCall    MissedCall?
 
   @@index([businessId])
   @@index([serviceOfferingId])
+}
+
+model TeamNote {
+  id         String   @id @default(cuid())
+  body       String
+  authorName String   @default("Team")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([leadId])
 }
 
 model ReviewRequest {
@@ -150,36 +173,36 @@ model ReviewRequest {
 }
 
 model ConciergeIntake {
-  id                    String     @id @default(cuid())
-  status                String     @default("IN_PROGRESS")
-  currentStep           Int        @default(0)
-  intent                String     @default("")
-  urgency               String     @default("")
-  preferredTime         String     @default("")
-  schedulingRequested   Boolean    @default(false)
-  schedulingMode        String     @default("OWNER_CONFIRM")
-  quoteRequested        Boolean    @default(false)
-  quoteGuidance         String     @default("")
-  matchedServiceName    String     @default("")
-  matchedQuoteLowCents  Int        @default(0)
-  matchedQuoteHighCents Int        @default(0)
-  matchedDurationMinutes Int       @default(0)
-  serviceBookableOnline Boolean    @default(false)
-  availabilityGuidance  String     @default("")
-  summary               String     @default("")
-  nextAction            String     @default("")
-  transcript            Json       @default("[]")
-  answers               Json       @default("{}")
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
-  missedCallId          String     @unique
-  missedCall            MissedCall @relation(fields: [missedCallId], references: [id], onDelete: Cascade)
-  businessId            String
-  business              Business   @relation(fields: [businessId], references: [id])
-  matchedServiceId      String?
-  matchedService        ServiceOffering? @relation(fields: [matchedServiceId], references: [id], onDelete: SetNull)
-  leadId                String?
-  lead                  Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  id                     String           @id @default(cuid())
+  status                 String           @default("IN_PROGRESS")
+  currentStep            Int              @default(0)
+  intent                 String           @default("")
+  urgency                String           @default("")
+  preferredTime          String           @default("")
+  schedulingRequested    Boolean          @default(false)
+  schedulingMode         String           @default("OWNER_CONFIRM")
+  quoteRequested         Boolean          @default(false)
+  quoteGuidance          String           @default("")
+  matchedServiceName     String           @default("")
+  matchedQuoteLowCents   Int              @default(0)
+  matchedQuoteHighCents  Int              @default(0)
+  matchedDurationMinutes Int              @default(0)
+  serviceBookableOnline  Boolean          @default(false)
+  availabilityGuidance   String           @default("")
+  summary                String           @default("")
+  nextAction             String           @default("")
+  transcript             Json             @default("[]")
+  answers                Json             @default("{}")
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  missedCallId           String           @unique
+  missedCall             MissedCall       @relation(fields: [missedCallId], references: [id], onDelete: Cascade)
+  businessId             String
+  business               Business         @relation(fields: [businessId], references: [id])
+  matchedServiceId       String?
+  matchedService         ServiceOffering? @relation(fields: [matchedServiceId], references: [id], onDelete: SetNull)
+  leadId                 String?
+  lead                   Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
   @@index([businessId])
   @@index([matchedServiceId])
