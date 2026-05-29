@@ -91,6 +91,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
   const [sourceFilter, setSourceFilter] = useState("ALL")
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showManualLeadEntry, setShowManualLeadEntry] = useState(false)
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -132,6 +133,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
 
       setForm(emptyForm())
       setMessage("Lead added.")
+      setShowManualLeadEntry(false)
       router.refresh()
     } catch {
       setMessage("Something went wrong.")
@@ -187,267 +189,307 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
   }
 
   return (
-    <div className="mt-8 grid gap-8 lg:grid-cols-[0.9fr_1.4fr]">
-      <form
-        onSubmit={handleCreateLead}
-        className="rounded-2xl border border-slate-200 p-5"
+    <div className="mt-8 space-y-5">
+      <div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="text-lg font-bold text-slate-950">Lead pipeline</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Captured leads, follow-ups, source, value, and status.
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-expanded={showManualLeadEntry}
+          onClick={() => setShowManualLeadEntry((isOpen) => !isOpen)}
+          className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+        >
+          {showManualLeadEntry ? "Hide manual lead entry" : "Manual lead entry"}
+        </button>
+      </div>
+
+      {message && (
+        <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          {message}
+        </p>
+      )}
+
+      <div
+        className={`grid gap-8 ${
+          showManualLeadEntry ? "lg:grid-cols-[0.9fr_1.4fr]" : ""
+        }`}
       >
-        <h2 className="text-xl font-bold text-slate-950">Add lead</h2>
-        <div className="mt-5 space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Name</label>
-            <input
-              type="text"
-              value={form.customerName}
-              onChange={(e) => updateForm("customerName", e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              required
-            />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Phone</label>
-              <input
-                type="tel"
-                value={form.customerPhone}
-                onChange={(e) => updateForm("customerPhone", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Email</label>
-              <input
-                type="email"
-                value={form.customerEmail}
-                onChange={(e) => updateForm("customerEmail", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              />
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Source</label>
-              <select
-                value={form.source}
-                onChange={(e) => updateForm("source", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
-              >
-                {leadSourceOptions.map((source) => (
-                  <option key={source.value} value={source.value}>
-                    {source.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Status</label>
-              <select
-                value={form.status}
-                onChange={(e) => updateForm("status", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
-              >
-                {leadStatusOptions.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Estimated value
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={form.estimatedValue}
-                onChange={(e) => updateForm("estimatedValue", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-                placeholder="500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                Captured value
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={form.capturedValue}
-                onChange={(e) => updateForm("capturedValue", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-                placeholder="500"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Follow-up date
-            </label>
-            <input
-              type="date"
-              value={form.followUpAt}
-              onChange={(e) => updateForm("followUpAt", e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Follow-up note
-            </label>
-            <textarea
-              value={form.followUpNote}
-              onChange={(e) => updateForm("followUpNote", e.target.value)}
-              className="min-h-20 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-              placeholder="Call back tomorrow about the estimate."
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Notes</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => updateForm("notes", e.target.value)}
-              className="min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+        {showManualLeadEntry && (
+          <form
+            onSubmit={handleCreateLead}
+            className="rounded-2xl border border-slate-200 p-5"
           >
-            {loading ? "Adding..." : "Add lead"}
-          </button>
-          {message && <p className="text-sm text-slate-600">{message}</p>}
-        </div>
-      </form>
+            <h2 className="text-xl font-bold text-slate-950">
+              Manual lead entry
+            </h2>
 
-      <div>
-        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500"
-          >
-            <option value="ALL">All statuses</option>
-            {leadStatusOptions.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500"
-          >
-            <option value="ALL">All sources</option>
-            {leadSourceOptions.map((source) => (
-              <option key={source.value} value={source.value}>
-                {source.label}
-              </option>
-            ))}
-          </select>
-        </div>
+            <div className="mt-5 space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Name</label>
+                <input
+                  type="text"
+                  value={form.customerName}
+                  onChange={(e) => updateForm("customerName", e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                  required
+                />
+              </div>
 
-        <div className="mt-5 space-y-4">
-          {filteredLeads.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
-              <p className="text-lg font-bold text-slate-950">No leads yet</p>
-              <p className="mt-2 text-sm text-slate-600">
-                Add the first lead to start filling your pipeline.
-              </p>
-            </div>
-          ) : (
-            filteredLeads.map((lead) => {
-              const qualityScore = getLeadQualityScore(lead)
-
-              return (
-                <article
-                  key={lead.id}
-                  className="rounded-2xl border border-slate-200 p-5"
-                >
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-bold text-slate-950">
-                        {lead.customerName}
-                      </h3>
-                      <span
-                        className={`rounded-lg px-2 py-1 text-xs font-bold ${statusClassName(
-                          lead.status
-                        )}`}
-                      >
-                        {leadStatusLabels[lead.status] ?? lead.status}
-                      </span>
-                      <span className="rounded-lg bg-violet-50 px-2 py-1 text-xs font-bold text-violet-700">
-                        {qualityScore.label} {qualityScore.score}
-                      </span>
-                      <span
-                        className={`rounded-lg px-2 py-1 text-xs font-bold ${appointmentStatusClassName(
-                          lead.appointmentStatus
-                        )}`}
-                      >
-                        {appointmentStatusLabels[lead.appointmentStatus] ??
-                          lead.appointmentStatus}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {lead.customerPhone}
-                      {lead.customerEmail ? ` - ${lead.customerEmail}` : ""}
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-600">
-                      {leadSourceLabels[lead.source] ?? lead.source}
-                    </p>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <p className="text-lg font-bold text-slate-950">
-                      {formatMoney(
-                        lead.status === "CAPTURED"
-                          ? lead.capturedValueCents
-                          : lead.estimatedValueCents
-                      )}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Follow up: {formatDate(lead.followUpAt)}
-                    </p>
-                  </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Phone</label>
+                  <input
+                    type="tel"
+                    value={form.customerPhone}
+                    onChange={(e) => updateForm("customerPhone", e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                    required
+                  />
                 </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Email</label>
+                  <input
+                    type="email"
+                    value={form.customerEmail}
+                    onChange={(e) => updateForm("customerEmail", e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                  />
+                </div>
+              </div>
 
-                {lead.followUpNote && (
-                  <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                    {lead.followUpNote}
-                  </p>
-                )}
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {leadStatusOptions.map((status) => (
-                    <button
-                      key={status.value}
-                      type="button"
-                      onClick={() => quickUpdateStatus(lead, status.value)}
-                      className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
-                        lead.status === status.value
-                          ? "border-slate-950 bg-slate-950 text-white"
-                          : "border-slate-300 text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      {status.label}
-                    </button>
-                  ))}
-                  <Link
-                    href={`/leads/${lead.id}`}
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Source</label>
+                  <select
+                    value={form.source}
+                    onChange={(e) => updateForm("source", e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
                   >
-                    Details
-                  </Link>
+                    {leadSourceOptions.map((source) => (
+                      <option key={source.value} value={source.value}>
+                        {source.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </article>
-              )
-            })
-          )}
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Status</label>
+                  <select
+                    value={form.status}
+                    onChange={(e) => updateForm("status", e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
+                  >
+                    {leadStatusOptions.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Estimated value
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.estimatedValue}
+                    onChange={(e) => updateForm("estimatedValue", e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                    placeholder="500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Captured value
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.capturedValue}
+                    onChange={(e) => updateForm("capturedValue", e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                    placeholder="500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  Follow-up date
+                </label>
+                <input
+                  type="date"
+                  value={form.followUpAt}
+                  onChange={(e) => updateForm("followUpAt", e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  Follow-up note
+                </label>
+                <textarea
+                  value={form.followUpNote}
+                  onChange={(e) => updateForm("followUpNote", e.target.value)}
+                  className="min-h-20 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                  placeholder="Call back tomorrow about the estimate."
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">Notes</label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) => updateForm("notes", e.target.value)}
+                  className="min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+              >
+                {loading ? "Saving..." : "Save manual lead"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div>
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500"
+            >
+              <option value="ALL">All statuses</option>
+              {leadStatusOptions.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500"
+            >
+              <option value="ALL">All sources</option>
+              {leadSourceOptions.map((source) => (
+                <option key={source.value} value={source.value}>
+                  {source.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-5 space-y-4">
+            {filteredLeads.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+                <p className="text-lg font-bold text-slate-950">No leads yet</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Add the first lead to start filling your pipeline.
+                </p>
+              </div>
+            ) : (
+              filteredLeads.map((lead) => {
+                const qualityScore = getLeadQualityScore(lead)
+
+                return (
+                  <article
+                    key={lead.id}
+                    className="rounded-2xl border border-slate-200 p-5"
+                  >
+                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-bold text-slate-950">
+                            {lead.customerName}
+                          </h3>
+                          <span
+                            className={`rounded-lg px-2 py-1 text-xs font-bold ${statusClassName(
+                              lead.status
+                            )}`}
+                          >
+                            {leadStatusLabels[lead.status] ?? lead.status}
+                          </span>
+                          <span className="rounded-lg bg-violet-50 px-2 py-1 text-xs font-bold text-violet-700">
+                            {qualityScore.label} {qualityScore.score}
+                          </span>
+                          <span
+                            className={`rounded-lg px-2 py-1 text-xs font-bold ${appointmentStatusClassName(
+                              lead.appointmentStatus
+                            )}`}
+                          >
+                            {appointmentStatusLabels[lead.appointmentStatus] ??
+                              lead.appointmentStatus}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {lead.customerPhone}
+                          {lead.customerEmail ? ` - ${lead.customerEmail}` : ""}
+                        </p>
+                        <p className="mt-2 text-sm font-medium text-slate-600">
+                          {leadSourceLabels[lead.source] ?? lead.source}
+                        </p>
+                      </div>
+                      <div className="text-left sm:text-right">
+                        <p className="text-lg font-bold text-slate-950">
+                          {formatMoney(
+                            lead.status === "CAPTURED"
+                              ? lead.capturedValueCents
+                              : lead.estimatedValueCents
+                          )}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Follow up: {formatDate(lead.followUpAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {lead.followUpNote && (
+                      <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        {lead.followUpNote}
+                      </p>
+                    )}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {leadStatusOptions.map((status) => (
+                        <button
+                          key={status.value}
+                          type="button"
+                          onClick={() => quickUpdateStatus(lead, status.value)}
+                          className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
+                            lead.status === status.value
+                              ? "border-slate-950 bg-slate-950 text-white"
+                              : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          {status.label}
+                        </button>
+                      ))}
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Details
+                      </Link>
+                    </div>
+                  </article>
+                )
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>

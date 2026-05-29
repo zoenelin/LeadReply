@@ -69,7 +69,7 @@ export default async function LeadsPage() {
                 Lead pipeline
               </h1>
               <p className="mt-3 max-w-2xl text-slate-600">
-                Add leads, track their value, and keep follow-ups from slipping.
+                Track lead value, source, status, and follow-ups from one place.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
