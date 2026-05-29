@@ -215,7 +215,7 @@ export function getBusinessHealthStats({
           ? "Win a customer, then request the review."
           : `${reviewRequestCount} review request${
               reviewRequestCount === 1 ? "" : "s"
-            } tracked for ${wonLeadCount} won customer${
+            } tracked for ${wonLeadCount} captured customer${
               wonLeadCount === 1 ? "" : "s"
             }.`,
       href: "/leads",

@@ -74,9 +74,9 @@ export async function GET(req: Request) {
     [
       "Source",
       "Leads",
-      "Won leads",
+      "Captured leads",
       "Conversion rate",
-      "Won revenue USD",
+      "Captured revenue USD",
       "Open pipeline USD",
       "Lost opportunity USD",
     ],

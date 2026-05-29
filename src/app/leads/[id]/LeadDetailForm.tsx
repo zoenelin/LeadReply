@@ -237,7 +237,9 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Won value</label>
+            <label className="mb-1 block text-sm font-medium">
+              Captured value
+            </label>
             <input
               type="number"
               min="0"

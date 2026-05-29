@@ -271,7 +271,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">
-                Won value
+                Captured value
               </label>
               <input
                 type="number"

@@ -15,7 +15,7 @@ import { AppNav } from "../components/AppNav"
 
 export const metadata: Metadata = {
   title: "Reviews",
-  description: "Track LeadReply review requests from won customers to received reviews.",
+  description: "Track LeadReply review requests from captured customers to received reviews.",
   robots: {
     index: false,
     follow: false,
@@ -90,11 +90,11 @@ export default async function ReviewsPage() {
                 Review funnel
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-950">
-                Turn won customers into reviews
+                Turn captured customers into reviews
               </h1>
               <p className="mt-3 max-w-2xl text-slate-600">
-                Track the path from customer won, to review requested, to review
-                received for {business.name}.
+                Track the path from customer captured, to review requested, to
+                review received for {business.name}.
               </p>
             </div>
             <Link
@@ -107,7 +107,7 @@ export default async function ReviewsPage() {
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">Customers won</p>
+              <p className="text-sm text-slate-500">Customers captured</p>
               <p className="mt-2 text-3xl font-bold text-slate-950">
                 {reviewFunnelStats.wonLeadCount}
               </p>
@@ -118,7 +118,7 @@ export default async function ReviewsPage() {
                 {reviewFunnelStats.requestedWonLeadCount}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-600">
-                {reviewFunnelStats.requestRate}% of won customers
+                {reviewFunnelStats.requestRate}% of captured customers
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 p-5">
@@ -183,7 +183,7 @@ export default async function ReviewsPage() {
                     Needs a review request
                   </p>
                   <h2 className="mt-1 text-xl font-bold text-slate-950">
-                    Won customers without a request
+                    Captured customers without a request
                   </h2>
                 </div>
                 <span className="w-fit rounded-lg bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
@@ -193,7 +193,7 @@ export default async function ReviewsPage() {
               <div className="mt-5 divide-y divide-slate-100">
                 {reviewFunnelStats.notRequestedWonLeads.length === 0 ? (
                   <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    Every won customer has at least started the review workflow.
+                    Every captured customer has at least started the review workflow.
                   </div>
                 ) : (
                   reviewFunnelStats.notRequestedWonLeads.slice(0, 5).map((lead) => (
@@ -207,7 +207,7 @@ export default async function ReviewsPage() {
                           {lead.customerName}
                         </p>
                         <p className="text-sm text-slate-600">
-                          Won on {formatDate(lead.closedAt)}
+                          Captured on {formatDate(lead.closedAt)}
                         </p>
                       </div>
                       <p className="text-sm font-semibold text-slate-700 sm:text-right">

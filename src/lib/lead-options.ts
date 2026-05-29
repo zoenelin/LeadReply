@@ -8,7 +8,7 @@ export const leadSourceOptions = [
 export const leadStatusOptions = [
   { value: "NEW", label: "New" },
   { value: "CONTACTED", label: "Contacted" },
-  { value: "WON", label: "Won" },
+  { value: "WON", label: "Captured" },
   { value: "LOST", label: "Lost" },
 ]
 

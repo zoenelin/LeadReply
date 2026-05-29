@@ -180,7 +180,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                 </p>
               </div>
               <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-xs font-medium text-slate-500">Won</p>
+                <p className="text-xs font-medium text-slate-500">Captured</p>
                 <p className="mt-1 text-xl font-bold">
                   {formatMoney(lead.wonValueCents)}
                 </p>
@@ -349,8 +349,8 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                   {lead.reviewRequests.length}
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Mark this lead as won, send a review request, then track when
-                  the review comes in.
+                  Mark this lead as captured, send a review request, then track
+                  when the review comes in.
                 </p>
                 <Link
                   href="/reviews"

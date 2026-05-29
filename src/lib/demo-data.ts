@@ -287,7 +287,7 @@ export function getStarterLeads(businessId: string, businessType: string) {
       closedAt: closeDate(secondWonDate, 3),
       appointmentStatus: "SHOWED",
       appointmentAt: closeDate(secondWonDate, 1),
-      appointmentNotes: "Appointment completed and marked won.",
+      appointmentNotes: "Appointment completed and marked captured.",
       followUpAt: null,
       followUpNote: "",
     },

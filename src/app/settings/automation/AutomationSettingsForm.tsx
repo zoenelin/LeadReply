@@ -149,7 +149,7 @@ export function AutomationSettingsForm({
                 Review requests
               </span>
               <span className="mt-1 block text-sm text-slate-600">
-                Prompt happy customers for reviews after won leads.
+                Prompt happy customers for reviews after captured leads.
               </span>
             </span>
           </label>

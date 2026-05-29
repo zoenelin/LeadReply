@@ -6,6 +6,7 @@ import {
 } from "@/lib/industry-presets"
 import { checkRequestRateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { passwordSchema } from "@/lib/password-policy"
 import bcrypt from "bcrypt"
 import { z } from "zod"
 
@@ -17,12 +18,7 @@ const planValues = Object.keys(planLabels) as [string, ...string[]]
 
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters.")
-    .max(72, "Password is too long.")
-    .regex(/[A-Za-z]/, "Password must include at least one letter.")
-    .regex(/[0-9]/, "Password must include at least one number."),
+  password: passwordSchema,
   businessName: z.string().min(1, "Please enter your business name."),
   businessPhone: z.string().min(1, "Please enter your business phone number."),
   website: z.string().trim().optional().default(""),

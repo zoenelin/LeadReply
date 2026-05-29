@@ -86,7 +86,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Website widget concept: adds a public "Text us" or "Request a callback" widget that creates Website leads.
 - Demo data reset button: restores sample leads, missed calls, and review workflow.
 - Missed-call to lead conversion: turns a missed call into a pipeline lead with one click.
-- ROI card: shows recovered revenue from won missed-call leads.
+- ROI card: shows recovered revenue from captured missed-call leads.
 - Lead source breakdown: compares missed calls, website, manual entries, and referrals.
 - CSV export: downloads lead detail and revenue summary reports.
 - Simple owner mode: gives owners a quiet daily view with one priority action.
@@ -94,7 +94,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Lost revenue tracker: shows likely revenue lost or at risk from lost leads, overdue follow-ups, and unanswered missed calls.
 - Business health score: combines setup completeness, reply speed, follow-up habits, revenue risk, and review activity into a simple score.
 - Lead intake form: gives each business a public form that creates Website leads in the CRM.
-- Review funnel: tracks won customers to review requested to review received, with status updates and a dedicated reviews page.
+- Review funnel: tracks captured customers to review requested to review received, with status updates and a dedicated reviews page.
 - Follow-up sequences: creates a three-step text follow-up plan for leads, tracks draft/sent/skipped steps, and surfaces due steps on the dashboard, owner view, analytics, and lead detail page.
 - AI missed-call concierge: runs the automatic text intake after a missed call, asks industry-specific questions, saves the transcript and answers, creates or updates the lead, and flags scheduling next steps.
 - Launch readiness dashboard: checks required env providers, business setup, sample data cleanup, Stripe checkout readiness, and deployment notes.

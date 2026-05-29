@@ -577,7 +577,7 @@ export default async function AnalyticsPage({
                 <p className="mt-2 max-w-2xl text-sm text-slate-600">
                   {reviewFunnelStats.receivedCount} review
                   {reviewFunnelStats.receivedCount === 1 ? "" : "s"} received
-                  from {reviewFunnelStats.wonLeadCount} won customer
+                  from {reviewFunnelStats.wonLeadCount} captured customer
                   {reviewFunnelStats.wonLeadCount === 1 ? "" : "s"} in this
                   view.
                 </p>
@@ -757,13 +757,13 @@ export default async function AnalyticsPage({
                   {formatMoney(recoveredRevenueCents)} recovered by LeadReply
                 </h2>
                 <p className="mt-2 text-sm text-slate-700">
-                  Won revenue from missed-call leads. {recoveredLeadCount} of{" "}
-                  {missedCallLeads.length} missed-call leads are won.
+                  Captured revenue from missed-call leads. {recoveredLeadCount} of{" "}
+                  {missedCallLeads.length} missed-call leads are captured.
                 </p>
               </div>
               <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
                 <p className="text-sm font-medium text-slate-500">
-                  Missed-call win rate
+                  Missed-call capture rate
                 </p>
                 <p className="mt-1 text-3xl font-bold text-slate-950">
                   {missedCallWinRate}%
@@ -799,11 +799,11 @@ export default async function AnalyticsPage({
                           {source.label}
                         </p>
                         <p className="text-sm text-slate-500">
-                          {source.wonCount} won of {source.leadCount} total
+                          {source.wonCount} captured of {source.leadCount} total
                         </p>
                       </div>
                       <p className="text-right text-sm font-semibold text-slate-700">
-                        {source.conversionRate}% won
+                        {source.conversionRate}% captured
                       </p>
                     </div>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
@@ -856,7 +856,7 @@ export default async function AnalyticsPage({
                   </h2>
                   <p className="mt-2 text-sm text-slate-600">
                     This is currently the strongest source in the selected
-                    view, with {formatMoney(bestSource.revenueCents)} won and{" "}
+                    view, with {formatMoney(bestSource.revenueCents)} captured and{" "}
                     {bestSource.leadCount} leads captured.
                   </p>
                 </>
@@ -951,7 +951,7 @@ export default async function AnalyticsPage({
                     Money made
                   </p>
                   <h2 className="mt-1 text-xl font-bold text-slate-950">
-                    Won lead value
+                    Captured lead value
                   </h2>
                 </div>
                 <span className="rounded-lg bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">

@@ -99,7 +99,7 @@ export function getReviewFunnelStats(leads: ReviewFunnelLead[]) {
     receivedRate: percentage(receivedRequests.length, sentOrReceivedRequests),
     funnelSteps: [
       {
-        label: "Customers won",
+        label: "Customers captured",
         count: wonLeads.length,
         percent: wonLeads.length === 0 ? 0 : 100,
       },
@@ -125,7 +125,7 @@ export function getReviewFunnelMessage(
   }
 
   if (stats.notRequestedWonLeads.length > 0) {
-    return `${stats.notRequestedWonLeads.length} won customer${
+    return `${stats.notRequestedWonLeads.length} captured customer${
       stats.notRequestedWonLeads.length === 1 ? "" : "s"
     } still need a review request.`
   }
@@ -136,5 +136,5 @@ export function getReviewFunnelMessage(
     } can be checked for completed reviews.`
   }
 
-  return "The review funnel is caught up for won customers."
+  return "The review funnel is caught up for captured customers."
 }

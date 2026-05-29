@@ -5,7 +5,7 @@ import { useState } from "react"
 
 const exampleCsv = `name,phone,email,source,status,estimated_value,notes
 Jane Customer,555-123-4567,jane@example.com,WEBSITE,NEW,450,Needs a callback
-Sam Buyer,555-987-1111,,REFERRAL,WON,900,Booked from referral`
+Sam Buyer,555-987-1111,,REFERRAL,CAPTURED,900,Captured from referral`
 
 export function LeadImportForm() {
   const router = useRouter()
@@ -48,7 +48,7 @@ export function LeadImportForm() {
         <h2 className="text-xl font-bold text-slate-950">Paste CSV</h2>
         <p className="mt-2 text-sm text-slate-600">
           Supported columns include name, phone, email, source, status,
-          estimated_value, won_value, revenue, and notes.
+          estimated_value, captured_value, revenue, and notes.
         </p>
         <textarea
           value={csv}

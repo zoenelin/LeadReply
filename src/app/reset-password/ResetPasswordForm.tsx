@@ -3,6 +3,11 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import {
+  passwordHelpText,
+  passwordMaxLength,
+  passwordMinLength,
+} from "@/lib/password-policy"
 
 type ResetPasswordFormProps = {
   token: string
@@ -11,6 +16,7 @@ type ResetPasswordFormProps = {
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const router = useRouter()
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -60,9 +66,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         <h1 className="mt-6 text-2xl font-bold text-slate-950">
           Create a new password
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Use at least 8 characters with a letter and a number.
-        </p>
+        <p className="mt-2 text-sm text-slate-600">{passwordHelpText}</p>
 
         {!token ? (
           <p className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -71,17 +75,27 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         ) : (
           <form onSubmit={resetPassword} className="mt-6 space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium">
-                New password
-              </label>
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <label className="block text-sm font-medium">
+                  New password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="text-sm font-semibold text-slate-600 hover:text-slate-950"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
                 required
-                minLength={8}
+                minLength={passwordMinLength}
+                maxLength={passwordMaxLength}
               />
             </div>
 

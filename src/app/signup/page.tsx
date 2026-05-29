@@ -3,6 +3,11 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { businessCategories, planOptions } from "@/lib/business-options"
+import {
+  passwordHelpText,
+  passwordMaxLength,
+  passwordMinLength,
+} from "@/lib/password-policy"
 
 const steps = ["Account", "Business", "Category", "Plan", "Confirm"]
 
@@ -65,6 +70,7 @@ export default function SignupPage() {
   const [step, setStep] = useState(0)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [businessName, setBusinessName] = useState("")
   const [businessPhone, setBusinessPhone] = useState("")
   const [website, setWebsite] = useState("")
@@ -91,7 +97,11 @@ export default function SignupPage() {
 
   function validateStep() {
     if (step === 0) {
-      return email.length > 0 && password.length >= 8
+      return (
+        email.length > 0 &&
+        password.length >= passwordMinLength &&
+        password.length <= passwordMaxLength
+      )
     }
     if (step === 1) {
       return (
@@ -204,21 +214,29 @@ export default function SignupPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">
-                  Password
-                </label>
+                <div className="mb-1 flex items-center justify-between gap-3">
+                  <label className="block text-sm font-medium">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="text-sm font-semibold text-slate-600 hover:text-slate-950"
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
                   placeholder="Create a password"
-                  minLength={8}
+                  minLength={passwordMinLength}
+                  maxLength={passwordMaxLength}
                   required
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  Must be at least 8 characters and include a letter and number.
+                  {passwordHelpText}
                 </p>
               </div>
             </section>

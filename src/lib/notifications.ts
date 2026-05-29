@@ -142,7 +142,7 @@ export function buildNotifications({
       notifications.push({
         id: `review-needed-${lead.id}`,
         title: "Review prompt ready",
-        message: `${lead.customerName} is a won lead with no sent review request.`,
+        message: `${lead.customerName} is a captured lead with no sent review request.`,
         href: `/leads/${lead.id}`,
         category: "Reviews",
         priority: "MEDIUM",

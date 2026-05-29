@@ -451,7 +451,7 @@ export default async function OwnerPage() {
                 {formatMoney(recoveredRevenueCents)}
               </p>
               <p className="mt-3 text-sm font-medium text-slate-700">
-                Missed-call wins
+                Captured missed calls
               </p>
             </Link>
             <Link
@@ -620,7 +620,7 @@ export default async function OwnerPage() {
                   {bestSource && (
                     <p className="mt-1 text-sm text-slate-600">
                       {bestSource.leadCount} leads,{" "}
-                      {formatMoney(bestSource.revenueCents)} won
+                      {formatMoney(bestSource.revenueCents)} captured
                     </p>
                   )}
                 </div>
@@ -684,7 +684,7 @@ export default async function OwnerPage() {
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">Customers won</p>
+                  <p className="text-sm text-slate-500">Customers captured</p>
                   <p className="mt-1 text-2xl font-bold text-slate-950">
                     {wonLeads.length}
                   </p>

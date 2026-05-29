@@ -841,13 +841,13 @@ export default async function DashboardPage() {
                 {formatMoney(recoveredRevenueCents)} recovered
               </h2>
               <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                Won revenue from missed-call leads. {recoveredLeadCount} of{" "}
-                {missedCallLeadCount} missed-call leads are won so far.
+                Captured revenue from missed-call leads. {recoveredLeadCount} of{" "}
+                {missedCallLeadCount} missed-call leads are captured so far.
               </p>
             </div>
             <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
               <p className="text-sm font-medium text-slate-500">
-                Missed-call win rate
+                Missed-call capture rate
               </p>
               <p className="mt-1 text-3xl font-bold text-slate-950">
                 {missedCallWinRate}%
@@ -1024,7 +1024,7 @@ export default async function DashboardPage() {
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm text-slate-600">
                     {bestSource.label} has captured {bestSource.leadCount} leads
-                    and {formatMoney(bestSource.revenueCents)} in won revenue.
+                    and {formatMoney(bestSource.revenueCents)} in captured revenue.
                   </p>
                 </>
               ) : (
@@ -1052,7 +1052,7 @@ export default async function DashboardPage() {
                     {formatMoney(source.revenueCents)}
                   </p>
                   <p className="mt-1 text-sm text-slate-500">
-                    {source.leadCount} leads, {source.conversionRate}% won
+                    {source.leadCount} leads, {source.conversionRate}% captured
                   </p>
                 </div>
               ))}
@@ -1180,7 +1180,7 @@ export default async function DashboardPage() {
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div>
-                <p className="text-sm text-slate-500">Won</p>
+                <p className="text-sm text-slate-500">Captured</p>
                 <p className="text-lg font-bold text-slate-950">
                   {reviewFunnelStats.wonLeadCount}
                 </p>

@@ -40,6 +40,10 @@ function getCell(row: Record<string, string>, keys: string[]) {
 function normalizedStatus(value: string) {
   const status = value.toUpperCase().replace(/\s+/g, "_")
 
+  if (status === "CAPTURED") {
+    return "WON"
+  }
+
   return leadStatusValues.includes(status) ? status : "NEW"
 }
 
@@ -109,7 +113,15 @@ export async function POST(req: Request) {
       ),
       wonValueCents:
         status === "WON"
-          ? dollarsToCents(getCell(row, ["wonvalue", "won_value", "revenue"]))
+          ? dollarsToCents(
+              getCell(row, [
+                "capturedvalue",
+                "captured_value",
+                "wonvalue",
+                "won_value",
+                "revenue",
+              ])
+            )
           : 0,
       notes: getCell(row, ["notes", "note"]),
       closedAt: status === "WON" || status === "LOST" ? new Date() : null,

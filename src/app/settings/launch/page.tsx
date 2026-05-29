@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
+import { isAdminEmail } from "@/lib/admin"
 import { businessCategoryLabels, planLabels } from "@/lib/business-options"
 import {
   getIntegrationStatuses,
@@ -62,6 +63,7 @@ export default async function LaunchSettingsPage() {
 
   const statuses = getIntegrationStatuses()
   const readinessScore = getLaunchReadinessScore(statuses)
+  const userIsAdmin = isAdminEmail(session.user.email)
   const businessChecks = [
     {
       label: "Business profile",
@@ -175,6 +177,14 @@ export default async function LaunchSettingsPage() {
               >
                 Automation setup
               </Link>
+              {userIsAdmin && (
+                <Link
+                  href="/admin"
+                  className="rounded-xl bg-slate-900 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-slate-800"
+                >
+                  Admin operations
+                </Link>
+              )}
             </div>
 
             <div className="mt-5 space-y-3">

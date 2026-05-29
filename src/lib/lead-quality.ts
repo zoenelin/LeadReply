@@ -53,7 +53,7 @@ export function getLeadQualityScore(lead: LeadQualityInput) {
   }
 
   if (lead.status === "WON") {
-    addFactor("Already won", 45)
+    addFactor("Already captured", 45)
   } else if (lead.status === "CONTACTED") {
     addFactor("Conversation started", 14)
   } else if (lead.status === "NEW") {

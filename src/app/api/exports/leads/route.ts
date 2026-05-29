@@ -58,7 +58,7 @@ export async function GET(req: Request) {
       "Source",
       "Status",
       "Estimated value USD",
-      "Won value USD",
+      "Captured value USD",
       "Follow-up date",
       "Follow-up completed",
       "Created date",

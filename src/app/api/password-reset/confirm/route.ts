@@ -1,17 +1,13 @@
 import { createHash } from "node:crypto"
 import bcrypt from "bcrypt"
 import { z } from "zod"
+import { passwordSchema } from "@/lib/password-policy"
 import { prisma } from "@/lib/prisma"
 import { rejectCrossSiteRequest } from "@/lib/request-security"
 
 const confirmSchema = z.object({
   token: z.string().min(32, "Reset token is missing."),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters.")
-    .max(72, "Password is too long.")
-    .regex(/[A-Za-z]/, "Password must include at least one letter.")
-    .regex(/[0-9]/, "Password must include at least one number."),
+  password: passwordSchema,
 })
 
 function hashToken(token: string) {
