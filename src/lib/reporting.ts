@@ -114,7 +114,7 @@ export function buildRevenueSummaryRows(leads: ReportLead[]) {
       (total, lead) => total + lead.capturedValueCents,
       0
     )
-    const pipelineCents = openLeads.reduce(
+    const openLeadValueCents = openLeads.reduce(
       (total, lead) => total + lead.estimatedValueCents,
       0
     )
@@ -134,7 +134,7 @@ export function buildRevenueSummaryRows(leads: ReportLead[]) {
       capturedCount: capturedLeads.length,
       conversionRate,
       revenueCents,
-      pipelineCents,
+      openLeadValueCents,
       lostOpportunityCents,
     }
   })

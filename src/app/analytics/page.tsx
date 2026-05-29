@@ -223,7 +223,7 @@ export default async function AnalyticsPage({
     (total, lead) => total + lead.capturedValueCents,
     0
   )
-  const pipelineCents = openLeads.reduce(
+  const openLeadValueCents = openLeads.reduce(
     (total, lead) => total + lead.estimatedValueCents,
     0
   )
@@ -326,7 +326,7 @@ export default async function AnalyticsPage({
                 href="/leads"
                 className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
               >
-                Open pipeline
+                Open Lead Center
               </Link>
               <a
                 href={leadExportHref}
@@ -411,9 +411,9 @@ export default async function AnalyticsPage({
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">Open pipeline</p>
+              <p className="text-sm text-slate-500">Open lead value</p>
               <p className="mt-2 text-3xl font-bold text-slate-950">
-                {formatMoney(pipelineCents)}
+                {formatMoney(openLeadValueCents)}
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 p-5">
@@ -828,9 +828,9 @@ export default async function AnalyticsPage({
                         </p>
                       </div>
                       <div>
-                        <p className="text-slate-500">Pipeline</p>
+                        <p className="text-slate-500">Open lead value</p>
                         <p className="font-semibold text-slate-950">
-                          {formatMoney(source.pipelineCents)}
+                          {formatMoney(source.openLeadValueCents)}
                         </p>
                       </div>
                       <div>

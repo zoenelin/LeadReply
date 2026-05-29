@@ -1,6 +1,6 @@
 # LeadReply
 
-LeadReply is a Next.js SaaS CRM for missed-call follow-up, lead capture, reviews, analytics, and business optimization. It has account signup, guided onboarding, a tailored dashboard, lead pipeline, missed-call concierge intake, service setup, review workflow, billing setup, and launch-readiness checks.
+LeadReply is a Next.js SaaS CRM for missed-call follow-up, lead capture, reviews, analytics, and business optimization. It has account signup, guided onboarding, a tailored dashboard, a Lead Center, missed-call concierge intake, service setup, review workflow, billing setup, and launch-readiness checks.
 
 ## Run locally
 

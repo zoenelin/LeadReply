@@ -85,7 +85,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Industry presets: adds starter services and availability for common business types.
 - Website widget concept: adds a public "Text us" or "Request a callback" widget that creates Website leads.
 - Demo data reset button: restores sample leads, missed calls, and review workflow.
-- Missed-call to lead conversion: turns a missed call into a pipeline lead with one click.
+- Missed-call to lead conversion: turns a missed call into a Lead Center record with one click.
 - ROI card: shows recovered revenue from captured missed-call leads.
 - Lead source breakdown: compares missed calls, website, manual entries, and referrals.
 - CSV export: downloads lead detail and revenue summary reports.

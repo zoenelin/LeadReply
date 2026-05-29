@@ -458,7 +458,7 @@ export default async function DashboardPage() {
       complete: reviewRequestsCount > 0,
     },
     {
-      label: "Lead pipeline",
+      label: "Lead Center",
       complete: Boolean((business?._count.leads ?? 0) > 0),
     },
     {
@@ -661,7 +661,7 @@ export default async function DashboardPage() {
                   Lead intake form
                 </p>
                 <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                  Share a form that sends leads into your pipeline
+                  Share a form that sends leads into the Lead Center
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm text-slate-700">
                   Add this link to a website, social profile, or message. New
@@ -1075,7 +1075,7 @@ export default async function DashboardPage() {
               href="/leads"
               className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
             >
-              Open pipeline
+              Open Lead Center
             </Link>
           </div>
           <div className="mt-5 space-y-3">

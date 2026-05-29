@@ -53,7 +53,7 @@ export async function GET(req: Request) {
       leadCount: summary.leadCount + row.leadCount,
       capturedCount: summary.capturedCount + row.capturedCount,
       revenueCents: summary.revenueCents + row.revenueCents,
-      pipelineCents: summary.pipelineCents + row.pipelineCents,
+      openLeadValueCents: summary.openLeadValueCents + row.openLeadValueCents,
       lostOpportunityCents:
         summary.lostOpportunityCents + row.lostOpportunityCents,
     }),
@@ -61,7 +61,7 @@ export async function GET(req: Request) {
       leadCount: 0,
       capturedCount: 0,
       revenueCents: 0,
-      pipelineCents: 0,
+      openLeadValueCents: 0,
       lostOpportunityCents: 0,
     }
   )
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
       "Captured leads",
       "Conversion rate",
       "Captured revenue USD",
-      "Open pipeline USD",
+      "Open lead value USD",
       "Lost opportunity USD",
     ],
     ...sourceRows.map((row) => [
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
       row.capturedCount,
       `${row.conversionRate}%`,
       moneyCsvValue(row.revenueCents),
-      moneyCsvValue(row.pipelineCents),
+      moneyCsvValue(row.openLeadValueCents),
       moneyCsvValue(row.lostOpportunityCents),
     ]),
     [
@@ -95,7 +95,7 @@ export async function GET(req: Request) {
       totals.capturedCount,
       `${totalConversionRate}%`,
       moneyCsvValue(totals.revenueCents),
-      moneyCsvValue(totals.pipelineCents),
+      moneyCsvValue(totals.openLeadValueCents),
       moneyCsvValue(totals.lostOpportunityCents),
     ],
   ]

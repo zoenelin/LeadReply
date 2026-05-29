@@ -8,7 +8,7 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/snapshot", label: "Snapshot" },
   { href: "/notifications", label: "Alerts" },
-  { href: "/leads", label: "Leads" },
+  { href: "/leads", label: "Lead Center" },
   { href: "/missed-calls", label: "Inbox" },
   { href: "/settings/services", label: "Services" },
   { href: "/settings/calendar", label: "Calendar" },
@@ -23,7 +23,7 @@ const navLinks = [
 const mobileNavLinks = [
   { href: "/snapshot", label: "Snapshot" },
   { href: "/notifications", label: "Alerts" },
-  { href: "/leads", label: "Leads" },
+  { href: "/leads", label: "Lead Center" },
   { href: "/missed-calls", label: "Inbox" },
   { href: "/analytics", label: "Stats" },
   { href: "/settings/business", label: "Settings" },

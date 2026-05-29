@@ -164,7 +164,7 @@ export function MissedCallsInbox({
     )
     setMessage(
       data.alreadyConverted
-        ? "This missed call is already in the pipeline."
+        ? "This missed call is already in the Lead Center."
         : "Lead created from missed call."
     )
   }
@@ -631,7 +631,7 @@ export function MissedCallsInbox({
             className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {selectedCall.convertedLeadId
-              ? "Already in pipeline"
+              ? "Already in Lead Center"
               : "Convert to lead"}
           </button>
           {selectedCall.convertedLeadId && (

@@ -4,7 +4,7 @@
 
 The original eight-item CRM foundation is now implemented. The current near-launch work is provider setup, production deployment, real-client onboarding, and safety testing.
 
-1. Lead Pipeline
+1. Lead Center
    - Add a leads page.
    - Let users add leads manually.
    - Track source, status, estimated value, captured value, follow-up date, and notes.
@@ -15,7 +15,7 @@ The original eight-item CRM foundation is now implemented. The current near-laun
 
 3. Better Analytics
    - Add source, status, and date filters.
-   - Split reporting into open pipeline, captured revenue, lost opportunity, and recovered revenue.
+   - Split reporting into open lead value, captured revenue, lost opportunity, and recovered revenue.
 
 4. Follow-Up Tasks
    - Show today's follow-ups on the dashboard.

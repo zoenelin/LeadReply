@@ -181,7 +181,7 @@ function getPriorityAction({
     description:
       "No overdue follow-ups, new missed calls, or new leads are waiting right now.",
     href: "/leads",
-    buttonLabel: "Review pipeline",
+    buttonLabel: "Review Lead Center",
   }
 }
 
@@ -509,7 +509,7 @@ export default async function SnapshotPage() {
                   href="/leads"
                   className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 >
-                  Open pipeline
+                  Open Lead Center
                 </Link>
               </div>
 

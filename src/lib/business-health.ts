@@ -143,16 +143,16 @@ export function getBusinessHealthStats({
     missedCalls,
     missedCallValueCents,
   })
-  const pipelineCents = openLeads.reduce(
+  const openLeadValueCents = openLeads.reduce(
     (total, lead) => total + lead.estimatedValueCents,
     0
   )
   const revenueRiskRatio =
-    pipelineCents === 0
+    openLeadValueCents === 0
       ? lostRevenueStats.totalAtRiskCents > 0
         ? 1
         : 0
-      : lostRevenueStats.totalAtRiskCents / pipelineCents
+      : lostRevenueStats.totalAtRiskCents / openLeadValueCents
   const revenueScore = clampScore(20 - Math.min(16, revenueRiskRatio * 20), 20)
   const capturedLeadCount = leads.filter((lead) => lead.status === "CAPTURED").length
   const reviewScore =

@@ -5,18 +5,19 @@ import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../components/AppNav"
-import { LeadPipeline } from "./LeadPipeline"
+import { LeadCenter } from "./LeadCenter"
 
 export const metadata: Metadata = {
-  title: "Leads",
-  description: "Manage LeadReply CRM leads, values, status, and follow-up timing.",
+  title: "Lead Center",
+  description:
+    "Manage LeadReply CRM leads, values, status, and follow-up timing.",
   robots: {
     index: false,
     follow: false,
   },
 }
 
-export default async function LeadsPage() {
+export default async function LeadCenterPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) {
@@ -63,10 +64,10 @@ export default async function LeadsPage() {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                Pipeline
+                Lead Center
               </p>
               <h1 className="mt-2 text-3xl font-bold text-slate-950">
-                Lead pipeline
+                Lead Center
               </h1>
               <p className="mt-3 max-w-2xl text-slate-600">
                 Track lead value, source, status, and follow-ups from one place.
@@ -95,7 +96,7 @@ export default async function LeadsPage() {
             </div>
           </div>
 
-          <LeadPipeline
+          <LeadCenter
             leads={business.leads.map((lead) => ({
               ...lead,
               createdAt: lead.createdAt.toISOString(),

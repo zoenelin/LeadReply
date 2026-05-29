@@ -16,7 +16,7 @@ import {
 } from "@/lib/lead-options"
 import { getLeadQualityScore } from "@/lib/lead-quality"
 
-type LeadPipelineLead = {
+type LeadCenterLead = {
   id: string
   customerName: string
   customerPhone: string
@@ -46,8 +46,8 @@ type LeadPipelineLead = {
   }[]
 }
 
-type LeadPipelineProps = {
-  leads: LeadPipelineLead[]
+type LeadCenterProps = {
+  leads: LeadCenterLead[]
 }
 
 function formatDate(value: Date | string | null) {
@@ -84,7 +84,7 @@ function emptyForm() {
   }
 }
 
-export function LeadPipeline({ leads }: LeadPipelineProps) {
+export function LeadCenter({ leads }: LeadCenterProps) {
   const router = useRouter()
   const [form, setForm] = useState(emptyForm())
   const [statusFilter, setStatusFilter] = useState("ALL")
@@ -142,7 +142,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
     }
   }
 
-  async function quickUpdateStatus(lead: LeadPipelineLead, status: string) {
+  async function quickUpdateStatus(lead: LeadCenterLead, status: string) {
     setMessage("")
 
     try {
@@ -192,7 +192,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
     <div className="mt-8 space-y-5">
       <div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-lg font-bold text-slate-950">Lead pipeline</h2>
+          <h2 className="text-lg font-bold text-slate-950">Lead Center</h2>
           <p className="mt-1 text-sm text-slate-600">
             Captured leads, follow-ups, source, value, and status.
           </p>
@@ -398,7 +398,7 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
               <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
                 <p className="text-lg font-bold text-slate-950">No leads yet</p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Add the first lead to start filling your pipeline.
+                  Add the first lead to start tracking customer opportunities.
                 </p>
               </div>
             ) : (
