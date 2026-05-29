@@ -50,6 +50,7 @@ export default async function LaunchSettingsPage() {
           reviewRequests: true,
           serviceOfferings: true,
           availabilityWindows: true,
+          teamMembers: true,
         },
       },
     },
@@ -92,6 +93,23 @@ export default async function LaunchSettingsPage() {
         business._count.availabilityWindows === 1 ? "" : "s"
       } configured`,
       href: "/settings/services",
+    },
+    {
+      label: "Calendar setup",
+      ready: Boolean(business.calendarProvider || business.calendarBookingUrl),
+      summary:
+        business.calendarProvider || business.calendarBookingUrl
+          ? "Booking preferences are recorded"
+          : "Calendar provider and booking link not set",
+      href: "/settings/calendar",
+    },
+    {
+      label: "Team access",
+      ready: business._count.teamMembers > 0,
+      summary: `${business._count.teamMembers} team member${
+        business._count.teamMembers === 1 ? "" : "s"
+      } added`,
+      href: "/settings/team",
     },
     {
       label: "Automation guard rails",
@@ -282,7 +300,9 @@ export default async function LaunchSettingsPage() {
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="font-bold text-slate-950">Webhooks</p>
               <p className="mt-2 text-sm text-slate-600">
-                Point Stripe webhooks to /api/webhooks/stripe after deployment.
+                Point Stripe webhooks to /api/webhooks/stripe, Twilio status
+                callbacks to /api/webhooks/twilio/status, and inbound SMS to
+                /api/webhooks/twilio/inbound after deployment.
               </p>
             </div>
           </div>

@@ -5,15 +5,10 @@ This file is for ideas we like but are not pulling into the current build yet. A
 ## Current Backlog
 
 - Weekly owner email: summarize leads, revenue, follow-ups, and missed opportunities.
-- Import leads: upload a CSV from another CRM or spreadsheet.
 - Export for accountant/bookkeeper: cleaner revenue report with date ranges.
-- Staff permissions: owner/admin/staff roles for later multi-user accounts.
-- Website embed script: replace the iframe snippet with a lightweight install script.
-- Twilio delivery webhooks: update review and follow-up delivery status from carrier callbacks.
 - Google Business Profile OAuth: pull profile and review data instead of only saving review links.
-- Stripe customer portal: let businesses manage cards, invoices, and cancellations.
-- Calendar integrations: Google Calendar, Square, Toast, Mindbody, Jane, and other booking systems.
-- Production email: password reset, owner alerts, and weekly CRM summaries.
+- Live calendar sync: Google Calendar, Square, Toast, Mindbody, Jane, and other booking systems.
+- Owner alerts and weekly CRM summaries through production email.
 - Dependency security follow-up: revisit remaining moderate transitive advisories in Next/NextAuth/Prisma when non-breaking patched versions are available.
 
 ## Business, Legal, And Launch Operations
@@ -51,6 +46,15 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Define basic brand typography and button/UI style rules.
 - Create simple social/profile assets from the final logo and colors.
 
+## Maintenance And Engineering Documentation
+
+- Add clear, useful code comments after the release feature set is complete.
+- Refactor release code where it improves readability, ownership boundaries, and long-term maintenance.
+- Document the website architecture, main user flows, and how the product pieces fit together.
+- Document the folder structure so engineers can quickly find routes, API handlers, shared libraries, auth, Prisma, and UI components.
+- Document common development tasks such as running the server, applying migrations, testing, adding pages, adding API routes, and changing provider integrations.
+- Add a release-readiness engineering checklist for future updates.
+
 ## New Brainstorm Ideas
 
 - Weekly owner email: summarize leads, revenue, follow-ups, and missed opportunities.
@@ -67,10 +71,10 @@ This file is for ideas we like but are not pulling into the current build yet. A
 ## Suggested Pull Order
 
 1. Weekly owner email
-2. Import leads
-3. Staff permissions
-4. Accountant/bookkeeper export
-5. Website embed script
+2. Accountant/bookkeeper export
+3. Google Business Profile OAuth
+4. Live calendar sync
+5. Client portal
 
 ## Completed From Backlog
 
@@ -99,14 +103,23 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Stripe checkout provider seam: creates subscription checkout sessions when live price IDs are configured.
 - Public form rate limits: protects signup, public intake, and widget lead capture from simple abuse.
 - Google review links: stores a business review link and appends it to review request messages.
+- Password reset emails: stores secure reset tokens and sends reset links through production email when configured.
+- Email delivery logs: records production email attempts for admin review.
+- Stripe customer portal: lets subscribed businesses open Stripe-hosted card, invoice, and subscription management.
+- Twilio delivery webhooks: verifies Twilio signatures and records carrier delivery failures for follow-ups and review requests.
+- SMS opt-out handling: records STOP/START-style replies and blocks future texts to opted-out numbers.
+- Website embed script: adds a lightweight script snippet that installs the floating LeadReply widget.
+- CSV lead import: lets owners paste CRM/spreadsheet leads into LeadReply.
+- Staff permissions setup: tracks team members, roles, and active/invited/disabled status.
+- Calendar setup: stores provider, booking link, scheduling notes, and self-scheduling preference.
+- Admin tools: adds an admin-only operations page for provider status, accounts, businesses, and email logs.
+- Smoke test script: checks core public pages, SEO files, and widget script from the command line.
+- Visual polish pass: improves navigation, focus states, spacing, and app-wide surface styling.
 
 ## Later Integrations
 
-- Twilio delivery webhooks
 - Google Business Profile OAuth and review sync
-- Stripe billing portal and invoice management
 - Apple Business Connect
-- Reservation systems
-- Website embed script
+- Live calendar and reservation-system sync
 - Native mobile app packaging
 - Dependency security follow-up for remaining moderate transitive advisories

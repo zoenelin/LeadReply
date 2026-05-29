@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto"
 import { env } from "@/lib/env"
 import { getAppBaseUrl, isConfigured } from "@/lib/integration-status"
 
@@ -28,6 +29,41 @@ export function isTwilioConfigured() {
     (isConfigured(env.TWILIO_PHONE_NUMBER) ||
       isConfigured(env.TWILIO_MESSAGING_SERVICE_SID))
   )
+}
+
+export function verifyTwilioSignature({
+  req,
+  fields,
+}: {
+  req: Request
+  fields: Record<string, string>
+}) {
+  if (!isConfigured(env.TWILIO_AUTH_TOKEN)) {
+    return false
+  }
+
+  const signature = req.headers.get("x-twilio-signature")
+
+  if (!signature) {
+    return false
+  }
+
+  const requestUrl = new URL(req.url)
+  const verificationUrl = `${getAppBaseUrl()}${requestUrl.pathname}${requestUrl.search}`
+  const signedPayload = Object.keys(fields)
+    .sort()
+    .reduce((payload, key) => `${payload}${key}${fields[key]}`, verificationUrl)
+  const computed = createHmac("sha1", env.TWILIO_AUTH_TOKEN?.trim() ?? "")
+    .update(signedPayload)
+    .digest("base64")
+  const expectedBuffer = Buffer.from(signature)
+  const computedBuffer = Buffer.from(computed)
+
+  if (expectedBuffer.length !== computedBuffer.length) {
+    return false
+  }
+
+  return timingSafeEqual(expectedBuffer, computedBuffer)
 }
 
 export async function sendSms({

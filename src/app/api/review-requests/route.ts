@@ -3,6 +3,7 @@ import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
 import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { isPhoneOptedOut } from "@/lib/sms-compliance"
 import { isTwilioConfigured, sendSms } from "@/lib/twilio"
 
 const reviewRequestSchema = z.object({
@@ -67,17 +68,28 @@ export async function POST(req: Request) {
       result.data.message ||
       `Thanks for choosing ${lead.business.name}. Would you mind leaving us a quick review?`
     const message = buildReviewMessage(baseMessage, lead.business.googleReviewUrl)
+    const optedOut = result.data.markSent
+      ? await isPhoneOptedOut(lead.customerPhone, lead.businessId)
+      : false
     const delivery = result.data.markSent
-      ? isTwilioConfigured()
-        ? await sendSms({
-            to: lead.customerPhone,
-            body: message,
-          })
-        : {
+      ? optedOut
+        ? {
             ok: false as const,
             provider: "TWILIO" as const,
-            reason: "Twilio is not configured; request was marked sent manually.",
+            reason: "This phone number has opted out of SMS messages.",
           }
+        : isTwilioConfigured()
+          ? await sendSms({
+              to: lead.customerPhone,
+              body: message,
+              statusCallbackPath: "/api/webhooks/twilio/status",
+            })
+          : {
+              ok: false as const,
+              provider: "TWILIO" as const,
+              reason:
+                "Twilio is not configured; request was marked sent manually.",
+            }
       : null
 
     const reviewRequest = await prisma.reviewRequest.create({

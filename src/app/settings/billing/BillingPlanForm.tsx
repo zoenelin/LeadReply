@@ -6,6 +6,8 @@ import { useState } from "react"
 type BillingPlanFormProps = {
   initialPlan: string
   stripeConfigured: boolean
+  hasStripeCustomer: boolean
+  billingStatus: string
   plans: {
     value: string
     label: string
@@ -17,6 +19,8 @@ type BillingPlanFormProps = {
 export function BillingPlanForm({
   initialPlan,
   stripeConfigured,
+  hasStripeCustomer,
+  billingStatus,
   plans,
 }: BillingPlanFormProps) {
   const router = useRouter()
@@ -86,8 +90,54 @@ export function BillingPlanForm({
     }
   }
 
+  async function openCustomerPortal() {
+    setLoading(true)
+    setMessage("")
+
+    try {
+      const res = await fetch("/api/billing/portal", {
+        method: "POST",
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setMessage(data.error || "Stripe customer portal is not ready yet.")
+        return
+      }
+
+      window.location.href = data.portalUrl
+    } catch {
+      setMessage("Something went wrong.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="mt-8">
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-semibold text-slate-950">
+              Current billing status: {billingStatus.replaceAll("_", " ")}
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              {hasStripeCustomer
+                ? "A Stripe customer is connected for this business."
+                : "A Stripe customer will be created after checkout is completed."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openCustomerPortal}
+            disabled={loading || !hasStripeCustomer || !stripeConfigured}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Opening..." : "Customer portal"}
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-5 lg:grid-cols-3">
         {plans.map((plan) => (
           <div

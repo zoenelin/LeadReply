@@ -7,6 +7,7 @@ export type IntegrationKey =
   | "openai"
   | "twilio"
   | "stripe"
+  | "email"
   | "google"
   | "deployment"
 
@@ -75,6 +76,7 @@ export function getIntegrationStatuses(): IntegrationStatus[] {
     "STRIPE_PRICE_GROWTH",
     "STRIPE_PRICE_COMPLETE",
   ])
+  const emailMissing = missingEnv(["RESEND_API_KEY", "EMAIL_FROM"])
   const googleMissing = missingEnv(["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"])
 
   return [
@@ -123,6 +125,15 @@ export function getIntegrationStatuses(): IntegrationStatus[] {
       summary: "Creates subscription checkout sessions for paid plans.",
       required: true,
       missing: [...stripeMissing, ...stripePriceMissing],
+    }),
+    status({
+      key: "email",
+      label: "Production email",
+      configured: emailMissing.length === 0,
+      summary:
+        "Sends password reset emails, owner summaries, and support notifications.",
+      required: true,
+      missing: emailMissing,
     }),
     status({
       key: "google",

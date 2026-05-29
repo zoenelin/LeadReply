@@ -45,6 +45,7 @@ export default async function WidgetSettingsPage() {
   const host = headerStore.get("host") ?? "localhost:3000"
   const protocol = host.includes("localhost") ? "http" : "https"
   const widgetUrl = `${protocol}://${host}/widget/${business.id}`
+  const scriptUrl = `${protocol}://${host}/widget.js`
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -72,7 +73,11 @@ export default async function WidgetSettingsPage() {
             </p>
           </div>
 
-          <WidgetSettingsForm business={business} widgetUrl={widgetUrl} />
+          <WidgetSettingsForm
+            business={business}
+            widgetUrl={widgetUrl}
+            scriptUrl={scriptUrl}
+          />
         </section>
       </div>
     </main>

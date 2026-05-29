@@ -12,6 +12,10 @@ type CheckoutInput = {
   customerEmail: string
 }
 
+type PortalInput = {
+  customerId: string
+}
+
 export function isStripeConfiguredForPlan(plan: string) {
   return isConfigured(env.STRIPE_SECRET_KEY) && isConfigured(getStripePriceId(plan))
 }
@@ -68,6 +72,53 @@ export async function createStripeCheckoutSession({
   return {
     ok: true as const,
     sessionId: typeof data.id === "string" ? data.id : "",
+    url: typeof data.url === "string" ? data.url : "",
+  }
+}
+
+export async function createStripePortalSession({ customerId }: PortalInput) {
+  if (!isConfigured(env.STRIPE_SECRET_KEY)) {
+    return {
+      ok: false as const,
+      reason: "Stripe is not configured yet.",
+    }
+  }
+
+  if (!customerId.trim()) {
+    return {
+      ok: false as const,
+      reason: "This business does not have a Stripe customer yet.",
+    }
+  }
+
+  const baseUrl = getAppBaseUrl()
+  const body = new URLSearchParams({
+    customer: customerId,
+    return_url: `${baseUrl}/settings/billing`,
+  })
+
+  const res = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.STRIPE_SECRET_KEY?.trim()}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  })
+  const data = await res.json().catch(() => ({}))
+
+  if (!res.ok) {
+    return {
+      ok: false as const,
+      reason:
+        typeof data.error?.message === "string"
+          ? data.error.message
+          : "Stripe could not open the customer portal.",
+    }
+  }
+
+  return {
+    ok: true as const,
     url: typeof data.url === "string" ? data.url : "",
   }
 }

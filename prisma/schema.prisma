@@ -7,11 +7,13 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String     @id @default(cuid())
+  email     String     @unique
   password  String
-  createdAt DateTime  @default(now())
+  role      String     @default("OWNER")
+  createdAt DateTime   @default(now())
   business  Business?
+  emailLogs EmailLog[]
 }
 
 model Business {
@@ -40,6 +42,10 @@ model Business {
   billingStatus            String               @default("PLAN_SELECTED")
   stripeCustomerId         String               @default("")
   stripeSubscriptionId     String               @default("")
+  emailSummaryEnabled      Boolean              @default(true)
+  calendarProvider         String               @default("")
+  calendarBookingUrl       String               @default("")
+  calendarSyncNotes        String               @default("")
   googleReviewUrl          String               @default("")
   googleBusinessProfileUrl String               @default("")
   launchNotes              String               @default("")
@@ -58,6 +64,67 @@ model Business {
   serviceOfferings         ServiceOffering[]
   availabilityWindows      AvailabilityWindow[]
   teamNotes                TeamNote[]
+  teamMembers              TeamMember[]
+  emailLogs                EmailLog[]
+  smsOptOuts               SmsOptOut[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model EmailLog {
+  id                String    @id @default(cuid())
+  to                String
+  subject           String
+  status            String    @default("DRAFT")
+  provider          String    @default("")
+  providerMessageId String    @default("")
+  error             String    @default("")
+  createdAt         DateTime  @default(now())
+  businessId        String?
+  business          Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([userId])
+}
+
+model SmsOptOut {
+  id         String    @id @default(cuid())
+  phone      String
+  source     String    @default("TWILIO")
+  optedOutAt DateTime  @default(now())
+  optedInAt  DateTime?
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, phone])
+  @@index([phone])
+}
+
+model TeamMember {
+  id         String   @id @default(cuid())
+  name       String   @default("")
+  email      String
+  role       String   @default("STAFF")
+  status     String   @default("INVITED")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, email])
+  @@index([businessId])
 }
 
 model ServiceOffering {
@@ -110,6 +177,8 @@ model MissedCall {
   businessId      String
   business        Business         @relation(fields: [businessId], references: [id])
   conciergeIntake ConciergeIntake?
+
+  @@index([businessId])
 }
 
 model Lead {

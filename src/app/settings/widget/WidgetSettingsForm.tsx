@@ -12,11 +12,13 @@ type WidgetSettingsFormProps = {
     widgetAccentColor: string
   }
   widgetUrl: string
+  scriptUrl: string
 }
 
 export function WidgetSettingsForm({
   business,
   widgetUrl,
+  scriptUrl,
 }: WidgetSettingsFormProps) {
   const router = useRouter()
   const [widgetGreeting, setWidgetGreeting] = useState(business.widgetGreeting)
@@ -28,7 +30,8 @@ export function WidgetSettingsForm({
   )
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
-  const embedCode = `<iframe src="${widgetUrl}" title="LeadReply contact widget" style="width:100%;max-width:420px;height:620px;border:0;border-radius:16px;"></iframe>`
+  const scriptEmbedCode = `<script src="${scriptUrl}" data-leadreply-business="${business.id}" async></script>`
+  const iframeEmbedCode = `<iframe src="${widgetUrl}" title="LeadReply contact widget" style="width:100%;max-width:420px;height:620px;border:0;border-radius:16px;"></iframe>`
 
   async function saveWidget(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -145,10 +148,24 @@ export function WidgetSettingsForm({
         </div>
 
         <div className="rounded-2xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500">Embed code</p>
+          <p className="text-sm font-medium text-slate-500">
+            Recommended embed
+          </p>
           <textarea
             readOnly
-            value={embedCode}
+            value={scriptEmbedCode}
+            className="mt-3 min-h-28 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none"
+          />
+          <p className="mt-3 text-xs text-slate-500">
+            Use this script for a floating mobile-friendly widget.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 p-5">
+          <p className="text-sm font-medium text-slate-500">Inline iframe</p>
+          <textarea
+            readOnly
+            value={iframeEmbedCode}
             className="mt-3 min-h-40 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none"
           />
         </div>

@@ -81,6 +81,8 @@ export default async function BillingSettingsPage() {
           <BillingPlanForm
             initialPlan={business.selectedPlan}
             stripeConfigured={Boolean(stripeStatus?.configured)}
+            hasStripeCustomer={Boolean(business.stripeCustomerId)}
+            billingStatus={business.billingStatus}
             plans={planOptions}
           />
         </section>

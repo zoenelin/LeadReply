@@ -3,6 +3,7 @@ import { z } from "zod"
 import { authOptions } from "@/auth/auth"
 import { prisma } from "@/lib/prisma"
 import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { isPhoneOptedOut } from "@/lib/sms-compliance"
 import { isTwilioConfigured, sendSms } from "@/lib/twilio"
 
 const followUpStepUpdateSchema = z.object({
@@ -58,17 +59,28 @@ export async function PATCH(
       status === "SENT" &&
       existingStep.status !== "SENT" &&
       existingStep.channel === "TEXT"
+    const optedOut = shouldSendSms
+      ? await isPhoneOptedOut(existingStep.lead.customerPhone, existingStep.businessId)
+      : false
     const delivery = shouldSendSms
-      ? isTwilioConfigured()
-        ? await sendSms({
-            to: existingStep.lead.customerPhone,
-            body: existingStep.message,
-          })
-        : {
+      ? optedOut
+        ? {
             ok: false as const,
             provider: "TWILIO" as const,
-            reason: "Twilio is not configured; follow-up was marked sent manually.",
+            reason: "This phone number has opted out of SMS messages.",
           }
+        : isTwilioConfigured()
+          ? await sendSms({
+              to: existingStep.lead.customerPhone,
+              body: existingStep.message,
+              statusCallbackPath: "/api/webhooks/twilio/status",
+            })
+          : {
+              ok: false as const,
+              provider: "TWILIO" as const,
+              reason:
+                "Twilio is not configured; follow-up was marked sent manually.",
+            }
       : null
     const followUpStep = await prisma.followUpStep.update({
       where: {
