@@ -2,7 +2,7 @@
 
 ## Active Build Order
 
-The original eight-item CRM foundation is now implemented. The current near-launch work is provider setup, production deployment, real-client onboarding, and safety testing.
+The original eight-item CRM foundation is now implemented. The current near-launch work is provider setup, production deployment, real-client onboarding, growth setup, and safety testing.
 
 1. Lead Center
    - Add a leads page.
@@ -28,6 +28,7 @@ The original eight-item CRM foundation is now implemented. The current near-laun
 6. Automation Settings
    - Add setup screens for phone, booking, reviews, SEO, and marketing.
    - Collect enough information for later integrations.
+   - Keep SEO and marketing details in a dedicated Growth setup area.
 
 7. Billing Plans
    - Add a billing/settings page.

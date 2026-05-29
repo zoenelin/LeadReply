@@ -10,6 +10,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Live calendar sync: Google Calendar, Square, Toast, Mindbody, Jane, and other booking systems.
 - Owner alerts and weekly CRM summaries through production email.
 - Dependency security follow-up: revisit remaining moderate transitive advisories in Next/NextAuth/Prisma when non-breaking patched versions are available.
+- Turn Growth setup into generated SEO tasks, marketing calendars, and approval workflows after launch.
 
 ## Business, Legal, And Launch Operations
 
@@ -115,6 +116,7 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Admin tools: adds an admin-only operations page for provider status, accounts, businesses, and email logs.
 - Smoke test script: checks core public pages, SEO files, and widget script from the command line.
 - Visual polish pass: improves navigation, focus states, spacing, and app-wide surface styling.
+- Growth setup: stores structured SEO and marketing details, shows readiness counts, and connects those gaps to dashboard and launch checks.
 
 ## Later Integrations
 

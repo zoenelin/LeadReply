@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -55,12 +56,8 @@ export function AutomationSettingsForm({
   const [bookingNotes, setBookingNotes] = useState(
     initialSettings.bookingNotes
   )
-  const [seoSetupNotes, setSeoSetupNotes] = useState(
-    initialSettings.seoSetupNotes
-  )
-  const [marketingSetupNotes, setMarketingSetupNotes] = useState(
-    initialSettings.marketingSetupNotes
-  )
+  const [seoSetupNotes] = useState(initialSettings.seoSetupNotes)
+  const [marketingSetupNotes] = useState(initialSettings.marketingSetupNotes)
   const [googleReviewUrl, setGoogleReviewUrl] = useState(
     initialSettings.googleReviewUrl
   )
@@ -276,27 +273,24 @@ export function AutomationSettingsForm({
         </div>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 p-5">
-          <h2 className="text-xl font-bold text-slate-950">SEO setup</h2>
-          <textarea
-            value={seoSetupNotes}
-            onChange={(e) => setSeoSetupNotes(e.target.value)}
-            className="mt-4 min-h-36 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-            placeholder="Services, service areas, hours, website notes, Google profile needs."
-          />
-        </div>
-        <div className="rounded-2xl border border-slate-200 p-5">
-          <h2 className="text-xl font-bold text-slate-950">
-            Marketing setup
-          </h2>
-          <textarea
-            value={marketingSetupNotes}
-            onChange={(e) => setMarketingSetupNotes(e.target.value)}
-            className="mt-4 min-h-36 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
-            placeholder="Social platforms, promotions, content ideas, seasonal campaigns."
-          />
-        </div>
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
+          Growth setup
+        </p>
+        <h2 className="mt-2 text-xl font-bold text-slate-950">
+          SEO and marketing now have a dedicated setup page
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-700">
+          Use Growth setup for service areas, target keywords, website page
+          priorities, marketing channels, campaign goals, offers, content
+          themes, and brand voice.
+        </p>
+        <Link
+          href="/settings/growth"
+          className="mt-4 inline-flex rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+        >
+          Open growth setup
+        </Link>
       </section>
 
       <section className="rounded-2xl border border-slate-200 p-5">

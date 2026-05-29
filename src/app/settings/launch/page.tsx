@@ -9,6 +9,7 @@ import {
   getIntegrationStatuses,
   getLaunchReadinessScore,
 } from "@/lib/integration-status"
+import { getGrowthReadinessStats } from "@/lib/growth-readiness"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../../components/AppNav"
 import { LaunchActionPanel } from "./LaunchActionPanel"
@@ -64,6 +65,7 @@ export default async function LaunchSettingsPage() {
   const statuses = getIntegrationStatuses()
   const readinessScore = getLaunchReadinessScore(statuses)
   const userIsAdmin = isAdminEmail(session.user.email)
+  const growthStats = getGrowthReadinessStats(business)
   const businessChecks = [
     {
       label: "Business profile",
@@ -127,6 +129,26 @@ export default async function LaunchSettingsPage() {
       summary: business.googleReviewUrl || "Review link not set",
       href: "/settings/automation",
     },
+    ...(growthStats.seoAccess
+      ? [
+          {
+            label: "SEO setup",
+            ready: growthStats.seoComplete,
+            summary: `${growthStats.seoReadyCount}/${growthStats.seoTotalCount} SEO items ready`,
+            href: "/settings/growth",
+          },
+        ]
+      : []),
+    ...(growthStats.marketingAccess
+      ? [
+          {
+            label: "Marketing setup",
+            ready: growthStats.marketingComplete,
+            summary: `${growthStats.marketingReadyCount}/${growthStats.marketingTotalCount} marketing items ready`,
+            href: "/settings/growth",
+          },
+        ]
+      : []),
   ]
 
   return (

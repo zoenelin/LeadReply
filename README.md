@@ -7,7 +7,7 @@ LeadReply is a Next.js SaaS CRM for missed-call follow-up, lead capture, reviews
 Run commands from the project folder:
 
 ```bash
-cd /mnt/c/Users/zoene/saas/leadreply
+cd /mnt/c/Users/zoene/saas/Leadreply
 npm install
 npx prisma generate
 npx prisma migrate deploy
@@ -34,6 +34,7 @@ If the dev server gets stale after adding routes, schema changes, or migrations,
 /analytics
 /reviews
 /settings/business
+/settings/growth
 /settings/automation
 /settings/services
 /settings/billing
@@ -69,6 +70,7 @@ npx prisma migrate deploy
 - The dashboard adapts setup prompts, analytics, and next actions by category and plan.
 - The CRM tracks leads, missed calls, follow-ups, appointment outcomes, captured revenue, reviews, team notes, and lead quality.
 - The missed-call concierge asks industry-specific questions, applies scheduling and quote guard rails, and can use OpenAI when configured.
+- Growth setup collects SEO services, service areas, target keywords, website priorities, marketing channels, campaign goals, offers, content themes, and brand voice.
 - Twilio and Stripe provider paths are wired with safe fallbacks until production credentials are added.
 
 ## Launch integrations
@@ -98,7 +100,7 @@ Stripe webhooks should point to:
 /api/webhooks/stripe
 ```
 
-Use `/settings/launch` to see missing provider keys, business setup gaps, CRM activity counts, and launch cleanup controls.
+Use `/settings/growth` to prepare SEO and marketing details, then use `/settings/launch` to see missing provider keys, business setup gaps, CRM activity counts, and launch cleanup controls.
 
 ## Before production
 

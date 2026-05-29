@@ -1,0 +1,13 @@
+ALTER TABLE "Business" ADD COLUMN "seoPrimaryServices" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "seoServiceAreas" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "seoTargetKeywords" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "seoCompetitors" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "seoWebsitePages" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "seoContentIdeas" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "marketingChannels" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "marketingAudience" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "marketingGoals" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "marketingOffer" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "marketingContentThemes" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Business" ADD COLUMN "marketingPostingCadence" TEXT NOT NULL DEFAULT 'weekly';
+ALTER TABLE "Business" ADD COLUMN "marketingBrandVoice" TEXT NOT NULL DEFAULT '';

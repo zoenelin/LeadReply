@@ -47,7 +47,7 @@ export const planOptions = [
     tagline: "Basic plus SEO optimization",
     features: [
       "Everything in Basic",
-      "SEO setup checklist",
+      "Structured SEO setup",
       "Local search profile prompts",
     ],
   },
@@ -57,7 +57,7 @@ export const planOptions = [
     tagline: "Full package with marketing support",
     features: [
       "Everything in Growth",
-      "Marketing setup checklist",
+      "Structured marketing plan",
       "Social presence prompts",
     ],
   },

@@ -9,7 +9,8 @@ import { AutomationSettingsForm } from "./AutomationSettingsForm"
 
 export const metadata: Metadata = {
   title: "Automation Setup",
-  description: "Configure LeadReply phone, booking, quote, review, SEO, and marketing guard rails.",
+  description:
+    "Configure LeadReply phone, booking, quote, and review automation guard rails.",
   robots: {
     index: false,
     follow: false,
@@ -51,8 +52,8 @@ export default async function AutomationSettingsPage() {
           Automation setup
         </h1>
         <p className="mt-3 text-slate-600">
-          Prepare phone, booking, review, SEO, and marketing workflows before
-          real integrations are connected.
+          Prepare phone, booking, quote, and review workflows before real
+          integrations are connected.
         </p>
 
         <AutomationSettingsForm

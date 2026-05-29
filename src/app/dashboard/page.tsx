@@ -17,6 +17,7 @@ import {
   getFollowUpSequenceMessage,
   getFollowUpSequenceStats,
 } from "@/lib/follow-up-sequences"
+import { getGrowthReadinessStats } from "@/lib/growth-readiness"
 import {
   getLostRevenueLabel,
   getLostRevenueMessage,
@@ -428,6 +429,7 @@ export default async function DashboardPage() {
   const selectedPlan = business?.selectedPlan ?? "BASIC"
   const selectedPlanDetails =
     planOptions.find((plan) => plan.value === selectedPlan) ?? planOptions[0]
+  const growthStats = business ? getGrowthReadinessStats(business) : null
   const intakeFormHref = business ? `/intake/${business.id}` : "/settings/business"
   const setupItems = [
     {
@@ -461,14 +463,22 @@ export default async function DashboardPage() {
       label: "Lead Center",
       complete: Boolean((business?._count.leads ?? 0) > 0),
     },
-    {
-      label: "SEO setup prompts",
-      complete: selectedPlan === "GROWTH" || selectedPlan === "COMPLETE",
-    },
-    {
-      label: "Marketing setup prompts",
-      complete: selectedPlan === "COMPLETE",
-    },
+    ...(selectedPlan === "GROWTH" || selectedPlan === "COMPLETE"
+      ? [
+          {
+            label: "SEO setup",
+            complete: Boolean(growthStats?.seoComplete),
+          },
+        ]
+      : []),
+    ...(selectedPlan === "COMPLETE"
+      ? [
+          {
+            label: "Marketing plan",
+            complete: Boolean(growthStats?.marketingComplete),
+          },
+        ]
+      : []),
   ]
   const completedSetupItems = setupItems.filter((item) => item.complete).length
 
@@ -1227,24 +1237,44 @@ export default async function DashboardPage() {
           {(selectedPlan === "GROWTH" || selectedPlan === "COMPLETE") && (
             <div className="rounded-2xl border border-slate-200 p-5">
               <p className="text-sm font-medium text-slate-500">
-                SEO setup prompts
+                SEO setup
+              </p>
+              <p className="mt-2 text-xl font-bold text-slate-950">
+                {growthStats?.seoReadyCount ?? 0}/
+                {growthStats?.seoTotalCount ?? 0} ready
               </p>
               <p className="mt-3 text-slate-800">
-                Start with business hours, service areas, website basics, and
-                local search profile details.
+                Services, service areas, keywords, website pages, and local
+                search profile details.
               </p>
+              <Link
+                href="/settings/growth"
+                className="mt-4 inline-flex rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                Open growth setup
+              </Link>
             </div>
           )}
 
           {selectedPlan === "COMPLETE" && (
             <div className="rounded-2xl border border-slate-200 p-5">
               <p className="text-sm font-medium text-slate-500">
-                Marketing setup prompts
+                Marketing plan
+              </p>
+              <p className="mt-2 text-xl font-bold text-slate-950">
+                {growthStats?.marketingReadyCount ?? 0}/
+                {growthStats?.marketingTotalCount ?? 0} ready
               </p>
               <p className="mt-3 text-slate-800">
-                Plan your social media presence, weekly content ideas, and
-                seasonal promotions.
+                Channels, audience, goals, offer, content themes, and brand
+                voice.
               </p>
+              <Link
+                href="/settings/growth"
+                className="mt-4 inline-flex rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              >
+                Open growth setup
+              </Link>
             </div>
           )}
 

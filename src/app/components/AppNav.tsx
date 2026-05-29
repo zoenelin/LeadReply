@@ -12,6 +12,7 @@ const navLinks = [
   { href: "/missed-calls", label: "Inbox" },
   { href: "/settings/services", label: "Services" },
   { href: "/settings/calendar", label: "Calendar" },
+  { href: "/settings/growth", label: "Growth" },
   { href: "/settings/team", label: "Team" },
   { href: "/analytics", label: "Analytics" },
   { href: "/reviews", label: "Reviews" },
@@ -44,6 +45,10 @@ function isActiveLink(pathname: string, href: string) {
 
   if (href === "/settings/services") {
     return pathname.startsWith("/settings/services")
+  }
+
+  if (href === "/settings/growth") {
+    return pathname === "/settings/growth"
   }
 
   return pathname === href || (href !== "/dashboard" && pathname.startsWith(href))
