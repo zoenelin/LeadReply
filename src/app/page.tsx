@@ -168,7 +168,7 @@ export default function Home() {
                     Owner dashboard
                   </p>
                   <h2 className="mt-1 text-lg font-black text-slate-950">
-                    Today&apos;s lead command center
+                    Lead command center
                   </h2>
                 </div>
                 <span className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">

@@ -17,6 +17,7 @@ export default function robots(): MetadataRoute.Robots {
           "/missed-calls",
           "/notifications",
           "/owner",
+          "/snapshot",
           "/reviews",
           "/settings",
           "/signup",

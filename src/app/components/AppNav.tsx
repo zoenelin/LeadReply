@@ -6,7 +6,7 @@ import { signOut } from "next-auth/react"
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/owner", label: "Today" },
+  { href: "/snapshot", label: "Snapshot" },
   { href: "/notifications", label: "Alerts" },
   { href: "/leads", label: "Leads" },
   { href: "/missed-calls", label: "Inbox" },
@@ -21,7 +21,7 @@ const navLinks = [
 ]
 
 const mobileNavLinks = [
-  { href: "/owner", label: "Today" },
+  { href: "/snapshot", label: "Snapshot" },
   { href: "/notifications", label: "Alerts" },
   { href: "/leads", label: "Leads" },
   { href: "/missed-calls", label: "Inbox" },

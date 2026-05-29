@@ -28,7 +28,7 @@ If the dev server gets stale after adding routes, schema changes, or migrations,
 /signup
 /login
 /dashboard
-/owner
+/snapshot
 /leads
 /missed-calls
 /analytics

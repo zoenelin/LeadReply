@@ -485,10 +485,10 @@ export default async function DashboardPage() {
         </p>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <Link
-            href="/owner"
+            href="/snapshot"
             className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
           >
-            Open simple owner mode
+            Open snapshot
           </Link>
           <Link
             href="/analytics"
