@@ -21,7 +21,7 @@ const leadUpdateSchema = z.object({
     message: "Please choose a lead status.",
   }),
   estimatedValue: z.string().optional().default(""),
-  wonValue: z.string().optional().default(""),
+  capturedValue: z.string().optional().default(""),
   notes: z.string().trim().optional().default(""),
   followUpAt: z.string().optional().default(""),
   followUpNote: z.string().trim().optional().default(""),
@@ -114,7 +114,7 @@ export async function PATCH(
       source,
       status,
       estimatedValue,
-      wonValue,
+      capturedValue,
       notes,
       followUpAt,
       followUpNote,
@@ -123,7 +123,7 @@ export async function PATCH(
       appointmentAt,
       appointmentNotes,
     } = result.data
-    const shouldClose = status === "WON" || status === "LOST"
+    const shouldClose = status === "CAPTURED" || status === "LOST"
     const lead = await prisma.lead.update({
       where: {
         id,
@@ -135,7 +135,7 @@ export async function PATCH(
         source,
         status,
         estimatedValueCents: dollarsToCents(estimatedValue),
-        wonValueCents: status === "WON" ? dollarsToCents(wonValue) : 0,
+        capturedValueCents: status === "CAPTURED" ? dollarsToCents(capturedValue) : 0,
         notes,
         followUpAt: parseFollowUpDate(followUpAt),
         followUpNote,

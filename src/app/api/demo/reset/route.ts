@@ -108,20 +108,20 @@ export async function POST(req: Request) {
       }),
     ])
 
-    const wonLeads = await prisma.lead.findMany({
+    const capturedLeads = await prisma.lead.findMany({
       where: {
         businessId: business.id,
-        status: "WON",
+        status: "CAPTURED",
       },
       orderBy: {
         createdAt: "asc",
       },
     })
 
-    if (wonLeads.length > 0) {
+    if (capturedLeads.length > 0) {
       const now = new Date()
       await prisma.reviewRequest.createMany({
-        data: wonLeads.slice(0, 3).map((lead, index) => ({
+        data: capturedLeads.slice(0, 3).map((lead, index) => ({
           businessId: business.id,
           leadId: lead.id,
           customerName: lead.customerName,

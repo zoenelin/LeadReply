@@ -189,7 +189,7 @@ model Lead {
   source              String            @default("MISSED_CALL")
   status              String            @default("NEW")
   estimatedValueCents Int               @default(0)
-  wonValueCents       Int               @default(0)
+  capturedValueCents  Int               @default(0)
   notes               String            @default("")
   followUpAt          DateTime?
   followUpNote        String            @default("")

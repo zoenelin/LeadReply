@@ -24,7 +24,7 @@ type LeadPipelineLead = {
   source: string
   status: string
   estimatedValueCents: number
-  wonValueCents: number
+  capturedValueCents: number
   notes: string
   followUpAt: Date | string | null
   followUpNote: string
@@ -77,7 +77,7 @@ function emptyForm() {
     source: "MANUAL",
     status: "NEW",
     estimatedValue: "",
-    wonValue: "",
+    capturedValue: "",
     followUpAt: "",
     followUpNote: "",
     notes: "",
@@ -156,10 +156,10 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
           source: lead.source,
           status,
           estimatedValue: centsToDollars(lead.estimatedValueCents),
-          wonValue: centsToDollars(
-            status === "WON" && lead.wonValueCents === 0
+          capturedValue: centsToDollars(
+            status === "CAPTURED" && lead.capturedValueCents === 0
               ? lead.estimatedValueCents
-              : lead.wonValueCents
+              : lead.capturedValueCents
           ),
           notes: lead.notes,
           followUpAt: dateInputValue(lead.followUpAt),
@@ -276,8 +276,8 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
               <input
                 type="number"
                 min="0"
-                value={form.wonValue}
-                onChange={(e) => updateForm("wonValue", e.target.value)}
+                value={form.capturedValue}
+                onChange={(e) => updateForm("capturedValue", e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
                 placeholder="500"
               />
@@ -405,8 +405,8 @@ export function LeadPipeline({ leads }: LeadPipelineProps) {
                   <div className="text-left sm:text-right">
                     <p className="text-lg font-bold text-slate-950">
                       {formatMoney(
-                        lead.status === "WON"
-                          ? lead.wonValueCents
+                        lead.status === "CAPTURED"
+                          ? lead.capturedValueCents
                           : lead.estimatedValueCents
                       )}
                     </p>

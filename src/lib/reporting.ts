@@ -22,7 +22,7 @@ export type ReportLead = {
   source: string
   status: string
   estimatedValueCents: number
-  wonValueCents: number
+  capturedValueCents: number
   notes: string
   followUpAt: Date | null
   followUpCompletedAt: Date | null
@@ -105,13 +105,13 @@ export function datedCsvFilename(prefix: string) {
 export function buildRevenueSummaryRows(leads: ReportLead[]) {
   return leadSourceValues.map((source) => {
     const sourceLeads = leads.filter((lead) => lead.source === source)
-    const wonLeads = sourceLeads.filter((lead) => lead.status === "WON")
+    const capturedLeads = sourceLeads.filter((lead) => lead.status === "CAPTURED")
     const openLeads = sourceLeads.filter(
-      (lead) => lead.status !== "WON" && lead.status !== "LOST"
+      (lead) => lead.status !== "CAPTURED" && lead.status !== "LOST"
     )
     const lostLeads = sourceLeads.filter((lead) => lead.status === "LOST")
-    const revenueCents = wonLeads.reduce(
-      (total, lead) => total + lead.wonValueCents,
+    const revenueCents = capturedLeads.reduce(
+      (total, lead) => total + lead.capturedValueCents,
       0
     )
     const pipelineCents = openLeads.reduce(
@@ -125,13 +125,13 @@ export function buildRevenueSummaryRows(leads: ReportLead[]) {
     const conversionRate =
       sourceLeads.length === 0
         ? 0
-        : Math.round((wonLeads.length / sourceLeads.length) * 100)
+        : Math.round((capturedLeads.length / sourceLeads.length) * 100)
 
     return {
       source,
       label: leadSourceLabels[source] ?? source,
       leadCount: sourceLeads.length,
-      wonCount: wonLeads.length,
+      capturedCount: capturedLeads.length,
       conversionRate,
       revenueCents,
       pipelineCents,

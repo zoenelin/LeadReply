@@ -41,7 +41,7 @@ function normalizedStatus(value: string) {
   const status = value.toUpperCase().replace(/\s+/g, "_")
 
   if (status === "CAPTURED") {
-    return "WON"
+    return "CAPTURED"
   }
 
   return leadStatusValues.includes(status) ? status : "NEW"
@@ -111,20 +111,18 @@ export async function POST(req: Request) {
       estimatedValueCents: dollarsToCents(
         getCell(row, ["estimatedvalue", "estimated_value", "value"])
       ),
-      wonValueCents:
-        status === "WON"
+      capturedValueCents:
+        status === "CAPTURED"
           ? dollarsToCents(
               getCell(row, [
                 "capturedvalue",
                 "captured_value",
-                "wonvalue",
-                "won_value",
                 "revenue",
               ])
             )
           : 0,
       notes: getCell(row, ["notes", "note"]),
-      closedAt: status === "WON" || status === "LOST" ? new Date() : null,
+      closedAt: status === "CAPTURED" || status === "LOST" ? new Date() : null,
     }
   })
 

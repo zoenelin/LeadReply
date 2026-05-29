@@ -289,14 +289,14 @@ export default async function OwnerPage() {
   const todaysLeads = business.leads.filter(
     (lead) => lead.createdAt >= todayStart && lead.createdAt <= todayEnd
   )
-  const wonLeads = business.leads.filter((lead) => lead.status === "WON")
-  const revenueWonCents = wonLeads.reduce(
-    (total, lead) => total + lead.wonValueCents,
+  const capturedLeads = business.leads.filter((lead) => lead.status === "CAPTURED")
+  const capturedRevenueCents = capturedLeads.reduce(
+    (total, lead) => total + lead.capturedValueCents,
     0
   )
-  const recoveredRevenueCents = wonLeads
+  const recoveredRevenueCents = capturedLeads
     .filter((lead) => lead.source === "MISSED_CALL")
-    .reduce((total, lead) => total + lead.wonValueCents, 0)
+    .reduce((total, lead) => total + lead.capturedValueCents, 0)
   const sourceRows = buildRevenueSummaryRows(business.leads)
   const responseStats = getResponseSpeedStats(business.missedCalls)
   const lostRevenueStats = getLostRevenueStats({
@@ -333,8 +333,8 @@ export default async function OwnerPage() {
     newMissedCalls.length +
     newLeads.length
   const summaryText = bestSource
-    ? `${business.leads.length} leads captured, ${wonLeads.length} became customers, and ${bestSource.label} is the strongest source right now.`
-    : `${business.leads.length} leads captured and ${wonLeads.length} became customers so far.`
+    ? `${business.leads.length} leads captured, ${capturedLeads.length} became customers, and ${bestSource.label} is the strongest source right now.`
+    : `${business.leads.length} leads captured and ${capturedLeads.length} became customers so far.`
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -609,7 +609,7 @@ export default async function OwnerPage() {
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Total money made</p>
                   <p className="mt-1 text-2xl font-bold text-slate-950">
-                    {formatMoney(revenueWonCents)}
+                    {formatMoney(capturedRevenueCents)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
@@ -676,8 +676,8 @@ export default async function OwnerPage() {
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Review funnel</p>
                   <p className="mt-1 text-2xl font-bold text-slate-950">
-                    {reviewFunnelStats.requestedWonLeadCount}/
-                    {reviewFunnelStats.wonLeadCount}
+                    {reviewFunnelStats.requestedCapturedLeadCount}/
+                    {reviewFunnelStats.capturedLeadCount}
                   </p>
                   <p className="mt-1 text-sm text-slate-600">
                     {getReviewFunnelMessage(reviewFunnelStats)}
@@ -686,7 +686,7 @@ export default async function OwnerPage() {
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Customers captured</p>
                   <p className="mt-1 text-2xl font-bold text-slate-950">
-                    {wonLeads.length}
+                    {capturedLeads.length}
                   </p>
                 </div>
               </div>

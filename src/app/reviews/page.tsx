@@ -109,13 +109,13 @@ export default async function ReviewsPage() {
             <div className="rounded-2xl border border-slate-200 p-5">
               <p className="text-sm text-slate-500">Customers captured</p>
               <p className="mt-2 text-3xl font-bold text-slate-950">
-                {reviewFunnelStats.wonLeadCount}
+                {reviewFunnelStats.capturedLeadCount}
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 p-5">
               <p className="text-sm text-slate-500">Review requested</p>
               <p className="mt-2 text-3xl font-bold text-slate-950">
-                {reviewFunnelStats.requestedWonLeadCount}
+                {reviewFunnelStats.requestedCapturedLeadCount}
               </p>
               <p className="mt-2 text-sm font-medium text-slate-600">
                 {reviewFunnelStats.requestRate}% of captured customers
@@ -187,16 +187,16 @@ export default async function ReviewsPage() {
                   </h2>
                 </div>
                 <span className="w-fit rounded-lg bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
-                  {reviewFunnelStats.notRequestedWonLeads.length} waiting
+                  {reviewFunnelStats.notRequestedCapturedLeads.length} waiting
                 </span>
               </div>
               <div className="mt-5 divide-y divide-slate-100">
-                {reviewFunnelStats.notRequestedWonLeads.length === 0 ? (
+                {reviewFunnelStats.notRequestedCapturedLeads.length === 0 ? (
                   <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
                     Every captured customer has at least started the review workflow.
                   </div>
                 ) : (
-                  reviewFunnelStats.notRequestedWonLeads.slice(0, 5).map((lead) => (
+                  reviewFunnelStats.notRequestedCapturedLeads.slice(0, 5).map((lead) => (
                     <Link
                       key={lead.id}
                       href={`/leads/${lead.id}`}

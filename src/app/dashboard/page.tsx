@@ -217,7 +217,7 @@ export default async function DashboardPage() {
           businessId: business.id,
         },
         _sum: {
-          wonValueCents: true,
+          capturedValueCents: true,
         },
       })
     : null
@@ -226,13 +226,13 @@ export default async function DashboardPage() {
         where: {
           businessId: business.id,
           source: "MISSED_CALL",
-          status: "WON",
+          status: "CAPTURED",
         },
         _count: {
           _all: true,
         },
         _sum: {
-          wonValueCents: true,
+          capturedValueCents: true,
         },
       })
     : null
@@ -342,11 +342,11 @@ export default async function DashboardPage() {
       })
     : []
   const reviewRequestsCount = reviewRequests.length
-  const revenueWonCents = leadAnalytics?._sum.wonValueCents ?? 0
+  const capturedRevenueCents = leadAnalytics?._sum.capturedValueCents ?? 0
   const recoveredRevenueCents =
-    recoveredLeadAnalytics?._sum.wonValueCents ?? 0
+    recoveredLeadAnalytics?._sum.capturedValueCents ?? 0
   const recoveredLeadCount = recoveredLeadAnalytics?._count._all ?? 0
-  const missedCallWinRate =
+  const missedCallCaptureRate =
     missedCallLeadCount === 0
       ? 0
       : Math.round((recoveredLeadCount / missedCallLeadCount) * 100)
@@ -775,7 +775,7 @@ export default async function DashboardPage() {
           >
             <p className="text-sm text-slate-500">Money made</p>
             <p className="mt-2 text-3xl font-bold">
-              {formatMoney(revenueWonCents)}
+              {formatMoney(capturedRevenueCents)}
             </p>
             <p className="mt-3 text-sm font-medium text-slate-700">
               Track revenue
@@ -850,7 +850,7 @@ export default async function DashboardPage() {
                 Missed-call capture rate
               </p>
               <p className="mt-1 text-3xl font-bold text-slate-950">
-                {missedCallWinRate}%
+                {missedCallCaptureRate}%
               </p>
             </div>
           </div>
@@ -1182,13 +1182,13 @@ export default async function DashboardPage() {
               <div>
                 <p className="text-sm text-slate-500">Captured</p>
                 <p className="text-lg font-bold text-slate-950">
-                  {reviewFunnelStats.wonLeadCount}
+                  {reviewFunnelStats.capturedLeadCount}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-slate-500">Requested</p>
                 <p className="text-lg font-bold text-slate-950">
-                  {reviewFunnelStats.requestedWonLeadCount}
+                  {reviewFunnelStats.requestedCapturedLeadCount}
                 </p>
               </div>
               <div>

@@ -182,7 +182,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
               <div className="rounded-2xl border border-slate-200 p-4">
                 <p className="text-xs font-medium text-slate-500">Captured</p>
                 <p className="mt-1 text-xl font-bold">
-                  {formatMoney(lead.wonValueCents)}
+                  {formatMoney(lead.capturedValueCents)}
                 </p>
               </div>
               <div className="rounded-2xl border border-slate-200 p-4">
@@ -206,7 +206,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                 source: lead.source,
                 status: lead.status,
                 estimatedValueCents: lead.estimatedValueCents,
-                wonValueCents: lead.wonValueCents,
+                capturedValueCents: lead.capturedValueCents,
                 notes: lead.notes,
                 followUpAt: lead.followUpAt?.toISOString() ?? null,
                 followUpNote: lead.followUpNote,

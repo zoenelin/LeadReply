@@ -154,11 +154,11 @@ export function getBusinessHealthStats({
         : 0
       : lostRevenueStats.totalAtRiskCents / pipelineCents
   const revenueScore = clampScore(20 - Math.min(16, revenueRiskRatio * 20), 20)
-  const wonLeadCount = leads.filter((lead) => lead.status === "WON").length
+  const capturedLeadCount = leads.filter((lead) => lead.status === "CAPTURED").length
   const reviewScore =
-    wonLeadCount === 0
+    capturedLeadCount === 0
       ? 10
-      : clampScore((reviewRequestCount / wonLeadCount) * 15, 15)
+      : clampScore((reviewRequestCount / capturedLeadCount) * 15, 15)
   const factors: HealthFactor[] = [
     {
       label: "Setup",
@@ -211,12 +211,12 @@ export function getBusinessHealthStats({
       score: reviewScore,
       maxScore: 15,
       message:
-        wonLeadCount === 0
-          ? "Win a customer, then request the review."
+        capturedLeadCount === 0
+          ? "Capture a customer, then request the review."
           : `${reviewRequestCount} review request${
               reviewRequestCount === 1 ? "" : "s"
-            } tracked for ${wonLeadCount} captured customer${
-              wonLeadCount === 1 ? "" : "s"
+            } tracked for ${capturedLeadCount} captured customer${
+              capturedLeadCount === 1 ? "" : "s"
             }.`,
       href: "/leads",
     },

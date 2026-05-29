@@ -134,7 +134,7 @@ export function buildNotifications({
     }
 
     if (
-      lead.status === "WON" &&
+      lead.status === "CAPTURED" &&
       (lead.reviewRequests ?? []).every(
         (request) => request.status !== "SENT" && request.status !== "RECEIVED"
       )

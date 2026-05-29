@@ -73,7 +73,7 @@ export async function GET(req: Request) {
       leadSourceLabel(lead.source),
       leadStatusLabel(lead.status),
       moneyCsvValue(lead.estimatedValueCents),
-      moneyCsvValue(lead.wonValueCents),
+      moneyCsvValue(lead.capturedValueCents),
       lead.followUpAt,
       lead.followUpCompletedAt,
       lead.createdAt,

@@ -17,7 +17,7 @@ type LeadDetailFormLead = {
   source: string
   status: string
   estimatedValueCents: number
-  wonValueCents: number
+  capturedValueCents: number
   notes: string
   followUpAt: Date | string | null
   followUpNote: string
@@ -60,7 +60,7 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
   const [estimatedValue, setEstimatedValue] = useState(
     centsToDollars(lead.estimatedValueCents)
   )
-  const [wonValue, setWonValue] = useState(centsToDollars(lead.wonValueCents))
+  const [capturedValue, setCapturedValue] = useState(centsToDollars(lead.capturedValueCents))
   const [followUpAt, setFollowUpAt] = useState(dateInputValue(lead.followUpAt))
   const [followUpNote, setFollowUpNote] = useState(lead.followUpNote)
   const [followUpCompleted, setFollowUpCompleted] = useState(
@@ -101,7 +101,7 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
           source,
           status,
           estimatedValue,
-          wonValue,
+          capturedValue,
           notes,
           followUpAt,
           followUpNote,
@@ -243,8 +243,8 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
             <input
               type="number"
               min="0"
-              value={wonValue}
-              onChange={(e) => setWonValue(e.target.value)}
+              value={capturedValue}
+              onChange={(e) => setCapturedValue(e.target.value)}
               className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
             />
           </div>
@@ -334,7 +334,7 @@ export function LeadDetailForm({ lead }: LeadDetailFormProps) {
         </button>
       </form>
 
-      {status === "WON" && (
+      {status === "CAPTURED" && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
           <h2 className="text-xl font-bold text-slate-950">
             Ask for a review

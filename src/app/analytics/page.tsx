@@ -214,13 +214,13 @@ export default async function AnalyticsPage({
     reviewRequestCount: business._count.reviewRequests,
     missedCallValueCents: getAverageLeadValueCents(business.businessType),
   })
-  const wonLeads = leads.filter((lead) => lead.status === "WON")
+  const capturedLeads = leads.filter((lead) => lead.status === "CAPTURED")
   const lostLeads = leads.filter((lead) => lead.status === "LOST")
   const openLeads = leads.filter(
-    (lead) => lead.status !== "WON" && lead.status !== "LOST"
+    (lead) => lead.status !== "CAPTURED" && lead.status !== "LOST"
   )
-  const revenueWonCents = wonLeads.reduce(
-    (total, lead) => total + lead.wonValueCents,
+  const capturedRevenueCents = capturedLeads.reduce(
+    (total, lead) => total + lead.capturedValueCents,
     0
   )
   const pipelineCents = openLeads.reduce(
@@ -231,14 +231,14 @@ export default async function AnalyticsPage({
     (total, lead) => total + lead.estimatedValueCents,
     0
   )
-  const recoveredRevenueCents = wonLeads
+  const recoveredRevenueCents = capturedLeads
     .filter((lead) => lead.source === "MISSED_CALL")
-    .reduce((total, lead) => total + lead.wonValueCents, 0)
+    .reduce((total, lead) => total + lead.capturedValueCents, 0)
   const missedCallLeads = leads.filter((lead) => lead.source === "MISSED_CALL")
   const recoveredLeadCount = missedCallLeads.filter(
-    (lead) => lead.status === "WON"
+    (lead) => lead.status === "CAPTURED"
   ).length
-  const missedCallWinRate =
+  const missedCallCaptureRate =
     missedCallLeads.length === 0
       ? 0
       : Math.round((recoveredLeadCount / missedCallLeads.length) * 100)
@@ -259,11 +259,11 @@ export default async function AnalyticsPage({
         right.leadCount - left.leadCount
     )[0]
   const conversionRate =
-    leads.length === 0 ? 0 : Math.round((wonLeads.length / leads.length) * 100)
+    leads.length === 0 ? 0 : Math.round((capturedLeads.length / leads.length) * 100)
   const monthRows = getLastSixMonths().map((month) => {
     const monthLeads = leads.filter((lead) => monthKey(lead.createdAt) === month.key)
     const monthRevenueCents = monthLeads.reduce(
-      (total, lead) => total + lead.wonValueCents,
+      (total, lead) => total + lead.capturedValueCents,
       0
     )
 
@@ -281,7 +281,7 @@ export default async function AnalyticsPage({
     ...monthRows.map((month) => month.revenueCents),
     1
   )
-  const statusRows = ["NEW", "CONTACTED", "WON", "LOST"].map((status) => ({
+  const statusRows = ["NEW", "CONTACTED", "CAPTURED", "LOST"].map((status) => ({
     status,
     label: leadStatusLabels[status],
     count: leads.filter((lead) => lead.status === status).length,
@@ -401,7 +401,7 @@ export default async function AnalyticsPage({
             <div className="rounded-2xl border border-slate-200 p-5">
               <p className="text-sm text-slate-500">Money made</p>
               <p className="mt-2 text-3xl font-bold text-slate-950">
-                {formatMoney(revenueWonCents)}
+                {formatMoney(capturedRevenueCents)}
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 p-5">
@@ -577,8 +577,8 @@ export default async function AnalyticsPage({
                 <p className="mt-2 max-w-2xl text-sm text-slate-600">
                   {reviewFunnelStats.receivedCount} review
                   {reviewFunnelStats.receivedCount === 1 ? "" : "s"} received
-                  from {reviewFunnelStats.wonLeadCount} captured customer
-                  {reviewFunnelStats.wonLeadCount === 1 ? "" : "s"} in this
+                  from {reviewFunnelStats.capturedLeadCount} captured customer
+                  {reviewFunnelStats.capturedLeadCount === 1 ? "" : "s"} in this
                   view.
                 </p>
               </div>
@@ -766,7 +766,7 @@ export default async function AnalyticsPage({
                   Missed-call capture rate
                 </p>
                 <p className="mt-1 text-3xl font-bold text-slate-950">
-                  {missedCallWinRate}%
+                  {missedCallCaptureRate}%
                 </p>
               </div>
             </div>
@@ -799,7 +799,7 @@ export default async function AnalyticsPage({
                           {source.label}
                         </p>
                         <p className="text-sm text-slate-500">
-                          {source.wonCount} captured of {source.leadCount} total
+                          {source.capturedCount} captured of {source.leadCount} total
                         </p>
                       </div>
                       <p className="text-right text-sm font-semibold text-slate-700">
@@ -955,7 +955,7 @@ export default async function AnalyticsPage({
                   </h2>
                 </div>
                 <span className="rounded-lg bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">
-                  {formatMoney(revenueWonCents)}
+                  {formatMoney(capturedRevenueCents)}
                 </span>
               </div>
               <div className="mt-6 space-y-4">
@@ -1050,8 +1050,8 @@ export default async function AnalyticsPage({
                       className="text-sm font-semibold text-slate-700 hover:text-slate-950 sm:text-right"
                     >
                       {formatMoney(
-                        lead.status === "WON"
-                          ? lead.wonValueCents
+                        lead.status === "CAPTURED"
+                          ? lead.capturedValueCents
                           : lead.estimatedValueCents
                       )}
                     </Link>

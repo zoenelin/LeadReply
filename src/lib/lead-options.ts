@@ -8,7 +8,7 @@ export const leadSourceOptions = [
 export const leadStatusOptions = [
   { value: "NEW", label: "New" },
   { value: "CONTACTED", label: "Contacted" },
-  { value: "WON", label: "Captured" },
+  { value: "CAPTURED", label: "Captured" },
   { value: "LOST", label: "Lost" },
 ]
 
@@ -73,7 +73,7 @@ export function centsToDollars(cents: number) {
 }
 
 export function statusClassName(status: string) {
-  if (status === "WON") {
+  if (status === "CAPTURED") {
     return "bg-emerald-50 text-emerald-700"
   }
 

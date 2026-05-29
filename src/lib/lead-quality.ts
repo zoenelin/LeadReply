@@ -2,7 +2,7 @@ type LeadQualityInput = {
   source: string
   status: string
   estimatedValueCents: number
-  wonValueCents?: number
+  capturedValueCents?: number
   followUpAt: Date | string | null
   followUpCompletedAt: Date | string | null
   createdAt: Date | string
@@ -52,7 +52,7 @@ export function getLeadQualityScore(lead: LeadQualityInput) {
     factors.push({ label, points })
   }
 
-  if (lead.status === "WON") {
+  if (lead.status === "CAPTURED") {
     addFactor("Already captured", 45)
   } else if (lead.status === "CONTACTED") {
     addFactor("Conversation started", 14)
@@ -125,7 +125,7 @@ export function getLeadQualityScore(lead: LeadQualityInput) {
 
   if (ageDays <= 2) {
     addFactor("Fresh lead", 5)
-  } else if (ageDays > 14 && lead.status !== "WON") {
+  } else if (ageDays > 14 && lead.status !== "CAPTURED") {
     addFactor("Getting stale", -8)
   }
 

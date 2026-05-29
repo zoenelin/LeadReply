@@ -21,7 +21,7 @@ const leadSchema = z.object({
     message: "Please choose a lead status.",
   }),
   estimatedValue: z.string().optional().default(""),
-  wonValue: z.string().optional().default(""),
+  capturedValue: z.string().optional().default(""),
   notes: z.string().trim().optional().default(""),
   followUpAt: z.string().optional().default(""),
   followUpNote: z.string().trim().optional().default(""),
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
       source,
       status,
       estimatedValue,
-      wonValue,
+      capturedValue,
       notes,
       followUpAt,
       followUpNote,
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
       appointmentAt,
       appointmentNotes,
     } = result.data
-    const closedAt = status === "WON" || status === "LOST" ? new Date() : null
+    const closedAt = status === "CAPTURED" || status === "LOST" ? new Date() : null
 
     const lead = await prisma.lead.create({
       data: {
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
         source,
         status,
         estimatedValueCents: dollarsToCents(estimatedValue),
-        wonValueCents: status === "WON" ? dollarsToCents(wonValue) : 0,
+        capturedValueCents: status === "CAPTURED" ? dollarsToCents(capturedValue) : 0,
         notes,
         followUpAt: parseFollowUpDate(followUpAt),
         followUpNote,

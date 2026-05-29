@@ -60,7 +60,7 @@ export function reviewStatusClassName(status: string) {
 }
 
 export function getReviewFunnelStats(leads: ReviewFunnelLead[]) {
-  const wonLeads = leads.filter((lead) => lead.status === "WON")
+  const capturedLeads = leads.filter((lead) => lead.status === "CAPTURED")
   const reviewRequests = leads.flatMap((lead) => lead.reviewRequests)
   const draftRequests = reviewRequests.filter(
     (request) => request.status === "DRAFT"
@@ -71,47 +71,47 @@ export function getReviewFunnelStats(leads: ReviewFunnelLead[]) {
   const receivedRequests = reviewRequests.filter(
     (request) => request.status === "RECEIVED"
   )
-  const requestedWonLeads = wonLeads.filter(hasSentOrReceivedRequest)
-  const reviewedWonLeads = wonLeads.filter(hasReceivedRequest)
-  const notRequestedWonLeads = wonLeads.filter(
+  const requestedCapturedLeads = capturedLeads.filter(hasSentOrReceivedRequest)
+  const reviewedCapturedLeads = capturedLeads.filter(hasReceivedRequest)
+  const notRequestedCapturedLeads = capturedLeads.filter(
     (lead) => lead.reviewRequests.length === 0
   )
-  const draftedWonLeads = wonLeads.filter(
+  const draftedCapturedLeads = capturedLeads.filter(
     (lead) =>
       lead.reviewRequests.length > 0 && !hasSentOrReceivedRequest(lead)
   )
   const sentOrReceivedRequests = sentRequests.length + receivedRequests.length
 
   return {
-    wonLeadCount: wonLeads.length,
+    capturedLeadCount: capturedLeads.length,
     requestCount: reviewRequests.length,
     draftCount: draftRequests.length,
     sentCount: sentRequests.length,
     receivedCount: receivedRequests.length,
-    requestedWonLeadCount: requestedWonLeads.length,
-    reviewedWonLeadCount: reviewedWonLeads.length,
-    notRequestedWonLeads,
-    draftedWonLeads,
+    requestedCapturedLeadCount: requestedCapturedLeads.length,
+    reviewedCapturedLeadCount: reviewedCapturedLeads.length,
+    notRequestedCapturedLeads,
+    draftedCapturedLeads,
     draftRequests,
     sentRequests,
     receivedRequests,
-    requestRate: percentage(requestedWonLeads.length, wonLeads.length),
+    requestRate: percentage(requestedCapturedLeads.length, capturedLeads.length),
     receivedRate: percentage(receivedRequests.length, sentOrReceivedRequests),
     funnelSteps: [
       {
         label: "Customers captured",
-        count: wonLeads.length,
-        percent: wonLeads.length === 0 ? 0 : 100,
+        count: capturedLeads.length,
+        percent: capturedLeads.length === 0 ? 0 : 100,
       },
       {
         label: "Review requested",
-        count: requestedWonLeads.length,
-        percent: percentage(requestedWonLeads.length, wonLeads.length),
+        count: requestedCapturedLeads.length,
+        percent: percentage(requestedCapturedLeads.length, capturedLeads.length),
       },
       {
         label: "Review received",
-        count: reviewedWonLeads.length,
-        percent: percentage(reviewedWonLeads.length, wonLeads.length),
+        count: reviewedCapturedLeads.length,
+        percent: percentage(reviewedCapturedLeads.length, capturedLeads.length),
       },
     ],
   }
@@ -120,13 +120,13 @@ export function getReviewFunnelStats(leads: ReviewFunnelLead[]) {
 export function getReviewFunnelMessage(
   stats: ReturnType<typeof getReviewFunnelStats>
 ) {
-  if (stats.wonLeadCount === 0) {
-    return "Win a customer, then LeadReply will help ask for the review."
+  if (stats.capturedLeadCount === 0) {
+    return "Capture a customer, then LeadReply will help ask for the review."
   }
 
-  if (stats.notRequestedWonLeads.length > 0) {
-    return `${stats.notRequestedWonLeads.length} captured customer${
-      stats.notRequestedWonLeads.length === 1 ? "" : "s"
+  if (stats.notRequestedCapturedLeads.length > 0) {
+    return `${stats.notRequestedCapturedLeads.length} captured customer${
+      stats.notRequestedCapturedLeads.length === 1 ? "" : "s"
     } still need a review request.`
   }
 

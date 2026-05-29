@@ -51,7 +51,7 @@ export async function GET(req: Request) {
   const totals = sourceRows.reduce(
     (summary, row) => ({
       leadCount: summary.leadCount + row.leadCount,
-      wonCount: summary.wonCount + row.wonCount,
+      capturedCount: summary.capturedCount + row.capturedCount,
       revenueCents: summary.revenueCents + row.revenueCents,
       pipelineCents: summary.pipelineCents + row.pipelineCents,
       lostOpportunityCents:
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
     }),
     {
       leadCount: 0,
-      wonCount: 0,
+      capturedCount: 0,
       revenueCents: 0,
       pipelineCents: 0,
       lostOpportunityCents: 0,
@@ -68,7 +68,7 @@ export async function GET(req: Request) {
   const totalConversionRate =
     totals.leadCount === 0
       ? 0
-      : Math.round((totals.wonCount / totals.leadCount) * 100)
+      : Math.round((totals.capturedCount / totals.leadCount) * 100)
 
   const rows = [
     [
@@ -83,7 +83,7 @@ export async function GET(req: Request) {
     ...sourceRows.map((row) => [
       row.label,
       row.leadCount,
-      row.wonCount,
+      row.capturedCount,
       `${row.conversionRate}%`,
       moneyCsvValue(row.revenueCents),
       moneyCsvValue(row.pipelineCents),
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
     [
       "Total",
       totals.leadCount,
-      totals.wonCount,
+      totals.capturedCount,
       `${totalConversionRate}%`,
       moneyCsvValue(totals.revenueCents),
       moneyCsvValue(totals.pipelineCents),

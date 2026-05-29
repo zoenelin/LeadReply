@@ -67,7 +67,7 @@ npx prisma migrate deploy
 
 - A user signs up, selects a business category and plan, and gets starter services and availability.
 - The dashboard adapts setup prompts, analytics, and next actions by category and plan.
-- The CRM tracks leads, missed calls, follow-ups, appointment outcomes, won revenue, reviews, team notes, and lead quality.
+- The CRM tracks leads, missed calls, follow-ups, appointment outcomes, captured revenue, reviews, team notes, and lead quality.
 - The missed-call concierge asks industry-specific questions, applies scheduling and quote guard rails, and can use OpenAI when configured.
 - Twilio and Stripe provider paths are wired with safe fallbacks until production credentials are added.
 
