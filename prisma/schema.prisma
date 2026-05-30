@@ -17,58 +17,58 @@ model User {
 }
 
 model Business {
-  id                       String               @id @default(cuid())
+  id                       String                  @id @default(cuid())
   name                     String
   phone                    String
-  website                  String               @default("")
-  address                  String               @default("")
-  city                     String               @default("")
-  state                    String               @default("")
-  zip                      String               @default("")
-  businessType             String               @default("HOME_SERVICES")
-  selectedPlan             String               @default("BASIC")
-  bookingNotes             String               @default("")
-  phoneAutomationEnabled   Boolean              @default(false)
-  bookingAutomationEnabled Boolean              @default(false)
-  autoSchedulingEnabled    Boolean              @default(false)
-  quoteEstimateEnabled     Boolean              @default(false)
-  quoteRules               String               @default("")
-  quoteDisclaimer          String               @default("Prices are estimates only. Final pricing is confirmed by the business.")
-  callbackTimeframe        String               @default("within one business day")
-  reviewAutomationEnabled  Boolean              @default(true)
-  seoSetupNotes            String               @default("")
-  seoPrimaryServices       String               @default("")
-  seoServiceAreas          String               @default("")
-  seoTargetKeywords        String               @default("")
-  seoCompetitors           String               @default("")
-  seoWebsitePages          String               @default("")
-  seoContentIdeas          String               @default("")
-  marketingSetupNotes      String               @default("")
-  marketingChannels        String               @default("")
-  marketingAudience        String               @default("")
-  marketingGoals           String               @default("")
-  marketingOffer           String               @default("")
-  marketingContentThemes   String               @default("")
-  marketingPostingCadence  String               @default("weekly")
-  marketingBrandVoice      String               @default("")
-  preferredContactMethod   String               @default("TEXT")
-  billingStatus            String               @default("PLAN_SELECTED")
-  stripeCustomerId         String               @default("")
-  stripeSubscriptionId     String               @default("")
-  emailSummaryEnabled      Boolean              @default(true)
-  calendarProvider         String               @default("")
-  calendarBookingUrl       String               @default("")
-  calendarSyncNotes        String               @default("")
-  googleReviewUrl          String               @default("")
-  googleBusinessProfileUrl String               @default("")
-  launchNotes              String               @default("")
-  onboardingComplete       Boolean              @default(false)
-  replyTemplate            String               @default("")
-  widgetGreeting           String               @default("Need help? Send us your info and we will follow up soon.")
-  widgetPrimaryAction      String               @default("CALLBACK")
-  widgetAccentColor        String               @default("#0f172a")
-  userId                   String               @unique
-  user                     User                 @relation(fields: [userId], references: [id])
+  website                  String                  @default("")
+  address                  String                  @default("")
+  city                     String                  @default("")
+  state                    String                  @default("")
+  zip                      String                  @default("")
+  businessType             String                  @default("HOME_SERVICES")
+  selectedPlan             String                  @default("BASIC")
+  bookingNotes             String                  @default("")
+  phoneAutomationEnabled   Boolean                 @default(false)
+  bookingAutomationEnabled Boolean                 @default(false)
+  autoSchedulingEnabled    Boolean                 @default(false)
+  quoteEstimateEnabled     Boolean                 @default(false)
+  quoteRules               String                  @default("")
+  quoteDisclaimer          String                  @default("Prices are estimates only. Final pricing is confirmed by the business.")
+  callbackTimeframe        String                  @default("within one business day")
+  reviewAutomationEnabled  Boolean                 @default(true)
+  seoSetupNotes            String                  @default("")
+  seoPrimaryServices       String                  @default("")
+  seoServiceAreas          String                  @default("")
+  seoTargetKeywords        String                  @default("")
+  seoCompetitors           String                  @default("")
+  seoWebsitePages          String                  @default("")
+  seoContentIdeas          String                  @default("")
+  marketingSetupNotes      String                  @default("")
+  marketingChannels        String                  @default("")
+  marketingAudience        String                  @default("")
+  marketingGoals           String                  @default("")
+  marketingOffer           String                  @default("")
+  marketingContentThemes   String                  @default("")
+  marketingPostingCadence  String                  @default("weekly")
+  marketingBrandVoice      String                  @default("")
+  preferredContactMethod   String                  @default("TEXT")
+  billingStatus            String                  @default("PLAN_SELECTED")
+  stripeCustomerId         String                  @default("")
+  stripeSubscriptionId     String                  @default("")
+  emailSummaryEnabled      Boolean                 @default(true)
+  calendarProvider         String                  @default("")
+  calendarBookingUrl       String                  @default("")
+  calendarSyncNotes        String                  @default("")
+  googleReviewUrl          String                  @default("")
+  googleBusinessProfileUrl String                  @default("")
+  launchNotes              String                  @default("")
+  onboardingComplete       Boolean                 @default(false)
+  replyTemplate            String                  @default("")
+  widgetGreeting           String                  @default("Need help? Send us your info and we will follow up soon.")
+  widgetPrimaryAction      String                  @default("CALLBACK")
+  widgetAccentColor        String                  @default("#0f172a")
+  userId                   String                  @unique
+  user                     User                    @relation(fields: [userId], references: [id])
   missedCalls              MissedCall[]
   leads                    Lead[]
   reviewRequests           ReviewRequest[]
@@ -76,10 +76,51 @@ model Business {
   conciergeIntakes         ConciergeIntake[]
   serviceOfferings         ServiceOffering[]
   availabilityWindows      AvailabilityWindow[]
+  growthTasks              GrowthTask[]
+  marketingCalendarItems   MarketingCalendarItem[]
   teamNotes                TeamNote[]
   teamMembers              TeamMember[]
   emailLogs                EmailLog[]
   smsOptOuts               SmsOptOut[]
+}
+
+model GrowthTask {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @default("")
+  category    String    @default("SEO")
+  status      String    @default("TODO")
+  priority    String    @default("MEDIUM")
+  source      String    @default("MANUAL")
+  dueAt       DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([dueAt])
+}
+
+model MarketingCalendarItem {
+  id           String    @id @default(cuid())
+  title        String
+  channel      String    @default("")
+  campaignGoal String    @default("")
+  contentTheme String    @default("")
+  offer        String    @default("")
+  status       String    @default("DRAFT")
+  scheduledFor DateTime?
+  notes        String    @default("")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([scheduledFor])
 }
 
 model PasswordResetToken {

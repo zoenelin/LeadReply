@@ -17,7 +17,10 @@ import {
   getFollowUpSequenceMessage,
   getFollowUpSequenceStats,
 } from "@/lib/follow-up-sequences"
-import { getGrowthReadinessStats } from "@/lib/growth-readiness"
+import {
+  getGrowthReadinessStats,
+  getNextBestGrowthAction,
+} from "@/lib/growth-readiness"
 import {
   getLostRevenueLabel,
   getLostRevenueMessage,
@@ -200,6 +203,8 @@ export default async function DashboardPage() {
           leads: true,
           serviceOfferings: true,
           availabilityWindows: true,
+          growthTasks: true,
+          marketingCalendarItems: true,
         },
       },
     },
@@ -342,6 +347,41 @@ export default async function DashboardPage() {
         },
       })
     : []
+  const growthTasks = business
+    ? await prisma.growthTask.findMany({
+        where: {
+          businessId: business.id,
+        },
+        orderBy: [
+          {
+            status: "asc",
+          },
+          {
+            dueAt: "asc",
+          },
+          {
+            createdAt: "desc",
+          },
+        ],
+        take: 8,
+      })
+    : []
+  const marketingCalendarItems = business
+    ? await prisma.marketingCalendarItem.findMany({
+        where: {
+          businessId: business.id,
+        },
+        orderBy: [
+          {
+            scheduledFor: "asc",
+          },
+          {
+            createdAt: "desc",
+          },
+        ],
+        take: 8,
+      })
+    : []
   const reviewRequestsCount = reviewRequests.length
   const capturedRevenueCents = leadAnalytics?._sum.capturedValueCents ?? 0
   const recoveredRevenueCents =
@@ -430,6 +470,13 @@ export default async function DashboardPage() {
   const selectedPlanDetails =
     planOptions.find((plan) => plan.value === selectedPlan) ?? planOptions[0]
   const growthStats = business ? getGrowthReadinessStats(business) : null
+  const nextBestGrowthAction = business
+    ? getNextBestGrowthAction({
+        business,
+        growthTasks,
+        marketingCalendarItems,
+      })
+    : null
   const intakeFormHref = business ? `/intake/${business.id}` : "/settings/business"
   const setupItems = [
     {
@@ -469,6 +516,10 @@ export default async function DashboardPage() {
             label: "SEO setup",
             complete: Boolean(growthStats?.seoComplete),
           },
+          {
+            label: "Growth tasks",
+            complete: Boolean((business?._count.growthTasks ?? 0) > 0),
+          },
         ]
       : []),
     ...(selectedPlan === "COMPLETE"
@@ -476,6 +527,12 @@ export default async function DashboardPage() {
           {
             label: "Marketing plan",
             complete: Boolean(growthStats?.marketingComplete),
+          },
+          {
+            label: "Marketing calendar",
+            complete: Boolean(
+              (business?._count.marketingCalendarItems ?? 0) > 0
+            ),
           },
         ]
       : []),
@@ -519,6 +576,33 @@ export default async function DashboardPage() {
             {dashboardContent.description}
           </p>
         </div>
+
+        {nextBestGrowthAction && (
+          <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
+                  Next best action
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                  {nextBestGrowthAction.title}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm text-slate-700">
+                  {nextBestGrowthAction.description}
+                </p>
+                <span className="mt-3 inline-flex rounded-lg bg-white px-3 py-1 text-xs font-bold text-slate-700">
+                  {nextBestGrowthAction.label}
+                </span>
+              </div>
+              <Link
+                href={nextBestGrowthAction.href}
+                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+              >
+                Open next step
+              </Link>
+            </div>
+          </div>
+        )}
 
         {business && business._count.serviceOfferings === 0 && (
           <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">

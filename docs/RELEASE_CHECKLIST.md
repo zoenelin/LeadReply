@@ -6,6 +6,7 @@ Use this before putting a real business on LeadReply.
 
 - Confirm business profile, address, phone, website, category, and selected plan.
 - Fill out Growth setup for SEO and marketing when the business is on Growth or Complete.
+- Create at least one Growth workbench task and one marketing calendar item for Complete-plan clients.
 - Configure services, appointment durations, estimate ranges, and bookable-online settings.
 - Configure calendar or booking link notes.
 - Configure automation guard rails for missed calls, quotes, scheduling, callbacks, and reviews.

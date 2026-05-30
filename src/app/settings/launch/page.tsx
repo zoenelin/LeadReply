@@ -53,6 +53,8 @@ export default async function LaunchSettingsPage() {
           serviceOfferings: true,
           availabilityWindows: true,
           teamMembers: true,
+          growthTasks: true,
+          marketingCalendarItems: true,
         },
       },
     },
@@ -137,6 +139,14 @@ export default async function LaunchSettingsPage() {
             summary: `${growthStats.seoReadyCount}/${growthStats.seoTotalCount} SEO items ready`,
             href: "/settings/growth",
           },
+          {
+            label: "Growth workbench",
+            ready: business._count.growthTasks > 0,
+            summary: `${business._count.growthTasks} saved growth task${
+              business._count.growthTasks === 1 ? "" : "s"
+            }`,
+            href: "/settings/growth",
+          },
         ]
       : []),
     ...(growthStats.marketingAccess
@@ -145,6 +155,14 @@ export default async function LaunchSettingsPage() {
             label: "Marketing setup",
             ready: growthStats.marketingComplete,
             summary: `${growthStats.marketingReadyCount}/${growthStats.marketingTotalCount} marketing items ready`,
+            href: "/settings/growth",
+          },
+          {
+            label: "Marketing calendar",
+            ready: business._count.marketingCalendarItems > 0,
+            summary: `${business._count.marketingCalendarItems} calendar item${
+              business._count.marketingCalendarItems === 1 ? "" : "s"
+            } planned`,
             href: "/settings/growth",
           },
         ]

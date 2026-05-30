@@ -4,10 +4,16 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
 import { planLabels } from "@/lib/business-options"
-import { getGrowthReadinessStats } from "@/lib/growth-readiness"
+import {
+  getGrowthReadinessStats,
+  getMarketingActionPlan,
+  getNextBestGrowthAction,
+  getSeoActionPlan,
+} from "@/lib/growth-readiness"
 import { prisma } from "@/lib/prisma"
 import { AppNav } from "../../components/AppNav"
 import { GrowthSettingsForm } from "./GrowthSettingsForm"
+import { GrowthWorkbench } from "./GrowthWorkbench"
 
 export const metadata: Metadata = {
   title: "Growth Setup",
@@ -36,6 +42,28 @@ export default async function GrowthSettingsPage() {
     where: {
       userId: session.user.id,
     },
+    include: {
+      growthTasks: {
+        orderBy: [
+          {
+            status: "asc",
+          },
+          {
+            createdAt: "desc",
+          },
+        ],
+      },
+      marketingCalendarItems: {
+        orderBy: [
+          {
+            scheduledFor: "asc",
+          },
+          {
+            createdAt: "desc",
+          },
+        ],
+      },
+    },
   })
 
   if (!business) {
@@ -43,6 +71,38 @@ export default async function GrowthSettingsPage() {
   }
 
   const growthStats = getGrowthReadinessStats(business)
+  const seoActions = growthStats.seoAccess ? getSeoActionPlan(business) : []
+  const marketingActions = growthStats.marketingAccess
+    ? getMarketingActionPlan(business)
+    : []
+  const nextBestAction = getNextBestGrowthAction({
+    business,
+    growthTasks: business.growthTasks,
+    marketingCalendarItems: business.marketingCalendarItems,
+  })
+  const growthTasks = business.growthTasks.map((task) => ({
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    category: task.category,
+    status: task.status,
+    priority: task.priority,
+    source: task.source,
+    dueAt: task.dueAt?.toISOString() ?? "",
+    createdAt: task.createdAt.toISOString(),
+  }))
+  const marketingCalendarItems = business.marketingCalendarItems.map((item) => ({
+    id: item.id,
+    title: item.title,
+    channel: item.channel,
+    campaignGoal: item.campaignGoal,
+    contentTheme: item.contentTheme,
+    offer: item.offer,
+    status: item.status,
+    scheduledFor: item.scheduledFor?.toISOString() ?? "",
+    notes: item.notes,
+    createdAt: item.createdAt.toISOString(),
+  }))
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
@@ -115,6 +175,29 @@ export default async function GrowthSettingsPage() {
                 Included with the Complete plan.
               </p>
             </div>
+          </div>
+
+          <GrowthWorkbench
+            seoActions={seoActions}
+            marketingActions={marketingActions}
+            nextBestAction={nextBestAction}
+            growthTasks={growthTasks}
+            marketingCalendarItems={marketingCalendarItems}
+            seoAccess={growthStats.seoAccess}
+            marketingAccess={growthStats.marketingAccess}
+          />
+
+          <div className="mt-10 border-t border-slate-200 pt-8">
+            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+              Setup details
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-950">
+              Edit SEO and marketing inputs
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm text-slate-600">
+              These fields feed the action plan, calendar, dashboard prompts,
+              and future automation.
+            </p>
           </div>
 
           <GrowthSettingsForm

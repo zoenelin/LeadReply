@@ -71,6 +71,7 @@ npx prisma migrate deploy
 - The CRM tracks leads, missed calls, follow-ups, appointment outcomes, captured revenue, reviews, team notes, and lead quality.
 - The missed-call concierge asks industry-specific questions, applies scheduling and quote guard rails, and can use OpenAI when configured.
 - Growth setup collects SEO services, service areas, target keywords, website priorities, marketing channels, campaign goals, offers, content themes, and brand voice.
+- The Growth workbench turns SEO and marketing setup into saved tasks, owner next-best actions, and a simple marketing calendar.
 - Twilio and Stripe provider paths are wired with safe fallbacks until production credentials are added.
 
 ## Launch integrations

@@ -30,6 +30,7 @@ The Growth plan setup lives on `Business` for now because it is a single-busines
 
 - SEO: primary services, service areas, keywords, competitors, website page priorities, content ideas, and notes.
 - Marketing: channels, audience, goals, offer, content themes, cadence, brand voice, and notes.
+- Growth workflow: `GrowthTask` stores owner-facing SEO/marketing work, and `MarketingCalendarItem` stores simple campaign/post planning with draft, approval, scheduled, and posted states.
 
 If LeadReply later supports multi-location businesses or agency-style marketing calendars, these fields can move into dedicated child tables.
 
