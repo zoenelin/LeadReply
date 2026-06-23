@@ -1,8 +1,8 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
-import { createStripePortalSession } from "@/lib/stripe"
+import { prisma } from "@/lib/data/prisma"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { createStripePortalSession } from "@/lib/integrations/stripe"
+import { logSecurityEvent } from "@/services/security/security-events"
+import { requireApiOwnerBusinessAccess } from "@/services/auth/business-access"
 
 export async function POST(req: Request) {
   const crossSite = rejectCrossSiteRequest(req)
@@ -11,17 +11,18 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiOwnerBusinessAccess(req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: auth.access.businessId,
     },
     select: {
+      id: true,
       stripeCustomerId: true,
     },
   })
@@ -35,8 +36,30 @@ export async function POST(req: Request) {
   })
 
   if (!portal.ok) {
+    await logSecurityEvent({
+      req,
+      type: "BILLING_PORTAL_BLOCKED",
+      outcome: "BLOCKED",
+      actorEmail: auth.session.user.email,
+      userId: auth.session.user.id,
+      businessId: business.id,
+      summary: "Stripe billing portal could not be created.",
+      metadata: {
+        reason: portal.reason,
+      },
+    })
+
     return Response.json({ error: portal.reason }, { status: 400 })
   }
+
+  await logSecurityEvent({
+    req,
+    type: "BILLING_PORTAL_CREATED",
+    actorEmail: auth.session.user.email,
+    userId: auth.session.user.id,
+    businessId: business.id,
+    summary: "Stripe billing portal session was created.",
+  })
 
   return Response.json({ portalUrl: portal.url })
 }

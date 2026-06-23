@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { absoluteUrl, getSiteUrl, siteDescription, siteName } from "@/lib/site";
+import Script from "next/script";
+import { absoluteUrl, getSiteUrl, siteDescription, siteName } from "@/lib/config/site";
+import { themeScript } from "@/lib/theme/theme-script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -45,7 +47,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f172a",
+  themeColor: "#070a0f",
 };
 
 export default function RootLayout({
@@ -54,8 +56,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <Script
+          id="leadreply-theme"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeScript }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

@@ -37,18 +37,18 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-16 sm:px-6">
-      <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <main className="min-h-screen bg-lr-page px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-md rounded-2xl border border-lr-border bg-lr-surface p-6 shadow-sm sm:p-8">
         <Link
           href="/login"
-          className="text-sm font-semibold text-slate-600 hover:text-slate-950"
+          className="text-sm font-semibold text-lr-muted hover:text-lr-strong"
         >
           Back to login
         </Link>
-        <h1 className="mt-6 text-2xl font-bold text-slate-950">
+        <h1 className="mt-6 text-2xl font-bold text-lr-strong">
           Reset your password
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-lr-muted">
           Enter your account email and LeadReply will send a secure reset link.
         </p>
 
@@ -60,7 +60,7 @@ export function ForgotPasswordForm() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
               placeholder="you@example.com"
               required
             />
@@ -69,14 +69,14 @@ export function ForgotPasswordForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            className="w-full rounded-xl bg-lr-primary px-4 py-3 text-sm font-semibold text-lr-on-primary hover:bg-lr-primary-hover disabled:opacity-60"
           >
             {loading ? "Sending..." : "Send reset link"}
           </button>
         </form>
 
         {message && (
-          <p className="mt-4 text-sm text-slate-600" aria-live="polite">
+          <p className="mt-4 text-sm text-lr-muted" aria-live="polite">
             {message}
           </p>
         )}

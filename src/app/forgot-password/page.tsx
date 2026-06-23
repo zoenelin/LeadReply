@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { noIndexRobots } from "@/lib/site"
+import { noIndexRobots } from "@/lib/config/site"
 import { ForgotPasswordForm } from "./ForgotPasswordForm"
 
 export const metadata: Metadata = {

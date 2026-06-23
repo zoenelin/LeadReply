@@ -1,20 +1,29 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/auth/auth"
 import {
-  buildConciergeLeadNotes,
-  buildConciergeSummary,
+  buildMissedCallAssistantLeadNotes,
+  buildMissedCallAssistantSummary,
   createAssistantEntry,
   createCustomerEntry,
-  getConciergePlan,
-} from "@/lib/concierge-intake"
-import { getSuggestedFollowUpSteps } from "@/lib/follow-up-sequences"
+  getMissedCallAssistantCustomerConfirmation,
+  getMissedCallAssistantPlan,
+} from "@/lib/domain/missed-call-assistant"
+import { getSuggestedFollowUpSteps } from "@/lib/domain/follow-up-sequences"
 import {
   getAverageLeadValueCents,
   getStarterLeads,
   getStarterMissedCalls,
-} from "@/lib/demo-data"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+} from "@/lib/data/demo-data"
+import { prisma } from "@/lib/data/prisma"
+import {
+  communicationStatuses,
+  missedCallAssistantStatuses,
+  leadStatuses,
+  missedCallStatuses,
+  opsJobStatuses,
+  openLeadStatuses,
+} from "@/lib/domain/status"
+import { phoneLookupKey } from "@/services/communications/sms-messages"
+import { requireApiOwnerBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 export async function POST(req: Request) {
   const crossSite = rejectCrossSiteRequest(req)
@@ -23,15 +32,15 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiOwnerBusinessAccess(req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: auth.access.businessId,
     },
     include: {
       serviceOfferings: {
@@ -61,7 +70,18 @@ export async function POST(req: Request) {
 
   try {
     await prisma.$transaction([
-      prisma.conciergeIntake.deleteMany({
+      prisma.smsMessage.deleteMany({
+        where: {
+          businessId: business.id,
+        },
+      }),
+      prisma.opsJobRun.deleteMany({
+        where: {
+          businessId: business.id,
+          source: "DEMO",
+        },
+      }),
+      prisma.missedCallAssistantIntake.deleteMany({
         where: {
           businessId: business.id,
         },
@@ -111,7 +131,7 @@ export async function POST(req: Request) {
     const capturedLeads = await prisma.lead.findMany({
       where: {
         businessId: business.id,
-        status: "CAPTURED",
+        status: leadStatuses.captured,
       },
       orderBy: {
         createdAt: "asc",
@@ -127,7 +147,12 @@ export async function POST(req: Request) {
           customerName: lead.customerName,
           customerPhone: lead.customerPhone,
           message: `Thanks for choosing ${business.name}. Would you mind leaving us a quick review?`,
-          status: index === 0 ? "RECEIVED" : index === 1 ? "SENT" : "DRAFT",
+          status:
+            index === 0
+              ? communicationStatuses.received
+              : index === 1
+                ? communicationStatuses.sent
+                : communicationStatuses.draft,
           sentAt: index <= 1 ? now : null,
           receivedAt: index === 0 ? now : null,
         })),
@@ -144,7 +169,7 @@ export async function POST(req: Request) {
     })
 
     if (newestMissedCall) {
-      const plan = getConciergePlan({
+      const plan = getMissedCallAssistantPlan({
         businessName: business.name,
         businessType: business.businessType,
         callerName: newestMissedCall.callerName,
@@ -153,7 +178,7 @@ export async function POST(req: Request) {
       const answers = Object.fromEntries(
         plan.questions.map((question) => [question.key, question.sampleAnswer])
       )
-      const summary = buildConciergeSummary({
+      const summary = buildMissedCallAssistantSummary({
         answers,
         businessType: business.businessType,
         bookingAutomationEnabled: business.bookingAutomationEnabled,
@@ -165,7 +190,12 @@ export async function POST(req: Request) {
         services: business.serviceOfferings,
         availabilityWindows: business.availabilityWindows,
       })
-      const leadNotes = buildConciergeLeadNotes({
+      const customerConfirmation = getMissedCallAssistantCustomerConfirmation({
+        callbackTimeframe: business.callbackTimeframe,
+        quoteRequested: summary.quoteRequested,
+        schedulingRequested: summary.schedulingRequested,
+      })
+      const leadNotes = buildMissedCallAssistantLeadNotes({
         summary: summary.summary,
         nextAction: summary.nextAction,
         schedulingMode: summary.schedulingMode,
@@ -176,13 +206,13 @@ export async function POST(req: Request) {
         availabilityGuidance: summary.availabilityGuidance,
         answers,
       })
-      const conciergeLead = await prisma.lead.create({
+      const missedCallAssistantLead = await prisma.lead.create({
         data: {
           businessId: business.id,
           customerName: newestMissedCall.callerName,
           customerPhone: newestMissedCall.callerPhone,
           source: "MISSED_CALL",
-          status: "CONTACTED",
+          status: leadStatuses.current,
           estimatedValueCents: getAverageLeadValueCents(business.businessType),
           notes: leadNotes,
           followUpAt: new Date(),
@@ -197,18 +227,18 @@ export async function POST(req: Request) {
           id: newestMissedCall.id,
         },
         data: {
-          status: "REPLIED",
+          status: missedCallStatuses.replied,
           repliedAt: new Date(),
-          convertedLeadId: conciergeLead.id,
+          convertedLeadId: missedCallAssistantLead.id,
         },
       })
 
-      await prisma.conciergeIntake.create({
+      const missedCallAssistantIntake = await prisma.missedCallAssistantIntake.create({
         data: {
           missedCallId: newestMissedCall.id,
           businessId: business.id,
-          leadId: conciergeLead.id,
-          status: "READY_FOR_OWNER",
+          leadId: missedCallAssistantLead.id,
+          status: missedCallAssistantStatuses.readyForOwner,
           currentStep: plan.questions.length,
           intent: summary.intent,
           urgency: summary.urgency,
@@ -233,11 +263,61 @@ export async function POST(req: Request) {
               createAssistantEntry(question.prompt),
               createCustomerEntry(answers[question.key]),
             ]),
-            createAssistantEntry(
-              "Thanks. I sent that to the team so they can follow up with the right next step."
-            ),
+            createAssistantEntry(customerConfirmation),
           ],
         },
+      })
+
+      await prisma.smsMessage.createMany({
+        data: [
+          {
+            businessId: business.id,
+            missedCallId: newestMissedCall.id,
+            missedCallAssistantIntakeId: missedCallAssistantIntake.id,
+            direction: "OUTBOUND",
+            status: communicationStatuses.delivered,
+            provider: "TWILIO",
+            fromPhone: business.phone,
+            fromPhoneNormalized: phoneLookupKey(business.phone),
+            toPhone: newestMissedCall.callerPhone,
+            toPhoneNormalized: phoneLookupKey(newestMissedCall.callerPhone),
+            body: `${plan.openingMessage}\n\n${plan.questions[0]?.prompt}`,
+            purpose: "MISSED_CALL_ASSISTANT_OPENING",
+            sentAt: new Date(),
+            deliveredAt: new Date(),
+          },
+          {
+            businessId: business.id,
+            missedCallId: newestMissedCall.id,
+            missedCallAssistantIntakeId: missedCallAssistantIntake.id,
+            direction: "INBOUND",
+            status: communicationStatuses.received,
+            provider: "TWILIO",
+            fromPhone: newestMissedCall.callerPhone,
+            fromPhoneNormalized: phoneLookupKey(newestMissedCall.callerPhone),
+            toPhone: business.phone,
+            toPhoneNormalized: phoneLookupKey(business.phone),
+            body: answers[plan.questions[0]?.key ?? ""] ?? "I need help.",
+            purpose: "MISSED_CALL_ASSISTANT_REPLY",
+            receivedAt: new Date(),
+          },
+          {
+            businessId: business.id,
+            missedCallId: newestMissedCall.id,
+            missedCallAssistantIntakeId: missedCallAssistantIntake.id,
+            direction: "OUTBOUND",
+            status: communicationStatuses.delivered,
+            provider: "TWILIO",
+            fromPhone: business.phone,
+            fromPhoneNormalized: phoneLookupKey(business.phone),
+            toPhone: newestMissedCall.callerPhone,
+            toPhoneNormalized: phoneLookupKey(newestMissedCall.callerPhone),
+            body: customerConfirmation,
+            purpose: "MISSED_CALL_ASSISTANT_CONFIRMATION",
+            sentAt: new Date(),
+            deliveredAt: new Date(),
+          },
+        ],
       })
     }
 
@@ -245,7 +325,7 @@ export async function POST(req: Request) {
       where: {
         businessId: business.id,
         status: {
-          in: ["NEW", "CONTACTED"],
+          in: [...openLeadStatuses],
         },
       },
       orderBy: {
@@ -271,7 +351,10 @@ export async function POST(req: Request) {
             channel: step.channel,
             stepOrder: step.stepOrder,
             dueAt: step.dueAt,
-            status: leadIndex === 0 && stepIndex === 0 ? "SENT" : "DRAFT",
+            status:
+              leadIndex === 0 && stepIndex === 0
+                ? communicationStatuses.sent
+                : communicationStatuses.draft,
             sentAt: leadIndex === 0 && stepIndex === 0 ? now : null,
           }))
         ),
@@ -289,18 +372,65 @@ export async function POST(req: Request) {
     })
 
     if (teamNoteLeads.length > 0) {
+      const noteBodies = [
+        "missed-call assistant intake reviewed. Confirm the schedule before giving any quote.",
+        "Customer is warm. Send the next follow-up before the end of the day.",
+        "Captured customer is ready for a review request after service completion.",
+        "Check source and timing so this lead improves the analytics story.",
+      ]
+
       await prisma.teamNote.createMany({
         data: teamNoteLeads.map((lead, index) => ({
           businessId: business.id,
           leadId: lead.id,
           authorName: index % 2 === 0 ? "Owner" : "Front desk",
-          body:
-            index % 2 === 0
-              ? "Customer details reviewed. Next step is ready."
-              : "Left an internal note so the next teammate has context.",
+          body: noteBodies[index] ?? "Customer details reviewed.",
         })),
       })
     }
+
+    const jobNow = new Date()
+    await prisma.opsJobRun.createMany({
+      data: [
+        {
+          businessId: business.id,
+          name: "Demo missed-call text back",
+          kind: "MISSED_CALL_SMS",
+          status: opsJobStatuses.succeeded,
+          source: "DEMO",
+          queueName: "leadreply-automation",
+          queueJobId: "demo-missed-call-sms",
+          details: "Sent the first missed-call response and recorded the SMS.",
+          queuedAt: jobNow,
+          startedAt: jobNow,
+          finishedAt: jobNow,
+        },
+        {
+          businessId: business.id,
+          name: "Demo missed-call assistant intake summary",
+          kind: "MISSED_CALL_ASSISTANT_INTAKE",
+          status: opsJobStatuses.succeeded,
+          source: "DEMO",
+          queueName: "leadreply-automation",
+          queueJobId: "demo-ai-intake",
+          details:
+            "Generated an owner-ready summary with scheduling and quote rules.",
+          queuedAt: jobNow,
+          startedAt: jobNow,
+          finishedAt: jobNow,
+        },
+        {
+          businessId: business.id,
+          name: "Demo website audit",
+          kind: "WEBSITE_AUDIT",
+          status: opsJobStatuses.planned,
+          source: "DEMO",
+          details:
+            "Placeholder for the deep audit job that will run through the worker.",
+          scheduledFor: jobNow,
+        },
+      ],
+    })
 
     return Response.json({
       message: "Demo data reset.",

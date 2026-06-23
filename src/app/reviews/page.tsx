@@ -3,19 +3,20 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
-import { ReviewRequestStatusButtons } from "@/app/components/ReviewRequestStatusButtons"
-import { prisma } from "@/lib/prisma"
-import {
-  getReviewFunnelMessage,
-  getReviewFunnelStats,
-  getReviewStatusLabel,
-  reviewStatusClassName,
-} from "@/lib/review-funnel"
-import { AppNav } from "../components/AppNav"
+import { AppNav } from "@/components/AppNav"
+import { ReviewDiscountForm } from "@/features/reviews/ReviewDiscountForm"
+import { ReviewRequestStatusButtons } from "@/features/reviews/ReviewRequestStatusButtons"
+import { ReviewSendButton } from "@/features/reviews/ReviewSendButton"
+import { ReviewSyncButton } from "@/features/reviews/ReviewSyncButton"
+import { prisma } from "@/lib/data/prisma"
+import { getReviewStatusLabel, reviewStatusClassName } from "@/lib/domain/review-funnel"
+import { communicationStatuses, leadStatuses } from "@/lib/domain/status"
+import { getBusinessAccessForSession } from "@/services/auth/business-access"
 
 export const metadata: Metadata = {
   title: "Reviews",
-  description: "Track LeadReply review requests from captured customers to received reviews.",
+  description:
+    "Send review requests and track which customers have reviewed the business.",
   robots: {
     index: false,
     follow: false,
@@ -34,6 +35,81 @@ function formatDate(value: Date | null) {
   })
 }
 
+type ReviewRequest = {
+  id: string
+  status: string
+  customerName: string
+  customerPhone: string
+  deliveryError: string
+  createdAt: Date
+  sentAt: Date | null
+  receivedAt: Date | null
+  externalReview: {
+    reviewerName: string
+    rating: number
+    reviewCreatedAt: Date | null
+    matchedConfidence: number
+  } | null
+}
+
+type ReviewCustomerRow = {
+  lead: {
+    id: string
+    customerName: string
+    customerPhone: string
+    closedAt: Date | null
+  }
+  draftRequest: ReviewRequest | null
+  sentRequest: ReviewRequest | null
+  receivedRequest: ReviewRequest | null
+}
+
+function getLatestRequest(
+  requests: ReviewRequest[],
+  status: string
+) {
+  return requests.find((request) => request.status === status) ?? null
+}
+
+function EmptyMessage({ children }: { children: string }) {
+  return (
+    <div className="rounded-xl bg-lr-surface-muted px-4 py-3 text-sm font-medium text-lr-muted">
+      {children}
+    </div>
+  )
+}
+
+function CustomerIdentity({
+  name,
+  phone,
+  detail,
+}: {
+  name: string
+  phone: string
+  detail: string
+}) {
+  return (
+    <div>
+      <p className="font-bold text-lr-strong">{name}</p>
+      <p className="mt-1 text-sm text-lr-muted">{phone}</p>
+      <p className="mt-1 text-sm text-lr-subtle">{detail}</p>
+    </div>
+  )
+}
+
+function formatSyncDate(value: Date | null | undefined) {
+  if (!value) {
+    return "Never checked"
+  }
+
+  return value.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}
+
 export default async function ReviewsPage() {
   const session = await getServerSession(authOptions)
 
@@ -41,22 +117,65 @@ export default async function ReviewsPage() {
     redirect("/login")
   }
 
+  const access = await getBusinessAccessForSession(session, "manageReviews")
+
+  if (!access) {
+    redirect("/dashboard")
+  }
+
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: access.businessId,
     },
     include: {
       leads: {
-        orderBy: {
-          closedAt: "desc",
+        where: {
+          OR: [
+            {
+              status: leadStatuses.captured,
+            },
+            {
+              reviewRequests: {
+                some: {
+                  status: communicationStatuses.received,
+                },
+              },
+            },
+          ],
         },
+        orderBy: [
+          {
+            closedAt: "desc",
+          },
+          {
+            createdAt: "desc",
+          },
+        ],
         include: {
           reviewRequests: {
             orderBy: {
               createdAt: "desc",
             },
+            include: {
+              externalReview: true,
+            },
           },
         },
+      },
+      reviewProviderConnections: {
+        where: {
+          provider: "GOOGLE_BUSINESS_PROFILE",
+        },
+        take: 1,
+      },
+      reviewSyncRuns: {
+        where: {
+          provider: "GOOGLE_BUSINESS_PROFILE",
+        },
+        orderBy: {
+          startedAt: "desc",
+        },
+        take: 1,
       },
     },
   })
@@ -65,302 +184,275 @@ export default async function ReviewsPage() {
     redirect("/settings/business")
   }
 
-  const reviewFunnelStats = getReviewFunnelStats(business.leads)
-  const recentRequests = business.leads
-    .flatMap((lead) =>
-      lead.reviewRequests.map((request) => ({
-        ...request,
-        lead,
-      }))
+  const reviewRows: ReviewCustomerRow[] = business.leads.map((lead) => ({
+    lead,
+    draftRequest: getLatestRequest(
+      lead.reviewRequests,
+      communicationStatuses.draft
+    ),
+    sentRequest: getLatestRequest(lead.reviewRequests, communicationStatuses.sent),
+    receivedRequest: getLatestRequest(
+      lead.reviewRequests,
+      communicationStatuses.received
+    ),
+  }))
+  const needsRequestRows = reviewRows.filter(
+    (row) => !row.sentRequest && !row.receivedRequest
+  )
+  const noReviewYetRows = reviewRows.filter(
+    (row) => row.sentRequest && !row.receivedRequest
+  )
+  const reviewLeftRows = reviewRows.filter((row) => row.receivedRequest)
+  const googleConnection = business.reviewProviderConnections[0] ?? null
+  const latestSyncRun = business.reviewSyncRuns[0] ?? null
+  const googleReady =
+    googleConnection?.status === "CONNECTED" ||
+    Boolean(
+      process.env.GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID &&
+        process.env.GOOGLE_BUSINESS_PROFILE_LOCATION_ID &&
+        process.env.GOOGLE_BUSINESS_PROFILE_ACCESS_TOKEN
     )
-    .sort(
-      (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
-    )
-    .slice(0, 6)
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen bg-lr-page px-4 py-6 pb-10 sm:px-6 sm:py-8 md:pb-8">
+      <div className="mx-auto max-w-[1600px]">
         <AppNav />
 
-        <section className="mt-8 rounded-2xl bg-white p-5 shadow-sm sm:p-8">
+        <section className="mt-8 space-y-6 rounded-2xl bg-lr-surface p-5 shadow-sm sm:p-8">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                Review funnel
+                Reviews
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-950">
-                Turn captured customers into reviews
+              <h1 className="mt-2 text-3xl font-black text-lr-strong">
+                Ask happy customers for reviews
               </h1>
-              <p className="mt-3 max-w-2xl text-slate-600">
-                Track the path from customer captured, to review requested, to
-                review received for {business.name}.
+              <p className="mt-3 max-w-2xl text-lr-muted">
+                Keep this simple: send requests, see who has not reviewed yet,
+                and let LeadReply check Google reviews automatically.
               </p>
             </div>
             <Link
-              href="/leads"
-              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+              href="/settings/automation"
+              className="inline-flex items-center justify-center rounded-xl border border-lr-border-strong bg-lr-surface px-5 py-3 text-sm font-bold text-lr-strong hover:bg-lr-hover"
             >
-              Open leads
+              Review link settings
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">Customers captured</p>
-              <p className="mt-2 text-3xl font-bold text-slate-950">
-                {reviewFunnelStats.capturedLeadCount}
+          {!business.googleReviewUrl && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900">
+              Add the business review link in settings before sending real
+              requests, so customers land in the right place.
+            </div>
+          )}
+
+          <div className="grid gap-4 rounded-2xl border border-lr-border bg-lr-surface-muted p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-lr-subtle">
+                Google review API
+              </p>
+              <h2 className="mt-2 text-xl font-black text-lr-strong">
+                {googleReady ? "Connected" : "Needs setup"}
+              </h2>
+              <p className="mt-2 text-sm text-lr-muted">
+                LeadReply syncs Google Business Profile reviews, matches them
+                to sent requests when possible, and moves customers to Review
+                received automatically.
+              </p>
+              <p className="mt-2 text-xs font-semibold text-lr-subtle">
+                Last check: {formatSyncDate(latestSyncRun?.finishedAt)}
+                {latestSyncRun?.status ? ` · ${latestSyncRun.status}` : ""}
+                {latestSyncRun?.error ? ` · ${latestSyncRun.error}` : ""}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">Review requested</p>
-              <p className="mt-2 text-3xl font-bold text-slate-950">
-                {reviewFunnelStats.requestedCapturedLeadCount}
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-600">
-                {reviewFunnelStats.requestRate}% of captured customers
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">Reviews received</p>
-              <p className="mt-2 text-3xl font-bold text-slate-950">
-                {reviewFunnelStats.receivedCount}
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-600">
-                {reviewFunnelStats.receivedRate}% of sent requests
+            <ReviewSyncButton disabled={!googleReady} />
+          </div>
+
+          <ReviewDiscountForm
+            initialEnabled={business.reviewDiscountEnabled}
+            initialOffer={business.reviewDiscountOffer}
+          />
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-lr-border p-5">
+              <p className="text-sm font-bold text-lr-subtle">Need request</p>
+              <p className="mt-2 text-3xl font-black text-lr-strong">
+                {needsRequestRows.length}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">Drafts waiting</p>
-              <p className="mt-2 text-3xl font-bold text-slate-950">
-                {reviewFunnelStats.draftCount}
+            <div className="rounded-2xl border border-lr-border p-5">
+              <p className="text-sm font-bold text-lr-subtle">No review yet</p>
+              <p className="mt-2 text-3xl font-black text-lr-strong">
+                {noReviewYetRows.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-lr-border p-5">
+              <p className="text-sm font-bold text-lr-subtle">Review received</p>
+              <p className="mt-2 text-3xl font-black text-lr-strong">
+                {reviewLeftRows.length}
               </p>
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
-              Funnel status
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-slate-950">
-              {getReviewFunnelMessage(reviewFunnelStats)}
-            </h2>
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              {reviewFunnelStats.funnelSteps.map((step) => (
-                <div key={step.label} className="rounded-xl bg-white p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-950">
-                      {step.label}
-                    </p>
-                    <span className="text-sm font-bold text-slate-700">
-                      {step.percent}%
-                    </span>
-                  </div>
-                  <p className="mt-3 text-3xl font-bold text-slate-950">
-                    {step.count}
-                  </p>
-                  <div className="mt-4 h-3 overflow-hidden rounded-full bg-emerald-100">
-                    <div
-                      className="h-full rounded-full bg-emerald-600"
-                      style={{
-                        width:
-                          step.percent === 0
-                            ? "0%"
-                            : `${Math.max(8, step.percent)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-5 lg:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Needs a review request
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-slate-950">
-                    Captured customers without a request
-                  </h2>
-                </div>
-                <span className="w-fit rounded-lg bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
-                  {reviewFunnelStats.notRequestedCapturedLeads.length} waiting
-                </span>
+          <div className="rounded-2xl border border-lr-border p-5">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="text-xl font-black text-lr-strong">
+                  Need a review request sent
+                </h2>
+                <p className="mt-1 text-sm text-lr-muted">
+                  Captured customers who have not received a review request yet.
+                </p>
               </div>
-              <div className="mt-5 divide-y divide-slate-100">
-                {reviewFunnelStats.notRequestedCapturedLeads.length === 0 ? (
-                  <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    Every captured customer has at least started the review workflow.
-                  </div>
-                ) : (
-                  reviewFunnelStats.notRequestedCapturedLeads.slice(0, 5).map((lead) => (
-                    <Link
-                      key={lead.id}
-                      href={`/leads/${lead.id}`}
-                      className="grid gap-2 py-4 hover:bg-slate-50 sm:grid-cols-[1fr_8rem]"
-                    >
-                      <div>
-                        <p className="font-semibold text-slate-950">
-                          {lead.customerName}
-                        </p>
-                        <p className="text-sm text-slate-600">
-                          Captured on {formatDate(lead.closedAt)}
-                        </p>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-700 sm:text-right">
-                        Ask now
-                      </p>
-                    </Link>
-                  ))
-                )}
-              </div>
+              <span className="w-fit rounded-full bg-amber-50 px-3 py-1 text-sm font-bold text-amber-700">
+                {needsRequestRows.length}
+              </span>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Drafts not sent
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-slate-950">
-                    Requests ready to send
-                  </h2>
-                </div>
-                <span className="w-fit rounded-lg bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
-                  {reviewFunnelStats.draftCount} draft
-                  {reviewFunnelStats.draftCount === 1 ? "" : "s"}
-                </span>
-              </div>
-              <div className="mt-5 divide-y divide-slate-100">
-                {reviewFunnelStats.draftRequests.length === 0 ? (
-                  <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    No draft review requests are waiting.
-                  </div>
-                ) : (
-                  reviewFunnelStats.draftRequests.slice(0, 5).map((request) => (
-                    <div key={request.id} className="py-4">
-                      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                        <div>
-                          <p className="font-semibold text-slate-950">
-                            {request.customerName}
-                          </p>
-                          <p className="text-sm text-slate-600">
-                            Drafted {formatDate(request.createdAt)}
-                          </p>
-                        </div>
-                        <span
-                          className={`w-fit rounded-lg px-2 py-1 text-xs font-bold ${reviewStatusClassName(
-                            request.status
-                          )}`}
-                        >
-                          {getReviewStatusLabel(request.status)}
-                        </span>
-                      </div>
-                      <ReviewRequestStatusButtons
-                        requestId={request.id}
-                        status={request.status}
-                      />
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    Waiting for review
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-slate-950">
-                    Sent requests to check
-                  </h2>
-                </div>
-                <span className="w-fit rounded-lg bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">
-                  {reviewFunnelStats.sentCount} sent
-                </span>
-              </div>
-              <div className="mt-5 divide-y divide-slate-100">
-                {reviewFunnelStats.sentRequests.length === 0 ? (
-                  <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    No sent requests are waiting right now.
-                  </div>
-                ) : (
-                  reviewFunnelStats.sentRequests.slice(0, 5).map((request) => (
-                    <div key={request.id} className="py-4">
-                      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                        <div>
-                          <p className="font-semibold text-slate-950">
-                            {request.customerName}
-                          </p>
-                          <p className="text-sm text-slate-600">
-                            Sent {formatDate(request.sentAt)}
-                          </p>
-                        </div>
-                        <span
-                          className={`w-fit rounded-lg px-2 py-1 text-xs font-bold ${reviewStatusClassName(
-                            request.status
-                          )}`}
-                        >
-                          {getReviewStatusLabel(request.status)}
-                        </span>
-                      </div>
-                      <ReviewRequestStatusButtons
-                        requestId={request.id}
-                        status={request.status}
-                      />
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-slate-200 p-5">
-            <p className="text-sm font-medium text-slate-500">
-              Recent review activity
-            </p>
-            <div className="mt-5 divide-y divide-slate-100">
-              {recentRequests.length === 0 ? (
-                <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  No review requests have been created yet.
-                </div>
+            <div className="mt-5 divide-y divide-lr-border">
+              {needsRequestRows.length === 0 ? (
+                <EmptyMessage>No customers are waiting for a request.</EmptyMessage>
               ) : (
-                recentRequests.map((request) => (
+                needsRequestRows.map((row) => (
                   <div
-                    key={request.id}
-                    className="grid gap-3 py-4 lg:grid-cols-[1fr_8rem_10rem]"
+                    key={row.lead.id}
+                    className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto]"
                   >
-                    <div>
-                      <Link
-                        href={`/leads/${request.lead.id}`}
-                        className="font-semibold text-slate-950 hover:text-slate-700"
-                      >
-                        {request.customerName}
-                      </Link>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {request.message}
-                      </p>
-                    </div>
-                    <span
-                      className={`h-fit w-fit rounded-lg px-2 py-1 text-xs font-bold ${reviewStatusClassName(
-                        request.status
-                      )}`}
-                    >
-                      {getReviewStatusLabel(request.status)}
-                    </span>
-                    <p className="text-sm font-medium text-slate-500 lg:text-right">
-                      {request.status === "RECEIVED"
-                        ? formatDate(request.receivedAt)
-                        : request.status === "SENT"
-                          ? formatDate(request.sentAt)
-                          : formatDate(request.createdAt)}
-                    </p>
+                    <CustomerIdentity
+                      name={row.lead.customerName}
+                      phone={row.lead.customerPhone}
+                      detail={
+                        row.lead.closedAt
+                          ? `Closed ${formatDate(row.lead.closedAt)}`
+                          : "Captured customer"
+                      }
+                    />
+                    {row.draftRequest ? (
+                      <ReviewSendButton requestId={row.draftRequest.id} />
+                    ) : (
+                      <ReviewSendButton leadId={row.lead.id} />
+                    )}
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-lr-border p-5">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="text-xl font-black text-lr-strong">
+                  Sent, no review yet
+                </h2>
+                <p className="mt-1 text-sm text-lr-muted">
+                  LeadReply checks Google reviews automatically. Use the manual
+                  button only as a backup.
+                </p>
+              </div>
+              <span className="w-fit rounded-full bg-sky-50 px-3 py-1 text-sm font-bold text-sky-700">
+                {noReviewYetRows.length}
+              </span>
+            </div>
+
+            <div className="mt-5 divide-y divide-lr-border">
+              {noReviewYetRows.length === 0 ? (
+                <EmptyMessage>No sent requests are waiting right now.</EmptyMessage>
+              ) : (
+                noReviewYetRows.map((row) => {
+                  const request = row.sentRequest
+
+                  if (!request) {
+                    return null
+                  }
+
+                  return (
+                    <div
+                      key={request.id}
+                      className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto]"
+                    >
+                      <div>
+                        <CustomerIdentity
+                          name={row.lead.customerName}
+                          phone={row.lead.customerPhone}
+                          detail={`Sent ${formatDate(request.sentAt)}`}
+                        />
+                        {request.deliveryError && (
+                          <p className="mt-2 text-sm font-medium text-amber-700">
+                            Delivery note: {request.deliveryError}
+                          </p>
+                        )}
+                      </div>
+                      <ReviewRequestStatusButtons
+                        requestId={request.id}
+                        status={request.status}
+                      />
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-lr-border p-5">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="text-xl font-black text-lr-strong">
+                  Review received
+                </h2>
+                <p className="mt-1 text-sm text-lr-muted">
+                  Customers who completed the review step.
+                </p>
+              </div>
+              <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
+                {reviewLeftRows.length}
+              </span>
+            </div>
+
+            <div className="mt-5 divide-y divide-lr-border">
+              {reviewLeftRows.length === 0 ? (
+                <EmptyMessage>No synced or manually received reviews yet.</EmptyMessage>
+              ) : (
+                reviewLeftRows.map((row) => {
+                  const request = row.receivedRequest
+
+                  if (!request) {
+                    return null
+                  }
+
+                  return (
+                    <div
+                      key={request.id}
+                      className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto]"
+                    >
+                      <div>
+                        <CustomerIdentity
+                          name={row.lead.customerName}
+                          phone={row.lead.customerPhone}
+                          detail={`Review received ${formatDate(
+                            request.externalReview?.reviewCreatedAt ??
+                              request.receivedAt
+                          )}`}
+                        />
+                        {request.externalReview && (
+                          <p className="mt-2 text-sm font-medium text-lr-muted">
+                            Synced from Google:{" "}
+                            {request.externalReview.reviewerName || "Reviewer"} ·{" "}
+                            {request.externalReview.rating || "No"} stars ·{" "}
+                            {request.externalReview.matchedConfidence}% match
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={`h-fit w-fit rounded-lg px-3 py-1 text-sm font-bold ${reviewStatusClassName(
+                          request.status
+                        )}`}
+                      >
+                        {getReviewStatusLabel(request.status)}
+                      </span>
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>

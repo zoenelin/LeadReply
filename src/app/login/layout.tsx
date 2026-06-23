@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { noIndexRobots } from "@/lib/site"
+import { noIndexRobots } from "@/lib/config/site"
 
 export const metadata: Metadata = {
   title: "Log In",

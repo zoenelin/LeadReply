@@ -1,9 +1,8 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { dollarsToCents } from "@/lib/lead-options"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { dollarsToCents } from "@/lib/domain/lead-options"
+import { prisma } from "@/lib/data/prisma"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 const serviceSchema = z.object({
   name: z.string().trim().min(1, "Please enter a service name."),
@@ -24,15 +23,15 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: auth.access.businessId,
     },
     include: {
       _count: {

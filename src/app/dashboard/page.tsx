@@ -1,188 +1,46 @@
 import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
+import { prisma } from "@/lib/data/prisma"
+import { leadStatuses } from "@/lib/domain/status"
 import {
-  businessCategoryLabels,
-  planLabels,
-  planOptions,
-} from "@/lib/business-options"
-import { getBusinessHealthStats } from "@/lib/business-health"
-import { getAverageLeadValueCents } from "@/lib/demo-data"
-import {
-  getConciergeStats,
-  getConciergeStatusLabel,
-} from "@/lib/concierge-intake"
-import {
-  getFollowUpSequenceMessage,
-  getFollowUpSequenceStats,
-} from "@/lib/follow-up-sequences"
-import {
-  getGrowthReadinessStats,
-  getNextBestGrowthAction,
-} from "@/lib/growth-readiness"
-import {
-  getLostRevenueLabel,
-  getLostRevenueMessage,
-  getLostRevenueStats,
-} from "@/lib/lost-revenue"
-import { getLeadQualityScore } from "@/lib/lead-quality"
-import { buildNotifications } from "@/lib/notifications"
-import {
+  buildRevenueSummaryRows,
   formatResponseDuration,
   getResponseSpeedLabel,
   getResponseSpeedMessage,
   getResponseSpeedStats,
-} from "@/lib/response-speed"
+} from "@/services/modules/analytics"
 import {
-  getReviewFunnelMessage,
-  getReviewFunnelStats,
-} from "@/lib/review-funnel"
-import { buildRevenueSummaryRows } from "@/lib/reporting"
+  LeadStatusFunnel,
+  RevenueTrendChart,
+  SourcePerformancePanel,
+} from "@/features/analytics/AnalyticsCharts"
+import { AnalyticsSummaryCards } from "@/features/analytics/AnalyticsSummaryCards"
+import {
+  getMissedCallAssistantStats,
+  formatMoney,
+} from "@/services/modules/core"
+import { getGrowthReadinessStats } from "@/services/modules/marketing"
+import { getReviewFunnelStats } from "@/services/modules/reviews"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { AppNav } from "../components/AppNav"
-import { DemoResetButton } from "../components/DemoResetButton"
+import { AppNav } from "@/components/AppNav"
+import {
+  getSnapshotAnalytics,
+  getSnapshotBusinessContent,
+  getSnapshotLoopItems,
+  getSnapshotModuleCards,
+  getSnapshotWelcomeName,
+} from "@/features/snapshot/snapshot-dashboard"
+import { getBusinessAccessForSession } from "@/services/auth/business-access"
 
 export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "LeadReply dashboard for leads, missed calls, reviews, and setup progress.",
+  title: "Snapshot",
+  description: "LeadReply snapshot for leads, missed calls, reviews, and revenue.",
   robots: {
     index: false,
     follow: false,
   },
-}
-
-const businessTypeContent: Record<
-  string,
-  {
-    headline: string
-    description: string
-    missedCallExample: string
-    replyExample: string
-    reviewPrompt: string
-  }
-> = {
-  AUTOMOTIVE: {
-    headline: "Turn missed service calls into booked appointments.",
-    description:
-      "Use LeadReply to follow up when drivers ask about repairs, inspections, estimates, or availability.",
-    missedCallExample: "New service request",
-    replyExample:
-      "Thanks for calling. What vehicle do you need help with, and what service are you looking for?",
-    reviewPrompt: "Ask customers for a review after a completed repair.",
-  },
-  HOME_SERVICES: {
-    headline: "Recover calls from homeowners who need help fast.",
-    description:
-      "Use LeadReply to follow up when someone calls about repairs, estimates, emergency work, or scheduling.",
-    missedCallExample: "New estimate request",
-    replyExample:
-      "Thanks for calling. What service do you need help with, and what ZIP code are you in?",
-    reviewPrompt: "Ask completed jobs for a Google review after the visit.",
-  },
-  BEAUTY_SERVICES: {
-    headline: "Turn missed appointment calls into booked clients.",
-    description:
-      "Use LeadReply to reply when someone asks about openings, services, pricing, or last-minute availability.",
-    missedCallExample: "New appointment request",
-    replyExample:
-      "Thanks for calling. What service are you looking for, and what day works best?",
-    reviewPrompt: "Ask happy clients for a review after their appointment.",
-  },
-  FOOD_SERVICES: {
-    headline: "Keep food orders, reservations, and questions moving.",
-    description:
-      "Use LeadReply to respond when guests call about hours, reservations, catering, pickup, or large orders.",
-    missedCallExample: "New reservation or order question",
-    replyExample:
-      "Thanks for calling. Are you asking about a reservation, catering, or a pickup order?",
-    reviewPrompt: "Ask guests for a review after a great meal or pickup.",
-  },
-  MEDICAL_WELLNESS: {
-    headline: "Help patients and clients get a quick response.",
-    description:
-      "Use LeadReply to follow up when someone asks about appointments, services, insurance, or availability.",
-    missedCallExample: "New appointment question",
-    replyExample:
-      "Thanks for calling. What type of appointment are you looking for, and what day works best?",
-    reviewPrompt: "Ask satisfied clients for a review after their visit.",
-  },
-  LEGAL: {
-    headline: "Capture consultation requests before they go cold.",
-    description:
-      "Use LeadReply to respond when someone calls about consultations, case fit, fees, or availability.",
-    missedCallExample: "New consultation request",
-    replyExample:
-      "Thanks for calling. What kind of legal help are you looking for, and what is the best time to reach you?",
-    reviewPrompt: "Ask clients for a review after a successful matter closes.",
-  },
-  FITNESS: {
-    headline: "Convert class and membership questions into signups.",
-    description:
-      "Use LeadReply to follow up when people ask about memberships, classes, trials, or personal training.",
-    missedCallExample: "New membership question",
-    replyExample:
-      "Thanks for calling. Are you interested in classes, training, or membership options?",
-    reviewPrompt: "Ask members for a review after a positive milestone.",
-  },
-  REAL_ESTATE: {
-    headline: "Reply quickly to buyers, sellers, and rental leads.",
-    description:
-      "Use LeadReply to follow up when someone asks about listings, showings, valuations, or availability.",
-    missedCallExample: "New property lead",
-    replyExample:
-      "Thanks for calling. Are you looking to buy, sell, rent, or schedule a showing?",
-    reviewPrompt: "Ask clients for a review after closing or move-in.",
-  },
-  PROFESSIONAL_SERVICES: {
-    headline: "Turn missed calls into scheduled consultations.",
-    description:
-      "Use LeadReply to follow up when prospects ask about services, pricing, consultations, or timelines.",
-    missedCallExample: "New consultation request",
-    replyExample:
-      "Thanks for calling. What service are you looking for, and what is the best time to connect?",
-    reviewPrompt: "Ask clients for a review after a successful project.",
-  },
-  RETAIL: {
-    headline: "Keep product questions and store calls moving.",
-    description:
-      "Use LeadReply to respond when shoppers ask about inventory, hours, pickups, or special orders.",
-    missedCallExample: "New shopper question",
-    replyExample:
-      "Thanks for calling. Are you asking about inventory, store hours, or an order?",
-    reviewPrompt: "Ask shoppers for a review after a positive purchase.",
-  },
-  OTHER: {
-    headline: "Capture missed calls and guide customers to the next step.",
-    description:
-      "Use LeadReply to follow up with callers, answer common questions, and request reviews after good experiences.",
-    missedCallExample: "New lead",
-    replyExample:
-      "Thanks for calling. How can we help, and what is the best time to reach you?",
-    reviewPrompt: "Ask satisfied customers for a review after a good experience.",
-  },
-}
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-})
-
-function formatMoney(cents: number) {
-  return currencyFormatter.format(cents / 100)
-}
-
-function formatShortDate(value: Date | null) {
-  if (!value) {
-    return "No date"
-  }
-
-  return value.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  })
 }
 
 export default async function DashboardPage() {
@@ -192,31 +50,24 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
+  const access = await getBusinessAccessForSession(session, "viewAnalytics")
+
+  if (!access) {
+    redirect("/settings/business")
+  }
+
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: access.businessId,
     },
     include: {
       _count: {
         select: {
-          missedCalls: true,
           leads: true,
-          serviceOfferings: true,
-          availabilityWindows: true,
-          growthTasks: true,
-          marketingCalendarItems: true,
         },
       },
     },
   })
-  const repliedCalls = business
-    ? await prisma.missedCall.count({
-        where: {
-          businessId: business.id,
-          status: "REPLIED",
-        },
-      })
-    : 0
   const leadAnalytics = business
     ? await prisma.lead.aggregate({
         where: {
@@ -232,7 +83,17 @@ export default async function DashboardPage() {
         where: {
           businessId: business.id,
           source: "MISSED_CALL",
-          status: "CAPTURED",
+          OR: [
+            {
+              status: leadStatuses.captured,
+            },
+            {
+              status: leadStatuses.closed,
+              capturedValueCents: {
+                gt: 0,
+              },
+            },
+          ],
         },
         _count: {
           _all: true,
@@ -257,7 +118,7 @@ export default async function DashboardPage() {
         },
         include: {
           reviewRequests: true,
-          conciergeIntakes: {
+          missedCallAssistantIntakes: {
             orderBy: {
               updatedAt: "desc",
             },
@@ -278,52 +139,8 @@ export default async function DashboardPage() {
         },
       })
     : []
-  const todayEnd = new Date()
-  todayEnd.setHours(23, 59, 59, 999)
-  const followUpsDue = business
-    ? await prisma.lead.findMany({
-        where: {
-          businessId: business.id,
-          followUpAt: {
-            lte: todayEnd,
-          },
-          followUpCompletedAt: null,
-          status: {
-            in: ["NEW", "CONTACTED"],
-          },
-        },
-        orderBy: {
-          followUpAt: "asc",
-        },
-        take: 4,
-      })
-    : []
-  const followUpSequenceSteps = business
-    ? await prisma.followUpStep.findMany({
-        where: {
-          businessId: business.id,
-        },
-        include: {
-          lead: {
-            select: {
-              id: true,
-              customerName: true,
-              customerPhone: true,
-            },
-          },
-        },
-        orderBy: [
-          {
-            dueAt: "asc",
-          },
-          {
-            stepOrder: "asc",
-          },
-        ],
-      })
-    : []
-  const conciergeIntakes = business
-    ? await prisma.conciergeIntake.findMany({
+  const missedCallAssistantIntakes = business
+    ? await prisma.missedCallAssistantIntake.findMany({
         where: {
           businessId: business.id,
         },
@@ -347,41 +164,6 @@ export default async function DashboardPage() {
         },
       })
     : []
-  const growthTasks = business
-    ? await prisma.growthTask.findMany({
-        where: {
-          businessId: business.id,
-        },
-        orderBy: [
-          {
-            status: "asc",
-          },
-          {
-            dueAt: "asc",
-          },
-          {
-            createdAt: "desc",
-          },
-        ],
-        take: 8,
-      })
-    : []
-  const marketingCalendarItems = business
-    ? await prisma.marketingCalendarItem.findMany({
-        where: {
-          businessId: business.id,
-        },
-        orderBy: [
-          {
-            scheduledFor: "asc",
-          },
-          {
-            createdAt: "desc",
-          },
-        ],
-        take: 8,
-      })
-    : []
   const reviewRequestsCount = reviewRequests.length
   const capturedRevenueCents = leadAnalytics?._sum.capturedValueCents ?? 0
   const recoveredRevenueCents =
@@ -392,995 +174,201 @@ export default async function DashboardPage() {
       ? 0
       : Math.round((recoveredLeadCount / missedCallLeadCount) * 100)
   const sourceRows = buildRevenueSummaryRows(dashboardLeads)
-  const bestSource = [...sourceRows]
-    .filter((source) => source.leadCount > 0)
-    .sort(
-      (left, right) =>
-        right.revenueCents - left.revenueCents ||
-        right.leadCount - left.leadCount
-    )[0]
-  const topSourceRows = [...sourceRows]
-    .filter((source) => source.leadCount > 0)
-    .sort(
-      (left, right) =>
-        right.revenueCents - left.revenueCents ||
-        right.leadCount - left.leadCount
-    )
-    .slice(0, 3)
+  const {
+    activeSourceRows,
+    cards: snapshotAnalyticsCards,
+    monthRows,
+    statusRows,
+  } = getSnapshotAnalytics({
+    leads: dashboardLeads,
+    sourceRows,
+    capturedRevenueCents,
+  })
   const responseStats = getResponseSpeedStats(responseCalls)
   const reviewFunnelStats = getReviewFunnelStats(dashboardLeads)
-  const followUpSequenceStats =
-    getFollowUpSequenceStats(followUpSequenceSteps)
-  const conciergeStats = getConciergeStats(conciergeIntakes)
-  const conciergeActionItems = conciergeIntakes
-    .filter((intake) => intake.status !== "COMPLETED")
-    .slice(0, 3)
-  const dueSequenceSteps = followUpSequenceSteps
-    .filter((step) => step.status === "DRAFT" && step.dueAt && step.dueAt <= todayEnd)
-    .slice(0, 4)
-  const notifications = buildNotifications({
-    leads: dashboardLeads,
-    missedCalls: responseCalls,
-    conciergeIntakes,
-    reviewRequests,
-    followUpSteps: followUpSequenceSteps,
-    now: todayEnd,
-  })
-  const urgentNotificationCount = notifications.filter(
-    (notification) => notification.priority === "HIGH"
-  ).length
-  const lostRevenueStats = getLostRevenueStats({
-    leads: dashboardLeads,
-    missedCalls: responseCalls,
-    missedCallValueCents: getAverageLeadValueCents(
-      business?.businessType ?? "OTHER"
-    ),
-  })
-  const businessHealthStats = business
-    ? getBusinessHealthStats({
-        business,
-        leads: dashboardLeads,
-        missedCalls: responseCalls,
-        reviewRequestCount: reviewRequestsCount,
-        missedCallValueCents: getAverageLeadValueCents(business.businessType),
-      })
-    : null
-  const topQualityLeads = dashboardLeads
-    .map((lead) => ({
-      lead,
-      qualityScore: getLeadQualityScore(lead),
-    }))
-    .filter((item) => item.lead.status !== "LOST")
-    .sort(
-      (left, right) =>
-        right.qualityScore.score - left.qualityScore.score ||
-        right.lead.estimatedValueCents - left.lead.estimatedValueCents
-    )
-    .slice(0, 3)
+  const missedCallAssistantStats = getMissedCallAssistantStats(missedCallAssistantIntakes)
 
-  const dashboardContent =
-    businessTypeContent[business?.businessType ?? ""] ??
-    businessTypeContent.OTHER
-  const savedReplyTemplate = business?.replyTemplate.trim()
-  const replyTemplate =
-    savedReplyTemplate && savedReplyTemplate.length > 0
-      ? savedReplyTemplate
-      : dashboardContent.replyExample
+  const dashboardContent = getSnapshotBusinessContent(business?.businessType)
   const selectedPlan = business?.selectedPlan ?? "BASIC"
-  const selectedPlanDetails =
-    planOptions.find((plan) => plan.value === selectedPlan) ?? planOptions[0]
   const growthStats = business ? getGrowthReadinessStats(business) : null
-  const nextBestGrowthAction = business
-    ? getNextBestGrowthAction({
-        business,
-        growthTasks,
-        marketingCalendarItems,
-      })
-    : null
-  const intakeFormHref = business ? `/intake/${business.id}` : "/settings/business"
-  const setupItems = [
-    {
-      label: "Business profile",
-      complete: Boolean(
-        business?.name &&
-          business.phone &&
-          business.address &&
-          business.city &&
-          business.state &&
-          business.zip
-      ),
-    },
-    {
-      label: "Reply template",
-      complete: Boolean(savedReplyTemplate),
-    },
-    {
-      label: "Service catalog",
-      complete: Boolean((business?._count.serviceOfferings ?? 0) > 0),
-    },
-    {
-      label: "Availability",
-      complete: Boolean((business?._count.availabilityWindows ?? 0) > 0),
-    },
-    {
-      label: "Review request plan",
-      complete: reviewRequestsCount > 0,
-    },
-    {
-      label: "Lead Center",
-      complete: Boolean((business?._count.leads ?? 0) > 0),
-    },
-    ...(selectedPlan === "GROWTH" || selectedPlan === "COMPLETE"
-      ? [
-          {
-            label: "SEO setup",
-            complete: Boolean(growthStats?.seoComplete),
-          },
-          {
-            label: "Growth tasks",
-            complete: Boolean((business?._count.growthTasks ?? 0) > 0),
-          },
-        ]
-      : []),
-    ...(selectedPlan === "COMPLETE"
-      ? [
-          {
-            label: "Marketing plan",
-            complete: Boolean(growthStats?.marketingComplete),
-          },
-          {
-            label: "Marketing calendar",
-            complete: Boolean(
-              (business?._count.marketingCalendarItems ?? 0) > 0
-            ),
-          },
-        ]
-      : []),
-  ]
-  const completedSetupItems = setupItems.filter((item) => item.complete).length
+  const moduleCards = getSnapshotModuleCards({
+    leadCount: business?._count.leads ?? 0,
+    reviewRequestsCount,
+    selectedPlan,
+    growthStats,
+  })
+  const snapshotLoopItems = getSnapshotLoopItems({
+    missedCallAssistantStats,
+    reviewFunnelStats,
+  })
+  const welcomeName = getSnapshotWelcomeName({
+    contactName: business?.contactName,
+    sessionName: session.user.name,
+    email: session.user.email,
+  })
+  const businessName = business?.name || "your business"
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-8 pb-28 md:pb-8">
-      <div className="mx-auto max-w-4xl">
+    <main className="min-h-screen bg-lr-page px-3 py-4 pb-10 sm:px-5 lg:px-8 md:pb-8">
+      <div className="mx-auto max-w-[1600px]">
         <AppNav />
       </div>
 
-      <div className="mx-auto mt-8 max-w-4xl rounded-2xl bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="mt-3 text-slate-600">
-          Logged in as {session.user.email}
-        </p>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/snapshot"
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-          >
-            Open snapshot
-          </Link>
-          <Link
-            href="/analytics"
-            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-          >
-            View full analytics
-          </Link>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6">
-          <p className="text-sm font-medium text-slate-500">
-            Recommended workflow
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-950">
-            {dashboardContent.headline}
-          </h2>
-          <p className="mt-3 max-w-2xl text-slate-700">
-            {dashboardContent.description}
-          </p>
-        </div>
-
-        {nextBestGrowthAction && (
-          <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
-                  Next best action
-                </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                  {nextBestGrowthAction.title}
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                  {nextBestGrowthAction.description}
-                </p>
-                <span className="mt-3 inline-flex rounded-lg bg-white px-3 py-1 text-xs font-bold text-slate-700">
-                  {nextBestGrowthAction.label}
-                </span>
-              </div>
-              <Link
-                href={nextBestGrowthAction.href}
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                Open next step
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {business && business._count.serviceOfferings === 0 && (
-          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-amber-800">
-                  Service setup
-                </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                  Add services so quotes and scheduling become specific.
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                  A service catalog lets the concierge match customer requests
-                  to estimate ranges, durations, and booking rules.
-                </p>
-              </div>
-              <Link
-                href="/settings/services"
-                className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
-              >
-                Add services
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {business && (
-          <div className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-6">
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-rose-800">
-                  Notification center
-                </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                  {notifications.length} alert
-                  {notifications.length === 1 ? "" : "s"} to review
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                  {urgentNotificationCount} high-priority item
-                  {urgentNotificationCount === 1 ? "" : "s"} across leads,
-                  missed calls, AI intakes, follow-ups, and reviews.
-                </p>
-              </div>
-              <Link
-                href="/notifications"
-                className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-rose-100"
-              >
-                Open alerts
-              </Link>
-            </div>
-            {notifications.length > 0 && (
-              <div className="mt-5 grid gap-3 md:grid-cols-3">
-                {notifications.slice(0, 3).map((notification) => (
-                  <Link
-                    key={notification.id}
-                    href={notification.href}
-                    className="rounded-xl bg-white px-4 py-3 hover:bg-rose-100"
-                  >
-                    <p className="text-sm font-semibold text-slate-950">
-                      {notification.title}
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-xs text-slate-600">
-                      {notification.message}
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {businessHealthStats && (
-          <div className="mt-8 rounded-2xl border border-slate-200 p-6">
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                  Business health
-                </p>
-                <h2 className="mt-2 text-3xl font-bold text-slate-950">
-                  {businessHealthStats.score}/100 - {businessHealthStats.label}
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                  {businessHealthStats.message}
-                </p>
-              </div>
-              <Link
-                href={businessHealthStats.weakestFactor.href}
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                Improve score
-              </Link>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {businessHealthStats.factors.map((factor) => (
-                <Link
-                  key={factor.label}
-                  href={factor.href}
-                  className="rounded-xl bg-slate-50 p-4 hover:bg-slate-100"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-slate-950">
-                      {factor.label}
-                    </p>
-                    <span className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-slate-700">
-                      {factor.status}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-2xl font-bold text-slate-950">
-                    {factor.score}/{factor.maxScore}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {factor.message}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {business && (
-          <div className="mt-6 rounded-2xl border border-slate-200 p-5">
-            <div className="flex items-start justify-between gap-4">
-              <p className="text-sm text-slate-500">Business profile</p>
-              <Link
-                href="/settings/business"
-                className="text-sm font-medium text-slate-700 hover:text-slate-950"
-              >
-                Edit
-              </Link>
-            </div>
-            <p className="mt-2 text-xl font-bold">{business.name}</p>
-            <p className="mt-1 text-sm text-slate-600">{business.phone}</p>
-            <p className="mt-1 text-sm text-slate-600">
-              {business.city}, {business.state} {business.zip}
-            </p>
-            <p className="mt-3 inline-flex rounded-lg bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
-              {businessCategoryLabels[business.businessType] ?? "Business"}
-            </p>
-            <p className="mt-3 ms-2 inline-flex rounded-lg bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
-              {planLabels[business.selectedPlan] ?? "Basic"} plan
+      <div className="mx-auto mt-5 max-w-[1600px] px-2 sm:px-0">
+        <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
+          <div>
+            <h1 className="text-3xl font-bold text-lr-strong">
+              Welcome back, {welcomeName}
+            </h1>
+            <p className="mt-3 max-w-4xl text-lr-muted">
+              Working with {businessName}. {dashboardContent.headline}{" "}
+              {dashboardContent.description}
             </p>
           </div>
-        )}
-
-        {business && (
-          <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-6">
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-sky-800">
-                  Lead intake form
-                </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                  Share a form that sends leads into the Lead Center
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                  Add this link to a website, social profile, or message. New
-                  submissions become Website leads automatically.
-                </p>
-                <p className="mt-3 break-all rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-                  {intakeFormHref}
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
-                <Link
-                  href={intakeFormHref}
-                  target="_blank"
-                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-                >
-                  Open form
-                </Link>
-                <Link
-                  href="/leads"
-                  className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-sky-100"
-                >
-                  View leads
-                </Link>
-                <Link
-                  href="/settings/widget"
-                  className="inline-flex items-center justify-center rounded-xl border border-sky-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-sky-100"
-                >
-                  Website widget
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Setup progress
+          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[360px]">
+            <div className="rounded-xl border border-lr-border bg-lr-surface-muted px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-lr-subtle">
+                Captured
               </p>
-              <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                {completedSetupItems} of {setupItems.length} steps ready
+              <p className="mt-1 text-xl font-black text-lr-strong">
+                {formatMoney(capturedRevenueCents)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-lr-border bg-lr-surface-muted px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-lr-subtle">
+                Leads
+              </p>
+              <p className="mt-1 text-xl font-black text-lr-strong">
+                {business?._count.leads ?? 0}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-lr-border bg-lr-surface p-5">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                Lead flow
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-lr-strong">
+                Capture, respond, follow up, and review.
               </h2>
             </div>
             <Link
-              href={
-                (business?._count.serviceOfferings ?? 0) === 0
-                  ? "/settings/services"
-                  : "/settings/automation"
-              }
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              href="/leads"
+              className="text-sm font-semibold text-lr-body hover:text-lr-strong"
             >
-              Finish setup
+              Open Customers/Jobs
             </Link>
           </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {setupItems.map((item) => (
-              <div
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {snapshotLoopItems.map((item) => (
+              <Link
                 key={item.label}
-                className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                href={item.href}
+                className="rounded-xl bg-lr-surface-muted p-4 hover:bg-lr-hover"
               >
-                <span className="text-sm font-medium text-slate-700">
+                <p className="text-xs font-bold uppercase tracking-wide text-lr-subtle">
                   {item.label}
-                </span>
-                <span
-                  className={`rounded-lg px-2 py-1 text-xs font-semibold ${
-                    item.complete
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "bg-amber-50 text-amber-700"
-                  }`}
-                >
-                  {item.complete ? "Ready" : "Next"}
-                </span>
-              </div>
+                </p>
+                <p className="mt-2 text-2xl font-black text-lr-strong">
+                  {item.value}
+                </p>
+                <p className="mt-2 line-clamp-2 text-xs font-medium text-lr-muted">
+                  {item.detail}
+                </p>
+              </Link>
             ))}
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            href="/missed-calls"
-            className="rounded-2xl border border-slate-200 p-5 hover:bg-slate-50"
-          >
-            <p className="text-sm text-slate-500">
-              {dashboardContent.missedCallExample}
-            </p>
-            <p className="mt-2 text-3xl font-bold">
-              {business?._count.missedCalls ?? 0}
-            </p>
-            <p className="mt-3 text-sm font-medium text-slate-700">
-              Open inbox
-            </p>
-          </Link>
-
-          <Link
-            href="/leads"
-            className="rounded-2xl border border-slate-200 p-5 hover:bg-slate-50"
-          >
-            <p className="text-sm text-slate-500">Leads captured</p>
-            <p className="mt-2 text-3xl font-bold">
-              {business?._count.leads ?? 0}
-            </p>
-            <p className="mt-3 text-sm font-medium text-slate-700">
-              View graphs
-            </p>
-          </Link>
-
-          <Link
-            href="/analytics"
-            className="rounded-2xl border border-slate-200 p-5 hover:bg-slate-50"
-          >
-            <p className="text-sm text-slate-500">Money made</p>
-            <p className="mt-2 text-3xl font-bold">
-              {formatMoney(capturedRevenueCents)}
-            </p>
-            <p className="mt-3 text-sm font-medium text-slate-700">
-              Track revenue
-            </p>
-          </Link>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-sm text-slate-500">Texts sent</p>
-            <p className="mt-2 text-3xl font-bold">{repliedCalls}</p>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-rose-200 bg-rose-50 p-6">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-rose-800">
-                Lost revenue tracker
-              </p>
-              <h2 className="mt-2 text-3xl font-bold text-slate-950">
-                {formatMoney(lostRevenueStats.totalLostAndAtRiskCents)} possible
-                leak
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                {getLostRevenueMessage(lostRevenueStats)}
-              </p>
-            </div>
+        <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {moduleCards.map((module) => (
             <Link
-              href="/analytics"
-              className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
+              key={module.label}
+              href={module.href}
+              className="group rounded-2xl border border-lr-border bg-lr-surface p-5 hover:border-lr-border-strong hover:bg-lr-hover"
             >
-              View tracker
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-lr-subtle">
+                    {module.label}
+                  </p>
+                  <p className="mt-2 text-sm text-lr-muted">
+                    {module.description}
+                  </p>
+                </div>
+                <p className="rounded-lg bg-lr-hover px-3 py-1 text-sm font-bold text-lr-strong group-hover:bg-lr-surface">
+                  {module.metric}
+                </p>
+              </div>
             </Link>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl bg-white p-4">
-              <p className="text-sm text-slate-500">At risk now</p>
-              <p className="mt-1 text-2xl font-bold text-slate-950">
-                {formatMoney(lostRevenueStats.totalAtRiskCents)}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-4">
-              <p className="text-sm text-slate-500">Already lost</p>
-              <p className="mt-1 text-2xl font-bold text-slate-950">
-                {formatMoney(lostRevenueStats.lostLeadValueCents)}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-4">
-              <p className="text-sm text-slate-500">Status</p>
-              <p className="mt-1 text-2xl font-bold text-slate-950">
-                {getLostRevenueLabel(lostRevenueStats)}
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
 
-        <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+        <section id="money-made" className="mt-10 scroll-mt-24">
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
-                ROI snapshot
+              <p className="text-sm font-semibold uppercase tracking-wide text-lr-accent">
+                Money made
               </p>
-              <h2 className="mt-2 text-3xl font-bold text-slate-950">
-                {formatMoney(recoveredRevenueCents)} recovered
+              <h2 className="mt-2 text-3xl font-bold text-lr-strong">
+                {formatMoney(capturedRevenueCents)} made
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                Captured revenue from missed-call leads. {recoveredLeadCount} of{" "}
-                {missedCallLeadCount} missed-call leads are captured so far.
+              <p className="mt-2 max-w-2xl text-sm text-lr-body">
+                Captured revenue from leads and missed-call follow-up.{" "}
+                {formatMoney(recoveredRevenueCents)} came from missed-call leads,
+                with {recoveredLeadCount} of {missedCallLeadCount} missed-call
+                leads captured so far.
               </p>
             </div>
-            <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
-              <p className="text-sm font-medium text-slate-500">
+            <div className="rounded-2xl border border-lr-border bg-lr-surface px-5 py-4 text-center shadow-sm shadow-lr-shadow/30">
+              <p className="text-sm font-medium text-lr-subtle">
                 Missed-call capture rate
               </p>
-              <p className="mt-1 text-3xl font-bold text-slate-950">
+              <p className="mt-1 text-3xl font-bold text-lr-strong">
                 {missedCallCaptureRate}%
               </p>
             </div>
           </div>
-        </div>
 
-        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
+          <AnalyticsSummaryCards cards={snapshotAnalyticsCards} />
+
+          <div className="mt-8 grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
+            <RevenueTrendChart months={monthRows} />
+            <LeadStatusFunnel rows={statusRows} />
+          </div>
+
+          <div className="mt-4">
+            <SourcePerformancePanel rows={activeSourceRows} />
+          </div>
+        </section>
+
+        <div className="mt-8 rounded-2xl border border-lr-border p-5">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
-              <p className="text-sm font-medium text-slate-500">
+              <p className="text-sm font-medium text-lr-subtle">
                 Response speed
               </p>
-              <h2 className="mt-2 text-2xl font-bold text-slate-950">
+              <h2 className="mt-2 text-2xl font-bold text-lr-strong">
                 {formatResponseDuration(responseStats.averageMinutes)}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-600">
+              <p className="mt-2 max-w-2xl text-sm text-lr-muted">
                 {getResponseSpeedMessage(responseStats)}
               </p>
             </div>
-            <div className="rounded-2xl bg-slate-50 px-5 py-4 text-center">
-              <p className="text-sm font-medium text-slate-500">
+            <div className="rounded-2xl bg-lr-surface-muted px-5 py-4 text-center">
+              <p className="text-sm font-medium text-lr-subtle">
                 Speed rating
               </p>
-              <p className="mt-1 text-xl font-bold text-slate-950">
+              <p className="mt-1 text-xl font-bold text-lr-strong">
                 {getResponseSpeedLabel(responseStats.averageMinutes)}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-indigo-200 bg-indigo-50 p-6">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-indigo-800">
-                AI missed-call concierge
-              </p>
-              <h2 className="mt-2 text-3xl font-bold text-slate-950">
-                {conciergeStats.readyCount} intake
-                {conciergeStats.readyCount === 1 ? "" : "s"} ready for review
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                Guard-railed AI conversations collect customer details after missed
-                calls and turn finished intakes into leads.
-              </p>
-            </div>
-            <Link
-              href="/missed-calls"
-              className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
-            >
-              Open concierge
-            </Link>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-4">
-            <div className="rounded-xl bg-white p-4">
-              <p className="text-sm text-slate-500">In progress</p>
-              <p className="mt-1 text-2xl font-bold text-slate-950">
-                {conciergeStats.inProgressCount}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-4">
-              <p className="text-sm text-slate-500">Scheduling needed</p>
-              <p className="mt-1 text-2xl font-bold text-slate-950">
-                {conciergeStats.schedulingRequestedCount}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-4">
-              <p className="text-sm text-slate-500">Quotes requested</p>
-              <p className="mt-1 text-2xl font-bold text-slate-950">
-                {conciergeStats.quoteRequestedCount}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-4">
-              <p className="text-sm text-slate-500">Total intakes</p>
-              <p className="mt-1 text-2xl font-bold text-slate-950">
-                {conciergeStats.totalCount}
-              </p>
-            </div>
-          </div>
-          {conciergeActionItems.length > 0 && (
-            <div className="mt-5 space-y-3">
-              {conciergeActionItems.map((intake) => (
-                <Link
-                  key={intake.id}
-                  href={
-                    intake.lead?.id
-                      ? `/leads/${intake.lead.id}`
-                      : "/missed-calls"
-                  }
-                  className="block rounded-xl bg-white px-4 py-3 hover:bg-indigo-100"
-                >
-                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
-                    <div>
-                      <p className="font-semibold text-slate-950">
-                        {intake.missedCall.callerName}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {intake.summary || intake.missedCall.reason}
-                      </p>
-                    </div>
-                    <p className="text-sm font-semibold text-indigo-800">
-                      {getConciergeStatusLabel(intake.status)}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-violet-200 bg-violet-50 p-5">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-violet-800">
-                Lead quality
-              </p>
-              <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                Prioritize the warmest opportunities
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                Scores combine source, value, follow-up timing, service match,
-                AI intake signals, and appointment outcomes.
-              </p>
-            </div>
-            <Link
-              href="/leads"
-              className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-violet-100"
-            >
-              Open leads
-            </Link>
-          </div>
-          <div className="mt-5 space-y-3">
-            {topQualityLeads.length === 0 ? (
-              <div className="rounded-xl bg-white px-4 py-3 text-sm text-slate-600">
-                Add leads to see quality scores.
-              </div>
-            ) : (
-              topQualityLeads.map(({ lead, qualityScore }) => (
-                <Link
-                  key={lead.id}
-                  href={`/leads/${lead.id}`}
-                  className="block rounded-xl bg-white px-4 py-3 hover:bg-violet-100"
-                >
-                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                    <div>
-                      <p className="font-semibold text-slate-950">
-                        {lead.customerName}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {qualityScore.reason}
-                      </p>
-                    </div>
-                    <p className="text-sm font-bold text-violet-800">
-                      {qualityScore.label} {qualityScore.score}
-                    </p>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Best performing source
-              </p>
-              {bestSource ? (
-                <>
-                  <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                    {bestSource.label}
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                    {bestSource.label} has captured {bestSource.leadCount} leads
-                    and {formatMoney(bestSource.revenueCents)} in captured revenue.
-                  </p>
-                </>
-              ) : (
-                <p className="mt-2 text-sm text-slate-600">
-                  Add or convert a lead to see which source performs best.
-                </p>
-              )}
-            </div>
-            <Link
-              href="/analytics"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              View source report
-            </Link>
-          </div>
-
-          {topSourceRows.length > 0 && (
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              {topSourceRows.map((source) => (
-                <div key={source.source} className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-950">
-                    {source.label}
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-950">
-                    {formatMoney(source.revenueCents)}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {source.leadCount} leads, {source.conversionRate}% captured
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-sm font-medium text-slate-500">
-                Follow-ups due today
-              </p>
-              <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                {followUpsDue.length} lead
-                {followUpsDue.length === 1 ? "" : "s"} need attention
-              </h2>
-            </div>
-            <Link
-              href="/leads"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              Open Lead Center
-            </Link>
-          </div>
-          <div className="mt-5 space-y-3">
-            {followUpsDue.length === 0 ? (
-              <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                No follow-ups due today.
-              </div>
-            ) : (
-              followUpsDue.map((lead) => (
-                <Link
-                  key={lead.id}
-                  href={`/leads/${lead.id}`}
-                  className="block rounded-xl bg-slate-50 px-4 py-3 hover:bg-slate-100"
-                >
-                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                    <div>
-                      <p className="font-semibold text-slate-950">
-                        {lead.customerName}
-                      </p>
-                      <p className="text-sm text-slate-600">
-                        {lead.followUpNote || "Follow up with this lead."}
-                      </p>
-                    </div>
-                    <p className="text-sm font-medium text-slate-500">
-                      {lead.customerPhone}
-                    </p>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-5">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-sky-800">
-                Follow-up sequences
-              </p>
-              <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                {followUpSequenceStats.dueTodayCount} step
-                {followUpSequenceStats.dueTodayCount === 1 ? "" : "s"} ready
-                today
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-700">
-                {getFollowUpSequenceMessage(followUpSequenceStats)}
-              </p>
-            </div>
-            <Link
-              href="/leads"
-              className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-50"
-            >
-              Open sequences
-            </Link>
-          </div>
-          <div className="mt-5 space-y-3">
-            {dueSequenceSteps.length === 0 ? (
-              <div className="rounded-xl bg-white px-4 py-3 text-sm text-slate-600">
-                No sequence steps are due today.
-              </div>
-            ) : (
-              dueSequenceSteps.map((step) => (
-                <Link
-                  key={step.id}
-                  href={`/leads/${step.lead.id}`}
-                  className="block rounded-xl bg-white px-4 py-3 hover:bg-sky-100"
-                >
-                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
-                    <div>
-                      <p className="font-semibold text-slate-950">
-                        {step.title} for {step.lead.customerName}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {step.message}
-                      </p>
-                    </div>
-                    <div className="text-sm font-medium text-slate-500 sm:text-right">
-                      <p>{formatShortDate(step.dueAt)}</p>
-                      <p>{step.lead.customerPhone}</p>
-                    </div>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-sm font-medium text-slate-500">
-              {savedReplyTemplate ? "Saved text reply" : "Suggested text reply"}
-            </p>
-            <p className="mt-3 text-slate-800">{replyTemplate}</p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-sm font-medium text-slate-500">
-              Review funnel
-            </p>
-            <p className="mt-3 text-slate-800">
-              {getReviewFunnelMessage(reviewFunnelStats)}
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div>
-                <p className="text-sm text-slate-500">Captured</p>
-                <p className="text-lg font-bold text-slate-950">
-                  {reviewFunnelStats.capturedLeadCount}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Requested</p>
-                <p className="text-lg font-bold text-slate-950">
-                  {reviewFunnelStats.requestedCapturedLeadCount}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500">Received</p>
-                <p className="text-lg font-bold text-slate-950">
-                  {reviewFunnelStats.receivedCount}
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/reviews"
-              className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              Open review funnel
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-slate-200 p-5">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Demo tools</p>
-              <h2 className="mt-2 text-xl font-bold text-slate-950">
-                Reset sample data
-              </h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Restore the sample leads, missed calls, and review workflow for
-                demos or testing.
-              </p>
-            </div>
-            <DemoResetButton />
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          {(selectedPlan === "GROWTH" || selectedPlan === "COMPLETE") && (
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm font-medium text-slate-500">
-                SEO setup
-              </p>
-              <p className="mt-2 text-xl font-bold text-slate-950">
-                {growthStats?.seoReadyCount ?? 0}/
-                {growthStats?.seoTotalCount ?? 0} ready
-              </p>
-              <p className="mt-3 text-slate-800">
-                Services, service areas, keywords, website pages, and local
-                search profile details.
-              </p>
-              <Link
-                href="/settings/growth"
-                className="mt-4 inline-flex rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                Open growth setup
-              </Link>
-            </div>
-          )}
-
-          {selectedPlan === "COMPLETE" && (
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm font-medium text-slate-500">
-                Marketing plan
-              </p>
-              <p className="mt-2 text-xl font-bold text-slate-950">
-                {growthStats?.marketingReadyCount ?? 0}/
-                {growthStats?.marketingTotalCount ?? 0} ready
-              </p>
-              <p className="mt-3 text-slate-800">
-                Channels, audience, goals, offer, content themes, and brand
-                voice.
-              </p>
-              <Link
-                href="/settings/growth"
-                className="mt-4 inline-flex rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                Open growth setup
-              </Link>
-            </div>
-          )}
-
-          <div className="rounded-2xl border border-slate-200 p-5">
-            <p className="text-sm font-medium text-slate-500">
-              Current package
-            </p>
-            <p className="mt-2 text-xl font-bold text-slate-950">
-              {selectedPlanDetails.label}
-            </p>
-            <p className="mt-2 text-slate-700">{selectedPlanDetails.tagline}</p>
-            <p className="mt-3 text-sm font-semibold text-slate-500">
-              Pricing coming soon
-            </p>
-            <Link
-              href="/settings/billing"
-              className="mt-4 inline-flex rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              Manage plan
-            </Link>
-          </div>
-        </div>
       </div>
     </main>
   )

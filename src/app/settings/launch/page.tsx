@@ -3,15 +3,16 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
-import { isAdminEmail } from "@/lib/admin"
-import { businessCategoryLabels, planLabels } from "@/lib/business-options"
+import { isAdminEmail } from "@/lib/security/admin"
+import { businessCategoryLabels, planLabels } from "@/lib/domain/business-options"
 import {
   getIntegrationStatuses,
   getLaunchReadinessScore,
-} from "@/lib/integration-status"
-import { getGrowthReadinessStats } from "@/lib/growth-readiness"
-import { prisma } from "@/lib/prisma"
-import { AppNav } from "../../components/AppNav"
+} from "@/lib/config/integration-status"
+import { getGrowthReadinessStats } from "@/services/modules/seo"
+import { prisma } from "@/lib/data/prisma"
+import { SettingsShell } from "@/components/SettingsShell"
+import { getBusinessAccessForSession } from "@/services/auth/business-access"
 import { LaunchActionPanel } from "./LaunchActionPanel"
 
 export const metadata: Metadata = {
@@ -40,9 +41,15 @@ export default async function LaunchSettingsPage() {
     redirect("/login")
   }
 
+  const access = await getBusinessAccessForSession(session, "manageBusinessProfile")
+
+  if (!access) {
+    redirect("/dashboard")
+  }
+
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: access.businessId,
     },
     include: {
       _count: {
@@ -55,6 +62,9 @@ export default async function LaunchSettingsPage() {
           teamMembers: true,
           growthTasks: true,
           marketingCalendarItems: true,
+          serviceOpportunities: true,
+          websiteAuditRuns: true,
+          growthPlans: true,
         },
       },
     },
@@ -83,6 +93,12 @@ export default async function LaunchSettingsPage() {
         business.state || "state not set"
       }`,
       href: "/settings/business",
+    },
+    {
+      label: "Digital presence",
+      ready: growthStats.digitalPresenceComplete,
+      summary: `${growthStats.digitalPresenceReadyCount}/${growthStats.digitalPresenceTotalCount} presence items ready`,
+      href: "/growth",
     },
     {
       label: "Services",
@@ -118,7 +134,7 @@ export default async function LaunchSettingsPage() {
       href: "/settings/team",
     },
     {
-      label: "Automation guard rails",
+      label: "Automation rules",
       ready: Boolean(business.callbackTimeframe && business.quoteDisclaimer),
       summary: business.phoneAutomationEnabled
         ? "Missed-call automation is enabled"
@@ -137,15 +153,31 @@ export default async function LaunchSettingsPage() {
             label: "SEO setup",
             ready: growthStats.seoComplete,
             summary: `${growthStats.seoReadyCount}/${growthStats.seoTotalCount} SEO items ready`,
-            href: "/settings/growth",
+            href: "/growth",
           },
           {
-            label: "Growth workbench",
+            label: "SEO workbench",
             ready: business._count.growthTasks > 0,
             summary: `${business._count.growthTasks} saved growth task${
               business._count.growthTasks === 1 ? "" : "s"
             }`,
-            href: "/settings/growth",
+            href: "/growth",
+          },
+          {
+            label: "Deep audit",
+            ready: business._count.websiteAuditRuns > 0,
+            summary: `${business._count.websiteAuditRuns} website audit${
+              business._count.websiteAuditRuns === 1 ? "" : "s"
+            } completed`,
+            href: "/growth",
+          },
+          {
+            label: "Growth plan",
+            ready: business._count.growthPlans > 0,
+            summary: `${business._count.growthPlans} generated growth plan${
+              business._count.growthPlans === 1 ? "" : "s"
+            }`,
+            href: "/growth",
           },
         ]
       : []),
@@ -155,7 +187,7 @@ export default async function LaunchSettingsPage() {
             label: "Marketing setup",
             ready: growthStats.marketingComplete,
             summary: `${growthStats.marketingReadyCount}/${growthStats.marketingTotalCount} marketing items ready`,
-            href: "/settings/growth",
+            href: "/growth",
           },
           {
             label: "Marketing calendar",
@@ -163,18 +195,36 @@ export default async function LaunchSettingsPage() {
             summary: `${business._count.marketingCalendarItems} calendar item${
               business._count.marketingCalendarItems === 1 ? "" : "s"
             } planned`,
-            href: "/settings/growth",
+            href: "/growth",
           },
         ]
       : []),
   ]
+  const requiredBusinessLabels = new Set([
+    "Business profile",
+    "Services",
+    "Availability",
+    "Automation rules",
+  ])
+  const missingRequiredProviders = statuses.filter(
+    (item) => item.required && !item.configured
+  )
+  const businessBlockers = businessChecks.filter(
+    (item) => !item.ready && requiredBusinessLabels.has(item.label)
+  )
+  const optionalLaunchItems = businessChecks.filter(
+    (item) => !item.ready && !requiredBusinessLabels.has(item.label)
+  )
+  const launchIsBlocked =
+    missingRequiredProviders.length > 0 || businessBlockers.length > 0
+  const requiredProviderCount = statuses.filter((item) => item.required).length
+  const configuredProviderCount = statuses.filter(
+    (item) => item.required && item.configured
+  ).length
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-8 pb-28 md:pb-8">
-      <div className="mx-auto max-w-6xl">
-        <AppNav />
-
-        <section className="mt-8 rounded-2xl bg-slate-950 p-5 text-white shadow-sm sm:p-8">
+    <SettingsShell>
+        <section className="rounded-2xl bg-lr-primary p-5 text-lr-on-primary shadow-sm sm:p-8">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-emerald-300">
@@ -183,44 +233,147 @@ export default async function LaunchSettingsPage() {
               <h1 className="mt-2 text-3xl font-bold">
                 {business.name} is {readinessScore}% ready for launch
               </h1>
-              <p className="mt-3 max-w-2xl text-slate-300">
+              <p className="mt-3 max-w-2xl text-lr-on-primary/75">
                 Connect the live providers, confirm the business setup, then
                 clear CRM activity before onboarding the first client.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 p-4">
-              <p className="text-sm text-slate-300">Plan</p>
+              <p className="text-sm text-lr-on-primary/75">Plan</p>
               <p className="mt-1 text-xl font-bold">
                 {planLabels[business.selectedPlan] ?? "Basic"}
               </p>
-              <p className="mt-1 text-sm text-slate-300">
+              <p className="mt-1 text-sm text-lr-on-primary/75">
                 {businessCategoryLabels[business.businessType] ?? "Business"}
               </p>
             </div>
           </div>
         </section>
 
+        <section
+          className={`mt-6 rounded-2xl border p-5 shadow-sm sm:p-6 ${
+            launchIsBlocked
+              ? "border-amber-200 bg-amber-50"
+              : "border-emerald-200 bg-emerald-50"
+          }`}
+        >
+          <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+            <div>
+              <p
+                className={`text-sm font-semibold uppercase tracking-wide ${
+                  launchIsBlocked ? "text-amber-800" : "text-emerald-800"
+                }`}
+              >
+                Launch decision
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-lr-strong">
+                {launchIsBlocked
+                  ? "Not ready for real customer traffic yet."
+                  : "Ready for a controlled launch."}
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-lr-body">
+                {configuredProviderCount}/{requiredProviderCount} required
+                providers are configured. Clear the required provider and
+                business blockers before connecting live SMS, billing, and
+                customer traffic.
+              </p>
+            </div>
+            <Link
+              href={userIsAdmin ? "/admin#integrations" : "#provider-checklist"}
+              className="inline-flex items-center justify-center rounded-xl bg-lr-primary px-5 py-3 text-sm font-semibold text-lr-on-primary hover:bg-lr-primary-hover"
+            >
+              {userIsAdmin ? "Open admin checks" : "Review provider list"}
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            <div className="rounded-2xl bg-lr-surface p-4">
+              <p className="text-sm font-bold text-lr-strong">
+                Provider blockers
+              </p>
+              <div className="mt-3 space-y-2 text-sm text-lr-muted">
+                {missingRequiredProviders.length === 0 ? (
+                  <p>No required provider blockers.</p>
+                ) : (
+                  missingRequiredProviders.map((item) => (
+                    <Link
+                      key={item.key}
+                      href="#provider-checklist"
+                      className="block rounded-xl bg-lr-surface-muted px-3 py-2 hover:bg-lr-hover"
+                    >
+                      {item.label}: {item.missing.join(", ")}
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-lr-surface p-4">
+              <p className="text-sm font-bold text-lr-strong">
+                Business blockers
+              </p>
+              <div className="mt-3 space-y-2 text-sm text-lr-muted">
+                {businessBlockers.length === 0 ? (
+                  <p>No required business blockers.</p>
+                ) : (
+                  businessBlockers.map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="block rounded-xl bg-lr-surface-muted px-3 py-2 hover:bg-lr-hover"
+                    >
+                      {item.label}: {item.summary}
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+            <div className="rounded-2xl bg-lr-surface p-4">
+              <p className="text-sm font-bold text-lr-strong">
+                Optional polish
+              </p>
+              <div className="mt-3 space-y-2 text-sm text-lr-muted">
+                {optionalLaunchItems.length === 0 ? (
+                  <p>All optional launch polish is complete.</p>
+                ) : (
+                  optionalLaunchItems.slice(0, 4).map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="block rounded-xl bg-lr-surface-muted px-3 py-2 hover:bg-lr-hover"
+                    >
+                      {item.label}: {item.summary}
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
+          <div
+            id="provider-checklist"
+            className="rounded-2xl bg-lr-surface p-5 shadow-sm sm:p-6"
+          >
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <div>
-                <h2 className="text-xl font-bold text-slate-950">
+                <h2 className="text-xl font-bold text-lr-strong">
                   Provider checklist
                 </h2>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-lr-muted">
                   Required providers are needed before real customer traffic.
                 </p>
               </div>
               <Link
                 href="/settings/automation"
-                className="rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                className="rounded-xl border border-lr-border-strong px-4 py-3 text-center text-sm font-semibold text-lr-strong hover:bg-lr-hover"
               >
                 Automation setup
               </Link>
               {userIsAdmin && (
                 <Link
                   href="/admin"
-                  className="rounded-xl bg-slate-900 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-slate-800"
+                  className="rounded-xl bg-lr-primary px-4 py-3 text-center text-sm font-semibold text-lr-on-primary hover:bg-lr-primary-hover"
                 >
                   Admin operations
                 </Link>
@@ -231,12 +384,12 @@ export default async function LaunchSettingsPage() {
               {statuses.map((item) => (
                 <div
                   key={item.key}
-                  className="rounded-2xl border border-slate-200 p-4"
+                  className="rounded-2xl border border-lr-border p-4"
                 >
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-bold text-slate-950">
+                        <h3 className="font-bold text-lr-strong">
                           {item.label}
                         </h3>
                         <span
@@ -247,12 +400,12 @@ export default async function LaunchSettingsPage() {
                           {statusLabel(item.configured)}
                         </span>
                         {item.required && (
-                          <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
+                          <span className="rounded-lg bg-lr-hover px-2 py-1 text-xs font-bold text-lr-muted">
                             Required
                           </span>
                         )}
                       </div>
-                      <p className="mt-2 text-sm text-slate-600">
+                      <p className="mt-2 text-sm text-lr-muted">
                         {item.summary}
                       </p>
                     </div>
@@ -267,8 +420,8 @@ export default async function LaunchSettingsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="text-xl font-bold text-slate-950">
+          <div className="rounded-2xl bg-lr-surface p-5 shadow-sm sm:p-6">
+            <h2 className="text-xl font-bold text-lr-strong">
               Business checklist
             </h2>
             <div className="mt-5 space-y-3">
@@ -276,14 +429,14 @@ export default async function LaunchSettingsPage() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="block rounded-2xl border border-slate-200 p-4 hover:bg-slate-50"
+                  className="block rounded-2xl border border-lr-border p-4 hover:bg-lr-hover"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-bold text-slate-950">
+                      <h3 className="font-bold text-lr-strong">
                         {item.label}
                       </h3>
-                      <p className="mt-1 text-sm text-slate-600">
+                      <p className="mt-1 text-sm text-lr-muted">
                         {item.summary}
                       </p>
                     </div>
@@ -302,54 +455,54 @@ export default async function LaunchSettingsPage() {
         </section>
 
         <section className="mt-6 grid gap-5 lg:grid-cols-3">
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">CRM records</p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">
+          <div className="rounded-2xl bg-lr-surface p-5 shadow-sm">
+            <p className="text-sm text-lr-subtle">CRM records</p>
+            <p className="mt-2 text-3xl font-bold text-lr-strong">
               {business._count.leads}
             </p>
-            <p className="mt-1 text-sm text-slate-600">Leads in workspace</p>
+            <p className="mt-1 text-sm text-lr-muted">Leads in workspace</p>
           </div>
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Missed calls</p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">
+          <div className="rounded-2xl bg-lr-surface p-5 shadow-sm">
+            <p className="text-sm text-lr-subtle">Missed calls</p>
+            <p className="mt-2 text-3xl font-bold text-lr-strong">
               {business._count.missedCalls}
             </p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-lr-muted">
               Calls ready for follow-up
             </p>
           </div>
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <p className="text-sm text-slate-500">Reviews</p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">
+          <div className="rounded-2xl bg-lr-surface p-5 shadow-sm">
+            <p className="text-sm text-lr-subtle">Reviews</p>
+            <p className="mt-2 text-3xl font-bold text-lr-strong">
               {business._count.reviewRequests}
             </p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-lr-muted">
               Review requests tracked
             </p>
           </div>
         </section>
 
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm sm:p-6">
-          <h2 className="text-xl font-bold text-slate-950">
+        <section className="mt-6 rounded-2xl bg-lr-surface p-5 shadow-sm sm:p-6">
+          <h2 className="text-xl font-bold text-lr-strong">
             Deployment notes
           </h2>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="font-bold text-slate-950">Environment</p>
-              <p className="mt-2 text-sm text-slate-600">
+            <div className="rounded-2xl bg-lr-surface-muted p-4">
+              <p className="font-bold text-lr-strong">Environment</p>
+              <p className="mt-2 text-sm text-lr-muted">
                 Add production env values for database, auth, Twilio, OpenAI,
                 Stripe, and app URLs.
               </p>
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="font-bold text-slate-950">Database</p>
-              <p className="mt-2 text-sm text-slate-600">
+            <div className="rounded-2xl bg-lr-surface-muted p-4">
+              <p className="font-bold text-lr-strong">Database</p>
+              <p className="mt-2 text-sm text-lr-muted">
                 Run Prisma migrations against the hosted PostgreSQL database.
               </p>
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="font-bold text-slate-950">Webhooks</p>
-              <p className="mt-2 text-sm text-slate-600">
+            <div className="rounded-2xl bg-lr-surface-muted p-4">
+              <p className="font-bold text-lr-strong">Webhooks</p>
+              <p className="mt-2 text-sm text-lr-muted">
                 Point Stripe webhooks to /api/webhooks/stripe, Twilio status
                 callbacks to /api/webhooks/twilio/status, and inbound SMS to
                 /api/webhooks/twilio/inbound after deployment.
@@ -361,7 +514,6 @@ export default async function LaunchSettingsPage() {
         <div className="mt-6">
           <LaunchActionPanel />
         </div>
-      </div>
-    </main>
+    </SettingsShell>
   )
 }

@@ -1,13 +1,19 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
-import { isPhoneOptedOut } from "@/lib/sms-compliance"
-import { isTwilioConfigured, sendSms } from "@/lib/twilio"
+import { prisma } from "@/lib/data/prisma"
+import { communicationStatuses } from "@/lib/domain/status"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { isPhoneOptedOut } from "@/lib/integrations/sms-compliance"
+import { sendTrackedSms } from "@/services/communications/send-tracked-sms"
+
+const followUpStepStatuses = [
+  communicationStatuses.draft,
+  communicationStatuses.sent,
+  communicationStatuses.skipped,
+] as const
 
 const followUpStepUpdateSchema = z.object({
-  status: z.enum(["DRAFT", "SENT", "SKIPPED"]),
+  status: z.enum(followUpStepStatuses),
 })
 
 export async function PATCH(
@@ -20,19 +26,17 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
   const existingStep = await prisma.followUpStep.findFirst({
     where: {
       id,
-      business: {
-        userId: session.user.id,
-      },
+      businessId: auth.access.businessId,
     },
     include: {
       lead: true,
@@ -56,11 +60,14 @@ export async function PATCH(
 
     const { status } = result.data
     const shouldSendSms =
-      status === "SENT" &&
-      existingStep.status !== "SENT" &&
+      status === communicationStatuses.sent &&
+      existingStep.status !== communicationStatuses.sent &&
       existingStep.channel === "TEXT"
     const optedOut = shouldSendSms
-      ? await isPhoneOptedOut(existingStep.lead.customerPhone, existingStep.businessId)
+      ? await isPhoneOptedOut(
+          existingStep.lead.customerPhone,
+          existingStep.businessId
+        )
       : false
     const delivery = shouldSendSms
       ? optedOut
@@ -69,18 +76,12 @@ export async function PATCH(
             provider: "TWILIO" as const,
             reason: "This phone number has opted out of SMS messages.",
           }
-        : isTwilioConfigured()
-          ? await sendSms({
-              to: existingStep.lead.customerPhone,
-              body: existingStep.message,
-              statusCallbackPath: "/api/webhooks/twilio/status",
-            })
-          : {
-              ok: false as const,
-              provider: "TWILIO" as const,
-              reason:
-                "Twilio is not configured; follow-up was marked sent manually.",
-            }
+        : await sendTrackedSms({
+            to: existingStep.lead.customerPhone,
+            body: existingStep.message,
+            businessId: existingStep.businessId,
+            purpose: "FOLLOW_UP_STEP",
+          })
       : null
     const followUpStep = await prisma.followUpStep.update({
       where: {
@@ -88,7 +89,10 @@ export async function PATCH(
       },
       data: {
         status,
-        sentAt: status === "SENT" ? existingStep.sentAt ?? new Date() : null,
+        sentAt:
+          status === communicationStatuses.sent
+            ? existingStep.sentAt ?? new Date()
+            : null,
         deliveryProvider: delivery?.ok ? delivery.provider : "",
         providerMessageId: delivery?.ok ? delivery.messageId : "",
         deliveryError: delivery && !delivery.ok ? delivery.reason : "",

@@ -1,8 +1,7 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 const availabilitySchema = z.object({
   dayOfWeek: z.coerce.number().int().min(0).max(6),
@@ -19,15 +18,15 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageAppointments", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: auth.access.businessId,
     },
   })
 

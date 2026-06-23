@@ -2,19 +2,20 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { authOptions } from "@/auth/auth"
 import {
-  normalizeConciergeAnswers,
-  normalizeConciergeTranscript,
-} from "@/lib/concierge-intake"
-import { getStarterMissedCalls } from "@/lib/demo-data"
-import { prisma } from "@/lib/prisma"
+  normalizeMissedCallAssistantAnswers,
+  normalizeMissedCallAssistantTranscript,
+} from "@/services/modules/core"
+import { getStarterMissedCalls } from "@/lib/data/demo-data"
+import { prisma } from "@/lib/data/prisma"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
-import { AppNav } from "../components/AppNav"
-import { MissedCallsInbox } from "./MissedCallsInbox"
+import { AppNav } from "@/components/AppNav"
+import { MissedCallsInbox } from "@/features/core/MissedCallsInbox"
+import { getBusinessAccessForSession } from "@/services/auth/business-access"
 
 export const metadata: Metadata = {
   title: "Missed Call Inbox",
-  description: "Review missed calls and run the LeadReply concierge intake.",
+  description: "Review missed calls and automatic LeadReply missed-call assistant texts.",
   robots: {
     index: false,
     follow: false,
@@ -31,9 +32,15 @@ export default async function MissedCallsPage() {
     redirect("/login")
   }
 
+  const access = await getBusinessAccessForSession(session, "manageMessages")
+
+  if (!access) {
+    redirect("/dashboard")
+  }
+
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: access.businessId,
     },
     include: {
       missedCalls: {
@@ -41,7 +48,17 @@ export default async function MissedCallsPage() {
           createdAt: "desc",
         },
         include: {
-          conciergeIntake: true,
+          missedCallAssistantIntake: true,
+          smsMessages: {
+            orderBy: {
+              createdAt: "asc",
+            },
+          },
+          routingAttempts: {
+            orderBy: {
+              routeOrder: "asc",
+            },
+          },
         },
       },
     },
@@ -66,7 +83,17 @@ export default async function MissedCallsPage() {
         createdAt: "desc",
       },
       include: {
-        conciergeIntake: true,
+        missedCallAssistantIntake: true,
+        smsMessages: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        routingAttempts: {
+          orderBy: {
+            routeOrder: "asc",
+          },
+        },
       },
     })
   }
@@ -76,32 +103,32 @@ export default async function MissedCallsPage() {
     savedReplyTemplate.length > 0 ? savedReplyTemplate : fallbackReply
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-8 pb-28 md:pb-8">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-lr-page px-3 py-4 pb-8 sm:px-4 lg:px-6">
+      <div className="mx-auto max-w-[1600px]">
         <AppNav />
 
-        <section className="mt-8 rounded-2xl bg-white p-8 shadow-sm">
+        <section className="mt-4 rounded-2xl bg-lr-surface p-4 shadow-sm sm:p-6">
           <Link
             href="/dashboard"
-            className="text-sm font-medium text-slate-600 hover:text-slate-950"
+            className="text-sm font-medium text-lr-muted hover:text-lr-strong"
           >
             Back to dashboard
           </Link>
 
-          <div className="mt-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="mt-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
-              <h1 className="text-3xl font-bold text-slate-950">
+              <h1 className="text-3xl font-bold text-lr-strong">
                 Missed call inbox
               </h1>
-              <p className="mt-3 max-w-2xl text-slate-600">
-                Review missed calls, choose a caller, and use your saved reply
-                template to follow up quickly.
+              <p className="mt-3 max-w-2xl text-lr-muted">
+                Review missed calls, automatic text-back activity, customer
+                replies, and LeadReply missed-call assistant summaries.
               </p>
             </div>
 
             <Link
               href="/settings/business"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-xl border border-lr-border-strong bg-lr-surface px-4 py-3 text-sm font-semibold text-lr-strong hover:bg-lr-hover"
             >
               Edit reply template
             </Link>
@@ -117,43 +144,65 @@ export default async function MissedCallsPage() {
               reason: call.reason,
               status: call.status,
               convertedLeadId: call.convertedLeadId,
-              conciergeIntake: call.conciergeIntake
+              smsMessages: call.smsMessages.map((message) => ({
+                id: message.id,
+                direction: message.direction,
+                status: message.status,
+                providerMessageId: message.providerMessageId,
+                body: message.body,
+                purpose: message.purpose,
+                error: message.error,
+                createdAt: message.createdAt.toISOString(),
+                sentAt: message.sentAt?.toISOString() ?? null,
+                deliveredAt: message.deliveredAt?.toISOString() ?? null,
+                failedAt: message.failedAt?.toISOString() ?? null,
+                receivedAt: message.receivedAt?.toISOString() ?? null,
+              })),
+              routingAttempts: call.routingAttempts.map((attempt) => ({
+                id: attempt.id,
+                routedToPhoneNumber: attempt.routedToPhoneNumber,
+                routeLabel: attempt.routeLabel,
+                routeOrder: attempt.routeOrder,
+                status: attempt.status,
+                completedAt: attempt.completedAt?.toISOString() ?? null,
+              })),
+              missedCallAssistantIntake: call.missedCallAssistantIntake
                 ? {
-                    id: call.conciergeIntake.id,
-                    status: call.conciergeIntake.status,
-                    currentStep: call.conciergeIntake.currentStep,
-                    intent: call.conciergeIntake.intent,
-                    urgency: call.conciergeIntake.urgency,
-                    preferredTime: call.conciergeIntake.preferredTime,
+                    id: call.missedCallAssistantIntake.id,
+                    status: call.missedCallAssistantIntake.status,
+                    currentStep: call.missedCallAssistantIntake.currentStep,
+                    intent: call.missedCallAssistantIntake.intent,
+                    urgency: call.missedCallAssistantIntake.urgency,
+                    preferredTime: call.missedCallAssistantIntake.preferredTime,
                     schedulingRequested:
-                      call.conciergeIntake.schedulingRequested,
-                    schedulingMode: call.conciergeIntake.schedulingMode,
-                    quoteRequested: call.conciergeIntake.quoteRequested,
-                    quoteGuidance: call.conciergeIntake.quoteGuidance,
+                      call.missedCallAssistantIntake.schedulingRequested,
+                    schedulingMode: call.missedCallAssistantIntake.schedulingMode,
+                    quoteRequested: call.missedCallAssistantIntake.quoteRequested,
+                    quoteGuidance: call.missedCallAssistantIntake.quoteGuidance,
                     matchedServiceName:
-                      call.conciergeIntake.matchedServiceName,
+                      call.missedCallAssistantIntake.matchedServiceName,
                     matchedQuoteLowCents:
-                      call.conciergeIntake.matchedQuoteLowCents,
+                      call.missedCallAssistantIntake.matchedQuoteLowCents,
                     matchedQuoteHighCents:
-                      call.conciergeIntake.matchedQuoteHighCents,
+                      call.missedCallAssistantIntake.matchedQuoteHighCents,
                     matchedDurationMinutes:
-                      call.conciergeIntake.matchedDurationMinutes,
+                      call.missedCallAssistantIntake.matchedDurationMinutes,
                     serviceBookableOnline:
-                      call.conciergeIntake.serviceBookableOnline,
+                      call.missedCallAssistantIntake.serviceBookableOnline,
                     availabilityGuidance:
-                      call.conciergeIntake.availabilityGuidance,
-                    summary: call.conciergeIntake.summary,
-                    nextAction: call.conciergeIntake.nextAction,
-                    transcript: normalizeConciergeTranscript(
-                      call.conciergeIntake.transcript
+                      call.missedCallAssistantIntake.availabilityGuidance,
+                    summary: call.missedCallAssistantIntake.summary,
+                    nextAction: call.missedCallAssistantIntake.nextAction,
+                    transcript: normalizeMissedCallAssistantTranscript(
+                      call.missedCallAssistantIntake.transcript
                     ),
-                    answers: normalizeConciergeAnswers(
-                      call.conciergeIntake.answers
+                    answers: normalizeMissedCallAssistantAnswers(
+                      call.missedCallAssistantIntake.answers
                     ),
-                    aiProvider: call.conciergeIntake.aiProvider,
-                    aiModel: call.conciergeIntake.aiModel,
-                    aiError: call.conciergeIntake.aiError,
-                    leadId: call.conciergeIntake.leadId,
+                    aiProvider: call.missedCallAssistantIntake.aiProvider,
+                    aiModel: call.missedCallAssistantIntake.aiModel,
+                    aiError: call.missedCallAssistantIntake.aiError,
+                    leadId: call.missedCallAssistantIntake.leadId,
                   }
                 : null,
             }))}

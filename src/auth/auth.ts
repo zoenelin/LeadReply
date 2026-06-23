@@ -1,8 +1,8 @@
 import NextAuth, { type NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcrypt"
-import { prisma } from "@/lib/prisma"
-import { checkRateLimit } from "@/lib/rate-limit"
+import { prisma } from "@/lib/data/prisma"
+import { checkRateLimit } from "@/services/security/rate-limit"
 
 function readHeaderValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value

@@ -1,28 +1,17 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
-import { isPhoneOptedOut } from "@/lib/sms-compliance"
-import { isTwilioConfigured, sendSms } from "@/lib/twilio"
+import { prisma } from "@/lib/data/prisma"
+import { buildReviewRequestMessage } from "@/lib/domain/review-message"
+import { communicationStatuses } from "@/lib/domain/status"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { isPhoneOptedOut } from "@/lib/integrations/sms-compliance"
+import { sendTrackedSms } from "@/services/communications/send-tracked-sms"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 const reviewRequestSchema = z.object({
   leadId: z.string().min(1, "Lead is required."),
   message: z.string().trim().optional().default(""),
   markSent: z.boolean().optional().default(false),
 })
-
-function buildReviewMessage(message: string, googleReviewUrl: string) {
-  if (!googleReviewUrl.trim()) {
-    return message
-  }
-
-  if (message.includes(googleReviewUrl)) {
-    return message
-  }
-
-  return `${message}\n\nReview link: ${googleReviewUrl.trim()}`
-}
 
 export async function POST(req: Request) {
   const crossSite = rejectCrossSiteRequest(req)
@@ -31,10 +20,10 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageReviews", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   try {
@@ -51,9 +40,7 @@ export async function POST(req: Request) {
     const lead = await prisma.lead.findFirst({
       where: {
         id: result.data.leadId,
-        business: {
-          userId: session.user.id,
-        },
+        businessId: auth.access.businessId,
       },
       include: {
         business: true,
@@ -64,10 +51,10 @@ export async function POST(req: Request) {
       return Response.json({ error: "Lead not found." }, { status: 404 })
     }
 
-    const baseMessage =
-      result.data.message ||
-      `Thanks for choosing ${lead.business.name}. Would you mind leaving us a quick review?`
-    const message = buildReviewMessage(baseMessage, lead.business.googleReviewUrl)
+    const message = buildReviewRequestMessage({
+      business: lead.business,
+      message: result.data.message,
+    })
     const optedOut = result.data.markSent
       ? await isPhoneOptedOut(lead.customerPhone, lead.businessId)
       : false
@@ -78,18 +65,12 @@ export async function POST(req: Request) {
             provider: "TWILIO" as const,
             reason: "This phone number has opted out of SMS messages.",
           }
-        : isTwilioConfigured()
-          ? await sendSms({
-              to: lead.customerPhone,
-              body: message,
-              statusCallbackPath: "/api/webhooks/twilio/status",
-            })
-          : {
-              ok: false as const,
-              provider: "TWILIO" as const,
-              reason:
-                "Twilio is not configured; request was marked sent manually.",
-            }
+        : await sendTrackedSms({
+            to: lead.customerPhone,
+            body: message,
+            businessId: lead.businessId,
+            purpose: "REVIEW_REQUEST",
+          })
       : null
 
     const reviewRequest = await prisma.reviewRequest.create({
@@ -99,7 +80,9 @@ export async function POST(req: Request) {
         customerName: lead.customerName,
         customerPhone: lead.customerPhone,
         message,
-        status: result.data.markSent ? "SENT" : "DRAFT",
+        status: result.data.markSent
+          ? communicationStatuses.sent
+          : communicationStatuses.draft,
         sentAt: result.data.markSent ? new Date() : null,
         deliveryProvider: delivery?.ok ? delivery.provider : "",
         providerMessageId: delivery?.ok ? delivery.messageId : "",

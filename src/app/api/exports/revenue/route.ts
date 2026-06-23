@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
+import { prisma } from "@/lib/data/prisma"
 import {
   buildRevenueSummaryRows,
   csvResponse,
@@ -8,18 +6,19 @@ import {
   getReportFilters,
   moneyCsvValue,
   toCsv,
-} from "@/lib/reporting"
+} from "@/lib/analytics/reporting"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("exportData", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: auth.access.businessId,
     },
   })
 
@@ -54,15 +53,15 @@ export async function GET(req: Request) {
       capturedCount: summary.capturedCount + row.capturedCount,
       revenueCents: summary.revenueCents + row.revenueCents,
       openLeadValueCents: summary.openLeadValueCents + row.openLeadValueCents,
-      lostOpportunityCents:
-        summary.lostOpportunityCents + row.lostOpportunityCents,
+      closedLeadValueCents:
+        summary.closedLeadValueCents + row.closedLeadValueCents,
     }),
     {
       leadCount: 0,
       capturedCount: 0,
       revenueCents: 0,
       openLeadValueCents: 0,
-      lostOpportunityCents: 0,
+      closedLeadValueCents: 0,
     }
   )
   const totalConversionRate =
@@ -78,7 +77,7 @@ export async function GET(req: Request) {
       "Conversion rate",
       "Captured revenue USD",
       "Open lead value USD",
-      "Lost opportunity USD",
+      "Closed value USD",
     ],
     ...sourceRows.map((row) => [
       row.label,
@@ -87,7 +86,7 @@ export async function GET(req: Request) {
       `${row.conversionRate}%`,
       moneyCsvValue(row.revenueCents),
       moneyCsvValue(row.openLeadValueCents),
-      moneyCsvValue(row.lostOpportunityCents),
+      moneyCsvValue(row.closedLeadValueCents),
     ]),
     [
       "Total",
@@ -96,7 +95,7 @@ export async function GET(req: Request) {
       `${totalConversionRate}%`,
       moneyCsvValue(totals.revenueCents),
       moneyCsvValue(totals.openLeadValueCents),
-      moneyCsvValue(totals.lostOpportunityCents),
+      moneyCsvValue(totals.closedLeadValueCents),
     ],
   ]
 

@@ -1,0 +1,3 @@
+ALTER TABLE "BusinessCrmView"
+ADD COLUMN "customColumns" JSONB NOT NULL DEFAULT '[]',
+ADD COLUMN "columnWidths" JSONB NOT NULL DEFAULT '{}';

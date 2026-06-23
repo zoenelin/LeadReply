@@ -1,8 +1,8 @@
 import { z } from "zod"
-import { getAverageLeadValueCents } from "@/lib/demo-data"
-import { prisma } from "@/lib/prisma"
-import { checkRequestRateLimit, rateLimitResponse } from "@/lib/rate-limit"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { getAverageLeadValueCents } from "@/lib/data/demo-data"
+import { prisma } from "@/lib/data/prisma"
+import { checkRequestRateLimit, rateLimitResponse } from "@/services/security/rate-limit"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const intakeSchema = z.object({
   customerName: z.string().min(1, "Please enter your name."),

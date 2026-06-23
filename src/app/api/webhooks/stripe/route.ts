@@ -1,5 +1,7 @@
-import { prisma } from "@/lib/prisma"
-import { verifyStripeSignature } from "@/lib/stripe"
+import { prisma } from "@/lib/data/prisma"
+import { verifyStripeSignature } from "@/lib/integrations/stripe"
+import { captureException } from "@/services/observability/error-monitoring"
+import { logger } from "@/services/observability/logger"
 
 type StripeEvent = {
   type?: string
@@ -31,6 +33,7 @@ function getSelectedPlan(event: StripeEvent) {
 
 export async function POST(req: Request) {
   const payload = await req.text()
+  const requestId = req.headers.get("x-request-id") || ""
 
   if (
     !verifyStripeSignature({
@@ -38,18 +41,41 @@ export async function POST(req: Request) {
       signatureHeader: req.headers.get("stripe-signature"),
     })
   ) {
+    logger.warn("webhook.stripe.invalid_signature", {
+      requestId,
+    })
+
     return Response.json({ error: "Invalid signature." }, { status: 400 })
   }
 
-  const event = JSON.parse(payload) as StripeEvent
+  let event: StripeEvent
+
+  try {
+    event = JSON.parse(payload) as StripeEvent
+  } catch (error) {
+    captureException(error, {
+      requestId,
+      source: "webhook.stripe",
+      reason: "invalid_json",
+    })
+
+    return Response.json({ error: "Invalid payload." }, { status: 400 })
+  }
+
   const businessId = getBusinessId(event)
 
   if (!businessId) {
+    logger.info("webhook.stripe.ignored", {
+      requestId,
+      eventType: event.type,
+      reason: "missing_business_id",
+    })
+
     return Response.json({ received: true })
   }
 
   if (event.type === "checkout.session.completed") {
-    await prisma.business.update({
+    const result = await prisma.business.updateMany({
       where: {
         id: businessId,
       },
@@ -60,19 +86,32 @@ export async function POST(req: Request) {
         stripeSubscriptionId: event.data?.object?.subscription || "",
       },
     })
+
+    logger.info("webhook.stripe.checkout_completed", {
+      requestId,
+      businessId,
+      matchedBusinesses: result.count,
+    })
   }
 
   if (
     event.type === "customer.subscription.deleted" ||
     event.type === "customer.subscription.paused"
   ) {
-    await prisma.business.update({
+    const result = await prisma.business.updateMany({
       where: {
         id: businessId,
       },
       data: {
         billingStatus: "PAUSED",
       },
+    })
+
+    logger.info("webhook.stripe.subscription_paused", {
+      requestId,
+      businessId,
+      eventType: event.type,
+      matchedBusinesses: result.count,
     })
   }
 

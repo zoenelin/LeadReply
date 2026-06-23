@@ -1,8 +1,10 @@
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { businessCategoryLabels, planLabels } from "@/lib/business-options"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
-import { getServerSession } from "next-auth"
+import { prisma } from "@/lib/data/prisma"
+import { businessCategoryLabels, planLabels } from "@/lib/domain/business-options"
+import {
+  hasBusinessCapability,
+  requireApiBusinessAccess,
+} from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 import { z } from "zod"
 
 const businessCategoryValues = Object.keys(businessCategoryLabels) as [
@@ -14,6 +16,9 @@ const planValues = Object.keys(planLabels) as [string, ...string[]]
 const businessSchema = z.object({
   name: z.string().min(1, "Please enter your business name."),
   phone: z.string().min(1, "Please enter your business phone number."),
+  contactName: z.string().trim().max(120).optional().default(""),
+  contactPhonePrimary: z.string().trim().max(40).optional().default(""),
+  contactPhoneSecondary: z.string().trim().max(40).optional().default(""),
   website: z.string().trim().optional().default(""),
   address: z.string().min(1, "Please enter your business address."),
   city: z.string().min(1, "Please enter your city."),
@@ -34,10 +39,10 @@ export async function PUT(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageBusinessProfile", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   try {
@@ -51,15 +56,24 @@ export async function PUT(req: Request) {
       )
     }
 
-    const business = await prisma.business.upsert({
+    const existingBusiness = await prisma.business.findUnique({
       where: {
-        userId: session.user.id,
+        id: auth.access.businessId,
       },
-      update: result.data,
-      create: {
+      select: {
+        selectedPlan: true,
+      },
+    })
+    const canManageBilling = hasBusinessCapability(auth.access, "manageBilling")
+    const business = await prisma.business.update({
+      where: {
+        id: auth.access.businessId,
+      },
+      data: {
         ...result.data,
-        onboardingComplete: true,
-        userId: session.user.id,
+        selectedPlan: canManageBilling
+          ? result.data.selectedPlan
+          : existingBusiness?.selectedPlan,
       },
     })
 

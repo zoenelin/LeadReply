@@ -1,9 +1,8 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { dollarsToCents } from "@/lib/lead-options"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { dollarsToCents } from "@/lib/domain/lead-options"
+import { prisma } from "@/lib/data/prisma"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 const serviceSchema = z.object({
   name: z.string().trim().min(1, "Please enter a service name."),
@@ -17,13 +16,11 @@ const serviceSchema = z.object({
   active: z.boolean(),
 })
 
-async function findUserService(id: string, userId: string) {
+async function findBusinessService(id: string, businessId: string) {
   return prisma.serviceOffering.findFirst({
     where: {
       id,
-      business: {
-        userId,
-      },
+      businessId,
     },
   })
 }
@@ -38,14 +35,14 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existingService = await findUserService(id, session.user.id)
+  const existingService = await findBusinessService(id, auth.access.businessId)
 
   if (!existingService) {
     return Response.json({ error: "Service not found." }, { status: 404 })
@@ -111,14 +108,14 @@ export async function DELETE(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", _req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existingService = await findUserService(id, session.user.id)
+  const existingService = await findBusinessService(id, auth.access.businessId)
 
   if (!existingService) {
     return Response.json({ error: "Service not found." }, { status: 404 })

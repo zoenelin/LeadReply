@@ -1,13 +1,13 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { businessRoles } from "@/lib/security/permissions"
+import { requireApiOwnerBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const teamMemberSchema = z.object({
   name: z.string().trim().optional().default(""),
   email: z.string().email("Please enter a valid email address."),
-  role: z.enum(["OWNER", "MANAGER", "STAFF", "VIEWER"]),
+  role: z.enum(businessRoles),
 })
 
 export async function POST(req: Request) {
@@ -17,23 +17,10 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiOwnerBusinessAccess(req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
-  }
-
-  const business = await prisma.business.findUnique({
-    where: {
-      userId: session.user.id,
-    },
-    select: {
-      id: true,
-    },
-  })
-
-  if (!business) {
-    return Response.json({ error: "Business not found." }, { status: 404 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const body = await req.json().catch(() => ({}))
@@ -49,7 +36,7 @@ export async function POST(req: Request) {
   try {
     const member = await prisma.teamMember.create({
       data: {
-        businessId: business.id,
+        businessId: auth.access.businessId,
         name: result.data.name,
         email: result.data.email.toLowerCase().trim(),
         role: result.data.role,

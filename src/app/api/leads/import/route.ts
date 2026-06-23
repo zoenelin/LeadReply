@@ -1,57 +1,15 @@
-import { getServerSession } from "next-auth"
+import { createHash } from "node:crypto"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { parseCsvRows } from "@/lib/csv"
-import { dollarsToCents, leadSourceValues, leadStatusValues } from "@/lib/lead-options"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { getLeadImportPreview } from "@/services/jobs/lead-import-job"
+import { QueueUnavailableError } from "@/services/queue/client"
+import { enqueueOpsJob } from "@/services/queue/jobs"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 const importSchema = z.object({
   csv: z.string().min(1, "Please paste CSV content."),
 })
-
-function normalizeHeader(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "")
-}
-
-function toObjects(rows: string[][]) {
-  const [headers = [], ...dataRows] = rows
-  const normalizedHeaders = headers.map(normalizeHeader)
-
-  return dataRows.map((row) =>
-    Object.fromEntries(
-      normalizedHeaders.map((header, index) => [header, row[index] ?? ""])
-    )
-  )
-}
-
-function getCell(row: Record<string, string>, keys: string[]) {
-  for (const key of keys) {
-    const value = row[key]
-
-    if (value) {
-      return value.trim()
-    }
-  }
-
-  return ""
-}
-
-function normalizedStatus(value: string) {
-  const status = value.toUpperCase().replace(/\s+/g, "_")
-
-  if (status === "CAPTURED") {
-    return "CAPTURED"
-  }
-
-  return leadStatusValues.includes(status) ? status : "NEW"
-}
-
-function normalizedSource(value: string) {
-  const source = value.toUpperCase().replace(/\s+/g, "_")
-
-  return leadSourceValues.includes(source) ? source : "MANUAL"
-}
 
 export async function POST(req: Request) {
   const crossSite = rejectCrossSiteRequest(req)
@@ -60,15 +18,15 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: auth.access.businessId,
     },
     select: {
       id: true,
@@ -89,56 +47,59 @@ export async function POST(req: Request) {
     )
   }
 
-  const rows = toObjects(parseCsvRows(result.data.csv))
-  const leads = rows.slice(0, 500).flatMap((row) => {
-    const customerName = getCell(row, ["name", "customername", "customer_name"])
-    const customerPhone = getCell(row, ["phone", "customerphone", "customer_phone"])
+  const preview = getLeadImportPreview(result.data.csv)
 
-    if (!customerName || !customerPhone) {
-      return []
-    }
-
-    const status = normalizedStatus(getCell(row, ["status"]))
-    const source = normalizedSource(getCell(row, ["source"]))
-
-    return {
-      businessId: business.id,
-      customerName,
-      customerPhone,
-      customerEmail: getCell(row, ["email", "customeremail", "customer_email"]),
-      source,
-      status,
-      estimatedValueCents: dollarsToCents(
-        getCell(row, ["estimatedvalue", "estimated_value", "value"])
-      ),
-      capturedValueCents:
-        status === "CAPTURED"
-          ? dollarsToCents(
-              getCell(row, [
-                "capturedvalue",
-                "captured_value",
-                "revenue",
-              ])
-            )
-          : 0,
-      notes: getCell(row, ["notes", "note"]),
-      closedAt: status === "CAPTURED" || status === "LOST" ? new Date() : null,
-    }
-  })
-
-  if (leads.length === 0) {
+  if (preview.validRows === 0) {
     return Response.json(
       { error: "No valid leads found. Include at least name and phone columns." },
       { status: 400 }
     )
   }
 
-  await prisma.lead.createMany({
-    data: leads,
-  })
+  try {
+    const csvHash = createHash("sha256").update(result.data.csv).digest("hex")
+    const { jobRun, deduped } = await enqueueOpsJob({
+      type: "LEAD_IMPORT",
+      name: `Lead import for ${preview.validRows} row${
+        preview.validRows === 1 ? "" : "s"
+      }`,
+      businessId: business.id,
+      source: auth.access.isOwner ? "OWNER" : "TEAM",
+      details: `CSV import with ${preview.validRows} valid row${
+        preview.validRows === 1 ? "" : "s"
+      } and ${preview.skippedRows} skipped row${
+        preview.skippedRows === 1 ? "" : "s"
+      }.`,
+      payload: {
+        businessId: business.id,
+        csv: result.data.csv,
+        totalRows: preview.totalRows,
+        validRows: preview.validRows,
+      },
+      dedupeKey: `lead-import:${business.id}:${csvHash}`,
+      maxAttempts: 2,
+    })
 
-  return Response.json({
-    imported: leads.length,
-    skipped: Math.max(0, rows.length - leads.length),
-  })
+    return Response.json(
+      {
+        job: jobRun,
+        deduped,
+        preview,
+        message: deduped
+          ? "This exact import is already queued or completed."
+          : "Lead import queued. The worker will process the CSV in the background.",
+      },
+      { status: 202 }
+    )
+  } catch (error) {
+    return Response.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Something went wrong queueing the import.",
+      },
+      { status: error instanceof QueueUnavailableError ? 503 : 500 }
+    )
+  }
 }

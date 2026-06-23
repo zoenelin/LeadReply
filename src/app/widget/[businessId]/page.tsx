@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { prisma } from "@/lib/prisma"
-import { absoluteUrl, noIndexRobots } from "@/lib/site"
+import { prisma } from "@/lib/data/prisma"
+import { absoluteUrl, noIndexRobots } from "@/lib/config/site"
 import { LeadWidget } from "./LeadWidget"
 
 type WidgetPageProps = {

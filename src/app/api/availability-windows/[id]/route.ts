@@ -1,8 +1,7 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 const availabilitySchema = z.object({
   dayOfWeek: z.coerce.number().int().min(0).max(6),
@@ -12,13 +11,11 @@ const availabilitySchema = z.object({
   active: z.boolean(),
 })
 
-async function findUserAvailabilityWindow(id: string, userId: string) {
+async function findBusinessAvailabilityWindow(id: string, businessId: string) {
   return prisma.availabilityWindow.findFirst({
     where: {
       id,
-      business: {
-        userId,
-      },
+      businessId,
     },
   })
 }
@@ -33,14 +30,17 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageAppointments", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existingWindow = await findUserAvailabilityWindow(id, session.user.id)
+  const existingWindow = await findBusinessAvailabilityWindow(
+    id,
+    auth.access.businessId
+  )
 
   if (!existingWindow) {
     return Response.json(
@@ -93,14 +93,17 @@ export async function DELETE(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageAppointments", _req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existingWindow = await findUserAvailabilityWindow(id, session.user.id)
+  const existingWindow = await findBusinessAvailabilityWindow(
+    id,
+    auth.access.businessId
+  )
 
   if (!existingWindow) {
     return Response.json(

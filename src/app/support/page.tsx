@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { getSupportEmail } from "@/lib/email"
-import { noIndexRobots } from "@/lib/site"
+import { getSupportEmail } from "@/lib/integrations/email"
+import { noIndexRobots } from "@/lib/config/site"
 
 export const metadata: Metadata = {
   title: "Support",
@@ -13,15 +13,15 @@ export default function SupportPage() {
   const supportEmail = getSupportEmail() || "support@example.com"
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-12 sm:px-6">
-      <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <Link href="/login" className="text-sm font-semibold text-slate-600">
+    <main className="min-h-screen bg-lr-page px-4 py-12 sm:px-6">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-lr-border bg-lr-surface p-6 shadow-sm sm:p-8">
+        <Link href="/login" className="text-sm font-semibold text-lr-muted">
           Back to sign in
         </Link>
-        <h1 className="mt-6 text-3xl font-bold text-slate-950">
+        <h1 className="mt-6 text-3xl font-bold text-lr-strong">
           Help Center
         </h1>
-        <p className="mt-4 text-slate-600">
+        <p className="mt-4 text-lr-muted">
           For sign-in help, password reset problems, or account questions,
           contact support at{" "}
           <a className="font-semibold underline" href={`mailto:${supportEmail}`}>

@@ -1,8 +1,7 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const calendarItemSchema = z.object({
   title: z.string().trim().min(1, "Please enter a calendar item title.").max(140),
@@ -35,23 +34,10 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageMarketing", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
-  }
-
-  const business = await prisma.business.findUnique({
-    where: {
-      userId: session.user.id,
-    },
-    select: {
-      id: true,
-    },
-  })
-
-  if (!business) {
-    return Response.json({ error: "Business not found." }, { status: 404 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const body = await req.json().catch(() => ({}))
@@ -66,7 +52,7 @@ export async function POST(req: Request) {
 
   const item = await prisma.marketingCalendarItem.create({
     data: {
-      businessId: business.id,
+      businessId: auth.access.businessId,
       title: result.data.title,
       channel: result.data.channel,
       campaignGoal: result.data.campaignGoal,

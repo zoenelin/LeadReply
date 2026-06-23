@@ -1,14 +1,16 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
 import {
   appointmentStatusValues,
   dollarsToCents,
   leadSourceValues,
   leadStatusValues,
-} from "@/lib/lead-options"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+  normalizeLeadStatus,
+} from "@/lib/domain/lead-options"
+import { appointmentStatuses, leadStatuses } from "@/lib/domain/status"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { syncCustomerJobFromLead } from "@/services/crm/customer-jobs"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const leadSchema = z.object({
   customerName: z.string().min(1, "Please enter the lead name."),
@@ -17,6 +19,8 @@ const leadSchema = z.object({
   source: z.string().refine((value) => leadSourceValues.includes(value), {
     message: "Please choose a lead source.",
   }),
+  sourceDetail: z.string().trim().max(300).optional().default(""),
+  marketingCampaignId: z.string().trim().optional().default(""),
   status: z.string().refine((value) => leadStatusValues.includes(value), {
     message: "Please choose a lead status.",
   }),
@@ -28,7 +32,7 @@ const leadSchema = z.object({
   appointmentStatus: z
     .string()
     .optional()
-    .default("NOT_BOOKED")
+    .default(appointmentStatuses.notBooked)
     .refine((value) => appointmentStatusValues.includes(value), {
       message: "Please choose an appointment status.",
     }),
@@ -64,6 +68,45 @@ function parseAppointmentDate(value: string) {
   return parsedDate
 }
 
+function getCapturedValueCents(
+  status: string,
+  estimatedValueCents: number,
+  capturedValue: string
+) {
+  if (status !== leadStatuses.captured && status !== leadStatuses.closed) {
+    return 0
+  }
+
+  const capturedValueCents = dollarsToCents(capturedValue)
+
+  if (status === leadStatuses.closed) {
+    return capturedValueCents
+  }
+
+  return capturedValueCents > 0 ? capturedValueCents : estimatedValueCents
+}
+
+async function getValidMarketingCampaignId(
+  businessId: string,
+  marketingCampaignId: string
+) {
+  if (!marketingCampaignId) {
+    return null
+  }
+
+  const campaign = await prisma.marketingCampaign.findFirst({
+    where: {
+      id: marketingCampaignId,
+      businessId,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  return campaign?.id ?? undefined
+}
+
 export async function POST(req: Request) {
   const crossSite = rejectCrossSiteRequest(req)
 
@@ -71,23 +114,10 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
-  }
-
-  const business = await prisma.business.findUnique({
-    where: {
-      userId: session.user.id,
-    },
-  })
-
-  if (!business) {
-    return Response.json(
-      { error: "Please finish business setup before adding leads." },
-      { status: 400 }
-    )
+  if ("response" in auth) {
+    return auth.response
   }
 
   try {
@@ -106,7 +136,9 @@ export async function POST(req: Request) {
       customerPhone,
       customerEmail,
       source,
-      status,
+      sourceDetail,
+      marketingCampaignId,
+      status: rawStatus,
       estimatedValue,
       capturedValue,
       notes,
@@ -116,26 +148,61 @@ export async function POST(req: Request) {
       appointmentAt,
       appointmentNotes,
     } = result.data
-    const closedAt = status === "CAPTURED" || status === "LOST" ? new Date() : null
+    const status = normalizeLeadStatus(rawStatus)
+    const closedAt = status === leadStatuses.closed ? new Date() : null
+    const estimatedValueCents = dollarsToCents(estimatedValue)
+    const validMarketingCampaignId = await getValidMarketingCampaignId(
+      auth.access.businessId,
+      marketingCampaignId
+    )
 
-    const lead = await prisma.lead.create({
-      data: {
-        businessId: business.id,
-        customerName,
-        customerPhone,
-        customerEmail,
-        source,
-        status,
-        estimatedValueCents: dollarsToCents(estimatedValue),
-        capturedValueCents: status === "CAPTURED" ? dollarsToCents(capturedValue) : 0,
-        notes,
-        followUpAt: parseFollowUpDate(followUpAt),
-        followUpNote,
-        appointmentStatus,
-        appointmentAt: parseAppointmentDate(appointmentAt),
-        appointmentNotes,
-        closedAt,
-      },
+    if (validMarketingCampaignId === undefined) {
+      return Response.json(
+        { error: "Please choose a valid marketing campaign." },
+        { status: 400 }
+      )
+    }
+
+    const lead = await prisma.$transaction(async (tx) => {
+      const createdLead = await tx.lead.create({
+        data: {
+          businessId: auth.access.businessId,
+          customerName,
+          customerPhone,
+          customerEmail,
+          source,
+          sourceDetail,
+          marketingCampaignId: validMarketingCampaignId,
+          status,
+          estimatedValueCents,
+          capturedValueCents: getCapturedValueCents(
+            status,
+            estimatedValueCents,
+            capturedValue
+          ),
+          notes,
+          followUpAt: parseFollowUpDate(followUpAt),
+          followUpNote,
+          appointmentStatus,
+          appointmentAt: parseAppointmentDate(appointmentAt),
+          appointmentNotes,
+          closedAt,
+        },
+      })
+
+      await syncCustomerJobFromLead(tx, createdLead, {
+        createActivity: true,
+        activityTitle: "Manual customer/job added",
+        activityBody: notes || sourceDetail,
+        activitySource: "MANUAL_ENTRY",
+        authorName: auth.session.user.email ?? "Team",
+      })
+
+      return tx.lead.findUniqueOrThrow({
+        where: {
+          id: createdLead.id,
+        },
+      })
     })
 
     return Response.json({ lead }, { status: 201 })

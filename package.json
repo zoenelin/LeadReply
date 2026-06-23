@@ -6,17 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "worker": "tsx -r dotenv/config -r tsconfig-paths/register src/workers/index.ts",
+    "worker:dev": "tsx watch -r dotenv/config -r tsconfig-paths/register src/workers/index.ts",
+    "seed:dev": "tsx -r dotenv/config -r tsconfig-paths/register scripts/seed-dev.ts",
     "lint": "eslint src next.config.ts eslint.config.mjs prisma.config.ts",
-    "test:smoke": "node scripts/smoke-test.mjs"
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "test:service": "tsx -r dotenv/config -r tsconfig-paths/register scripts/service-smoke.ts",
+    "test:permissions": "tsx -r dotenv/config -r tsconfig-paths/register scripts/permissions-smoke.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.77.6",
+    "dotenv": "^17.4.2",
+    "ioredis": "^5.11.0",
     "next": "^16.2.6",
     "next-auth": "^4.24.14",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.22.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

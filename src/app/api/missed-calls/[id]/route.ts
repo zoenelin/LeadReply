@@ -1,17 +1,18 @@
-import { authOptions } from "@/auth/auth"
 import {
-  buildConciergeLeadNotes,
-  normalizeConciergeAnswers,
-} from "@/lib/concierge-intake"
-import { getAverageLeadValueCents } from "@/lib/demo-data"
-import { formatMoney } from "@/lib/lead-options"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
-import { getServerSession } from "next-auth"
+  buildMissedCallAssistantLeadNotes,
+  normalizeMissedCallAssistantAnswers,
+} from "@/lib/domain/missed-call-assistant"
+import { getAverageLeadValueCents } from "@/lib/data/demo-data"
+import { formatMoney } from "@/lib/domain/lead-options"
+import { leadStatuses, missedCallStatuses } from "@/lib/domain/status"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { syncCustomerJobFromLead } from "@/services/crm/customer-jobs"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 import { z } from "zod"
 
 const missedCallSchema = z.object({
-  status: z.enum(["NEW", "REPLIED"]),
+  status: z.enum([missedCallStatuses.new, missedCallStatuses.replied]),
 })
 
 function formatServiceEstimate(lowCents: number, highCents: number) {
@@ -30,18 +31,16 @@ function formatServiceEstimate(lowCents: number, highCents: number) {
   return ""
 }
 
-async function findUserMissedCall(id: string, userId: string) {
+async function findUserMissedCall(id: string, businessId: string) {
   return prisma.missedCall.findFirst({
     where: {
       id,
-      business: {
-        userId,
-      },
+      businessId,
     },
     include: {
       business: true,
       convertedLead: true,
-      conciergeIntake: true,
+      missedCallAssistantIntake: true,
     },
   })
 }
@@ -56,10 +55,10 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageMessages", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   try {
@@ -75,7 +74,7 @@ export async function PATCH(
 
     const { id } = await params
 
-    const missedCall = await findUserMissedCall(id, session.user.id)
+    const missedCall = await findUserMissedCall(id, auth.access.businessId)
 
     if (!missedCall) {
       return Response.json({ error: "Missed call not found." }, { status: 404 })
@@ -87,7 +86,8 @@ export async function PATCH(
       },
       data: {
         status: result.data.status,
-        repliedAt: result.data.status === "REPLIED" ? new Date() : null,
+        repliedAt:
+          result.data.status === missedCallStatuses.replied ? new Date() : null,
       },
     })
 
@@ -110,14 +110,14 @@ export async function POST(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageMessages", _req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const missedCall = await findUserMissedCall(id, session.user.id)
+  const missedCall = await findUserMissedCall(id, auth.access.businessId)
 
   if (!missedCall) {
     return Response.json({ error: "Missed call not found." }, { status: 404 })
@@ -135,29 +135,29 @@ export async function POST(
   followUpAt.setHours(9, 0, 0, 0)
 
   try {
-    const conciergeNotes = missedCall.conciergeIntake
-      ? buildConciergeLeadNotes({
-          summary: missedCall.conciergeIntake.summary || missedCall.reason,
+    const missedCallAssistantNotes = missedCall.missedCallAssistantIntake
+      ? buildMissedCallAssistantLeadNotes({
+          summary: missedCall.missedCallAssistantIntake.summary || missedCall.reason,
           nextAction:
-            missedCall.conciergeIntake.nextAction ||
+            missedCall.missedCallAssistantIntake.nextAction ||
             `Follow up from missed call: ${missedCall.reason}`,
-          schedulingMode: missedCall.conciergeIntake.schedulingMode,
-          quoteGuidance: missedCall.conciergeIntake.quoteGuidance,
-          matchedServiceName: missedCall.conciergeIntake.matchedServiceName,
+          schedulingMode: missedCall.missedCallAssistantIntake.schedulingMode,
+          quoteGuidance: missedCall.missedCallAssistantIntake.quoteGuidance,
+          matchedServiceName: missedCall.missedCallAssistantIntake.matchedServiceName,
           serviceEstimate:
-            missedCall.conciergeIntake.matchedQuoteLowCents > 0 ||
-            missedCall.conciergeIntake.matchedQuoteHighCents > 0
+            missedCall.missedCallAssistantIntake.matchedQuoteLowCents > 0 ||
+            missedCall.missedCallAssistantIntake.matchedQuoteHighCents > 0
               ? formatServiceEstimate(
-                  missedCall.conciergeIntake.matchedQuoteLowCents,
-                  missedCall.conciergeIntake.matchedQuoteHighCents
+                  missedCall.missedCallAssistantIntake.matchedQuoteLowCents,
+                  missedCall.missedCallAssistantIntake.matchedQuoteHighCents
                 )
               : "",
           serviceDuration:
-            missedCall.conciergeIntake.matchedDurationMinutes > 0
-              ? `${missedCall.conciergeIntake.matchedDurationMinutes} minutes`
+            missedCall.missedCallAssistantIntake.matchedDurationMinutes > 0
+              ? `${missedCall.missedCallAssistantIntake.matchedDurationMinutes} minutes`
               : "",
-          availabilityGuidance: missedCall.conciergeIntake.availabilityGuidance,
-          answers: normalizeConciergeAnswers(missedCall.conciergeIntake.answers),
+          availabilityGuidance: missedCall.missedCallAssistantIntake.availabilityGuidance,
+          answers: normalizeMissedCallAssistantAnswers(missedCall.missedCallAssistantIntake.answers),
         })
       : ""
     const lead = await prisma.$transaction(async (tx) => {
@@ -167,16 +167,26 @@ export async function POST(
           customerName: missedCall.callerName,
           customerPhone: missedCall.callerPhone,
           source: "MISSED_CALL",
-          status: "NEW",
+          sourceDetail:
+            missedCall.missedCallAssistantIntake?.matchedServiceName ||
+            missedCall.reason,
+          status: leadStatuses.new,
           estimatedValueCents: getAverageLeadValueCents(
             missedCall.business.businessType
           ),
-          serviceOfferingId: missedCall.conciergeIntake?.matchedServiceId,
-          notes: conciergeNotes || missedCall.reason,
+          serviceOfferingId: missedCall.missedCallAssistantIntake?.matchedServiceId,
+          notes: missedCallAssistantNotes || missedCall.reason,
           followUpAt,
           followUpNote: `Follow up from missed call: ${missedCall.reason}`,
           createdAt: missedCall.createdAt,
         },
+      })
+
+      await syncCustomerJobFromLead(tx, createdLead, {
+        createActivity: true,
+        activityTitle: "Missed call captured",
+        activityBody: missedCallAssistantNotes || missedCall.reason,
+        activitySource: "MISSED_CALL",
       })
 
       await tx.missedCall.update({
@@ -188,10 +198,10 @@ export async function POST(
         },
       })
 
-      if (missedCall.conciergeIntake) {
-        await tx.conciergeIntake.update({
+      if (missedCall.missedCallAssistantIntake) {
+        await tx.missedCallAssistantIntake.update({
           where: {
-            id: missedCall.conciergeIntake.id,
+            id: missedCall.missedCallAssistantIntake.id,
           },
           data: {
             leadId: createdLead.id,

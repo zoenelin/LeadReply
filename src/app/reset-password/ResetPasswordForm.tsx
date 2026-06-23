@@ -7,7 +7,7 @@ import {
   passwordHelpText,
   passwordMaxLength,
   passwordMinLength,
-} from "@/lib/password-policy"
+} from "@/lib/security/password-policy"
 
 type ResetPasswordFormProps = {
   token: string
@@ -55,18 +55,18 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-16 sm:px-6">
-      <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <main className="min-h-screen bg-lr-page px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-md rounded-2xl border border-lr-border bg-lr-surface p-6 shadow-sm sm:p-8">
         <Link
           href="/login"
-          className="text-sm font-semibold text-slate-600 hover:text-slate-950"
+          className="text-sm font-semibold text-lr-muted hover:text-lr-strong"
         >
           Back to login
         </Link>
-        <h1 className="mt-6 text-2xl font-bold text-slate-950">
+        <h1 className="mt-6 text-2xl font-bold text-lr-strong">
           Create a new password
         </h1>
-        <p className="mt-2 text-sm text-slate-600">{passwordHelpText}</p>
+        <p className="mt-2 text-sm text-lr-muted">{passwordHelpText}</p>
 
         {!token ? (
           <p className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -82,7 +82,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  className="text-sm font-semibold text-slate-600 hover:text-slate-950"
+                  className="text-sm font-semibold text-lr-muted hover:text-lr-strong"
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
@@ -92,7 +92,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
                 required
                 minLength={passwordMinLength}
                 maxLength={passwordMaxLength}
@@ -102,7 +102,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+              className="w-full rounded-xl bg-lr-primary px-4 py-3 text-sm font-semibold text-lr-on-primary hover:bg-lr-primary-hover disabled:opacity-60"
             >
               {loading ? "Updating..." : "Update password"}
             </button>
@@ -110,7 +110,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         )}
 
         {message && (
-          <p className="mt-4 text-sm text-slate-600" aria-live="polite">
+          <p className="mt-4 text-sm text-lr-muted" aria-live="polite">
             {message}
           </p>
         )}

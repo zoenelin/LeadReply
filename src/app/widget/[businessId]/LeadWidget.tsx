@@ -66,8 +66,8 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6">
-      <main className="mx-auto max-w-md rounded-2xl bg-white p-5 shadow-sm">
+    <div className="min-h-screen bg-lr-page px-4 py-6">
+      <main className="mx-auto max-w-md rounded-2xl bg-lr-surface p-5 shadow-sm">
         <div
           className="rounded-2xl p-5 text-white"
           style={{ backgroundColor: business.widgetAccentColor }}
@@ -83,10 +83,10 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
 
         {submitted ? (
           <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-            <h2 className="text-xl font-bold text-slate-950">
+            <h2 className="text-xl font-bold text-lr-strong">
               Request received
             </h2>
-            <p className="mt-2 text-sm text-slate-700">
+            <p className="mt-2 text-sm text-lr-body">
               The business has your info and can follow up from LeadReply.
             </p>
             <button
@@ -99,14 +99,14 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
           </div>
         ) : (
           <form onSubmit={submitRequest} className="mt-5 space-y-4">
-            <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-lr-hover p-1">
               <button
                 type="button"
                 onClick={() => updateForm("action", "CALLBACK")}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold ${
                   form.action === "CALLBACK"
-                    ? "bg-white text-slate-950 shadow-sm"
-                    : "text-slate-600"
+                    ? "bg-lr-surface text-lr-strong shadow-sm"
+                    : "text-lr-muted"
                 }`}
               >
                 Callback
@@ -116,8 +116,8 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
                 onClick={() => updateForm("action", "TEXT")}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold ${
                   form.action === "TEXT"
-                    ? "bg-white text-slate-950 shadow-sm"
-                    : "text-slate-600"
+                    ? "bg-lr-surface text-lr-strong shadow-sm"
+                    : "text-lr-muted"
                 }`}
               >
                 Text
@@ -130,7 +130,7 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
                 type="text"
                 value={form.customerName}
                 onChange={(e) => updateForm("customerName", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
                 required
               />
             </div>
@@ -141,7 +141,7 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
                 type="tel"
                 value={form.customerPhone}
                 onChange={(e) => updateForm("customerPhone", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
                 required
               />
             </div>
@@ -152,7 +152,7 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
                 type="email"
                 value={form.customerEmail}
                 onChange={(e) => updateForm("customerEmail", e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
               />
             </div>
 
@@ -163,7 +163,7 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
               <textarea
                 value={form.requestDetails}
                 onChange={(e) => updateForm("requestDetails", e.target.value)}
-                className="min-h-28 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                className="min-h-28 w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
                 required
               />
             </div>
@@ -178,7 +178,7 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
                 onChange={(e) =>
                   updateForm("preferredContactTime", e.target.value)
                 }
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
                 placeholder="Tomorrow morning, today after 4, etc."
               />
             </div>
@@ -192,7 +192,7 @@ export function LeadWidget({ businessId, business }: LeadWidgetProps) {
               {loading ? "Sending..." : "Send request"}
             </button>
 
-            {message && <p className="text-sm text-slate-600">{message}</p>}
+            {message && <p className="text-sm text-lr-muted">{message}</p>}
           </form>
         )}
       </main>

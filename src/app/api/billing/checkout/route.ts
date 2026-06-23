@@ -1,10 +1,10 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { planLabels } from "@/lib/business-options"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
-import { createStripeCheckoutSession } from "@/lib/stripe"
+import { planLabels } from "@/lib/domain/business-options"
+import { prisma } from "@/lib/data/prisma"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { createStripeCheckoutSession } from "@/lib/integrations/stripe"
+import { logSecurityEvent } from "@/services/security/security-events"
+import { requireApiOwnerBusinessAccess } from "@/services/auth/business-access"
 
 const planValues = Object.keys(planLabels) as [string, ...string[]]
 
@@ -19,10 +19,10 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiOwnerBusinessAccess(req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   try {
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
     const business = await prisma.business.findUnique({
       where: {
-        userId: session.user.id,
+        id: auth.access.businessId,
       },
       include: {
         user: true,
@@ -59,6 +59,18 @@ export async function POST(req: Request) {
       },
     })
 
+    await logSecurityEvent({
+      req,
+      type: "BILLING_CHECKOUT_REQUESTED",
+      actorEmail: business.user.email,
+      userId: auth.session.user.id,
+      businessId: business.id,
+      summary: "Stripe checkout was requested.",
+      metadata: {
+        selectedPlan: result.data.selectedPlan,
+      },
+    })
+
     const checkout = await createStripeCheckoutSession({
       plan: result.data.selectedPlan,
       businessId: business.id,
@@ -75,8 +87,34 @@ export async function POST(req: Request) {
         },
       })
 
+      await logSecurityEvent({
+        req,
+        type: "BILLING_CHECKOUT_BLOCKED",
+        outcome: "BLOCKED",
+        actorEmail: business.user.email,
+        userId: auth.session.user.id,
+        businessId: business.id,
+        summary: "Stripe checkout could not be created.",
+        metadata: {
+          selectedPlan: result.data.selectedPlan,
+          reason: checkout.reason,
+        },
+      })
+
       return Response.json({ error: checkout.reason }, { status: 400 })
     }
+
+    await logSecurityEvent({
+      req,
+      type: "BILLING_CHECKOUT_CREATED",
+      actorEmail: business.user.email,
+      userId: auth.session.user.id,
+      businessId: business.id,
+      summary: "Stripe checkout session was created.",
+      metadata: {
+        selectedPlan: result.data.selectedPlan,
+      },
+    })
 
     return Response.json({
       checkoutUrl: checkout.url,

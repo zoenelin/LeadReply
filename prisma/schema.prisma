@@ -7,81 +7,466 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  password  String
-  role      String     @default("OWNER")
-  createdAt DateTime   @default(now())
-  business  Business?
-  emailLogs EmailLog[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  password            String
+  role                String               @default("OWNER")
+  themePreference     String               @default("DARK")
+  createdAt           DateTime             @default(now())
+  business            Business?
+  businessMemberships BusinessMembership[] @relation("BusinessMembershipUser")
+  invitedMemberships  BusinessMembership[] @relation("BusinessMembershipInvitedBy")
+  acceptedInvitations TeamInvitation[]     @relation("TeamInvitationAcceptedBy")
+  sentInvitations     TeamInvitation[]     @relation("TeamInvitationInvitedBy")
+  linkedTeamMembers   TeamMember[]         @relation("TeamMemberUser")
+  createdCrmViews     BusinessCrmView[]    @relation("BusinessCrmViewCreatedBy")
+  emailLogs           EmailLog[]
+  securityEvents      SecurityEvent[]
 }
 
 model Business {
-  id                       String                  @id @default(cuid())
-  name                     String
-  phone                    String
-  website                  String                  @default("")
-  address                  String                  @default("")
-  city                     String                  @default("")
-  state                    String                  @default("")
-  zip                      String                  @default("")
-  businessType             String                  @default("HOME_SERVICES")
-  selectedPlan             String                  @default("BASIC")
-  bookingNotes             String                  @default("")
-  phoneAutomationEnabled   Boolean                 @default(false)
-  bookingAutomationEnabled Boolean                 @default(false)
-  autoSchedulingEnabled    Boolean                 @default(false)
-  quoteEstimateEnabled     Boolean                 @default(false)
-  quoteRules               String                  @default("")
-  quoteDisclaimer          String                  @default("Prices are estimates only. Final pricing is confirmed by the business.")
-  callbackTimeframe        String                  @default("within one business day")
-  reviewAutomationEnabled  Boolean                 @default(true)
-  seoSetupNotes            String                  @default("")
-  seoPrimaryServices       String                  @default("")
-  seoServiceAreas          String                  @default("")
-  seoTargetKeywords        String                  @default("")
-  seoCompetitors           String                  @default("")
-  seoWebsitePages          String                  @default("")
-  seoContentIdeas          String                  @default("")
-  marketingSetupNotes      String                  @default("")
-  marketingChannels        String                  @default("")
-  marketingAudience        String                  @default("")
-  marketingGoals           String                  @default("")
-  marketingOffer           String                  @default("")
-  marketingContentThemes   String                  @default("")
-  marketingPostingCadence  String                  @default("weekly")
-  marketingBrandVoice      String                  @default("")
-  preferredContactMethod   String                  @default("TEXT")
-  billingStatus            String                  @default("PLAN_SELECTED")
-  stripeCustomerId         String                  @default("")
-  stripeSubscriptionId     String                  @default("")
-  emailSummaryEnabled      Boolean                 @default(true)
-  calendarProvider         String                  @default("")
-  calendarBookingUrl       String                  @default("")
-  calendarSyncNotes        String                  @default("")
-  googleReviewUrl          String                  @default("")
-  googleBusinessProfileUrl String                  @default("")
-  launchNotes              String                  @default("")
-  onboardingComplete       Boolean                 @default(false)
-  replyTemplate            String                  @default("")
-  widgetGreeting           String                  @default("Need help? Send us your info and we will follow up soon.")
-  widgetPrimaryAction      String                  @default("CALLBACK")
-  widgetAccentColor        String                  @default("#0f172a")
-  userId                   String                  @unique
-  user                     User                    @relation(fields: [userId], references: [id])
-  missedCalls              MissedCall[]
-  leads                    Lead[]
-  reviewRequests           ReviewRequest[]
-  followUpSteps            FollowUpStep[]
-  conciergeIntakes         ConciergeIntake[]
-  serviceOfferings         ServiceOffering[]
-  availabilityWindows      AvailabilityWindow[]
-  growthTasks              GrowthTask[]
-  marketingCalendarItems   MarketingCalendarItem[]
-  teamNotes                TeamNote[]
-  teamMembers              TeamMember[]
-  emailLogs                EmailLog[]
-  smsOptOuts               SmsOptOut[]
+  id                          String                     @id @default(cuid())
+  name                        String
+  phone                       String
+  contactName                 String                     @default("")
+  contactPhonePrimary         String                     @default("")
+  contactPhoneSecondary       String                     @default("")
+  website                     String                     @default("")
+  address                     String                     @default("")
+  city                        String                     @default("")
+  state                       String                     @default("")
+  zip                         String                     @default("")
+  businessType                String                     @default("HOME_SERVICES")
+  selectedPlan                String                     @default("BASIC")
+  bookingNotes                String                     @default("")
+  phoneAutomationEnabled      Boolean                    @default(false)
+  bookingAutomationEnabled    Boolean                    @default(false)
+  autoSchedulingEnabled       Boolean                    @default(false)
+  quoteEstimateEnabled        Boolean                    @default(false)
+  quoteRules                  String                     @default("")
+  quoteDisclaimer             String                     @default("Prices are estimates only. Final pricing is confirmed by the business.")
+  callbackTimeframe           String                     @default("within one business day")
+  reviewAutomationEnabled     Boolean                    @default(true)
+  reviewDiscountEnabled       Boolean                    @default(false)
+  reviewDiscountOffer         String                     @default("")
+  seoSetupNotes               String                     @default("")
+  seoPrimaryServices          String                     @default("")
+  seoServiceAreas             String                     @default("")
+  seoTargetKeywords           String                     @default("")
+  seoCompetitors              String                     @default("")
+  seoWebsitePages             String                     @default("")
+  seoContentIdeas             String                     @default("")
+  marketingSetupNotes         String                     @default("")
+  marketingChannels           String                     @default("")
+  marketingAudience           String                     @default("")
+  marketingGoals              String                     @default("")
+  marketingOffer              String                     @default("")
+  marketingContentThemes      String                     @default("")
+  marketingPostingCadence     String                     @default("weekly")
+  marketingBrandVoice         String                     @default("")
+  preferredContactMethod      String                     @default("TEXT")
+  billingStatus               String                     @default("PLAN_SELECTED")
+  stripeCustomerId            String                     @default("")
+  stripeSubscriptionId        String                     @default("")
+  emailSummaryEnabled         Boolean                    @default(true)
+  calendarProvider            String                     @default("")
+  calendarBookingUrl          String                     @default("")
+  calendarSyncNotes           String                     @default("")
+  googleReviewUrl             String                     @default("")
+  googleBusinessProfileUrl    String                     @default("")
+  websitePresenceStatus       String                     @default("UNKNOWN")
+  googleBusinessProfileStatus String                     @default("UNKNOWN")
+  facebookPageUrl             String                     @default("")
+  facebookPageStatus          String                     @default("UNKNOWN")
+  instagramProfileUrl         String                     @default("")
+  instagramProfileStatus      String                     @default("UNKNOWN")
+  bookingLinkStatus           String                     @default("UNKNOWN")
+  reviewPlatformStatus        String                     @default("UNKNOWN")
+  brandAssetsStatus           String                     @default("UNKNOWN")
+  logoUrl                     String                     @default("")
+  brandAssetNotes             String                     @default("")
+  digitalPresenceNotes        String                     @default("")
+  wantsLeadReplySetupHelp     Boolean                    @default(true)
+  launchNotes                 String                     @default("")
+  onboardingComplete          Boolean                    @default(false)
+  replyTemplate               String                     @default("")
+  widgetGreeting              String                     @default("Need help? Send us your info and we will follow up soon.")
+  widgetPrimaryAction         String                     @default("CALLBACK")
+  widgetAccentColor           String                     @default("#0f172a")
+  userId                      String                     @unique
+  user                        User                       @relation(fields: [userId], references: [id])
+  missedCalls                 MissedCall[]
+  leads                       Lead[]
+  customers                   Customer[]
+  jobs                        Job[]
+  customerActivities          CustomerActivity[]
+  reviewRequests              ReviewRequest[]
+  reviewProviderConnections   ReviewProviderConnection[]
+  externalReviews             ExternalReview[]
+  reviewSyncRuns              ReviewSyncRun[]
+  followUpSteps               FollowUpStep[]
+  missedCallAssistantIntakes            MissedCallAssistantIntake[]
+  serviceOfferings            ServiceOffering[]
+  availabilityWindows         AvailabilityWindow[]
+  growthTasks                 GrowthTask[]
+  marketingCalendarItems      MarketingCalendarItem[]
+  marketingCampaigns          MarketingCampaign[]
+  serviceOpportunities        ServiceOpportunity[]
+  websiteAuditRuns            WebsiteAuditRun[]
+  websiteAuditFindings        WebsiteAuditFinding[]
+  growthPlans                 GrowthPlan[]
+  aiUsageLogs                 AiUsageLog[]
+  internalAssignments         InternalTaskAssignment[]
+  internalClientNotes         InternalClientNote[]
+  opsJobRuns                  OpsJobRun[]
+  teamNotes                   TeamNote[]
+  teamMembers                 TeamMember[]
+  businessMemberships         BusinessMembership[]
+  teamInvitations             TeamInvitation[]
+  phoneLines                  BusinessPhoneLine[]
+  phoneLineRouteTargets       BusinessPhoneRouteTarget[]
+  phoneCallRoutingAttempts    PhoneCallRoutingAttempt[]
+  emailLogs                   EmailLog[]
+  smsOptOuts                  SmsOptOut[]
+  smsMessages                 SmsMessage[]
+  securityEvents              SecurityEvent[]
+  businessMemorySources       BusinessMemorySource[]
+  businessMemoryItems         BusinessMemoryItem[]
+  crmViews                    BusinessCrmView[]
+}
+
+model BusinessCrmView {
+  id              String   @id @default(cuid())
+  name            String
+  viewKey         String   @default("")
+  filters         Json     @default("{}")
+  visibleColumns  Json     @default("[]")
+  customColumns   Json     @default("[]")
+  columnWidths    Json     @default("{}")
+  sortKey         String   @default("NEWEST")
+  sortDirection   String   @default("DESC")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdByUserId String?
+  createdByUser   User?    @relation("BusinessCrmViewCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([createdByUserId])
+}
+
+model Customer {
+  id         String             @id @default(cuid())
+  name       String
+  phone      String             @default("")
+  email      String             @default("")
+  address    String             @default("")
+  city       String             @default("")
+  state      String             @default("")
+  zip        String             @default("")
+  notes      String             @default("")
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  businessId String
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leads      Lead[]
+  jobs       Job[]
+  activities CustomerActivity[]
+
+  @@index([businessId])
+  @@index([businessId, phone])
+  @@index([businessId, email])
+  @@index([createdAt])
+}
+
+model Job {
+  id                  String             @id @default(cuid())
+  title               String
+  status              String             @default("NEW")
+  source              String             @default("MANUAL")
+  sourceDetail        String             @default("")
+  estimatedValueCents Int                @default(0)
+  capturedValueCents  Int                @default(0)
+  notes               String             @default("")
+  followUpAt          DateTime?
+  followUpNote        String             @default("")
+  followUpCompletedAt DateTime?
+  appointmentStatus   String             @default("NOT_BOOKED")
+  appointmentAt       DateTime?
+  appointmentNotes    String             @default("")
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  closedAt            DateTime?
+  businessId          String
+  business            Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId          String
+  customer            Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  leadId              String?            @unique
+  sourceLead          Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  serviceOfferingId   String?
+  serviceOffering     ServiceOffering?   @relation(fields: [serviceOfferingId], references: [id], onDelete: SetNull)
+  marketingCampaignId String?
+  marketingCampaign   MarketingCampaign? @relation(fields: [marketingCampaignId], references: [id], onDelete: SetNull)
+  activities          CustomerActivity[]
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([serviceOfferingId])
+  @@index([marketingCampaignId])
+  @@index([businessId, status])
+  @@index([appointmentAt])
+  @@index([followUpAt])
+  @@index([createdAt])
+}
+
+model CustomerActivity {
+  id         String   @id @default(cuid())
+  type       String   @default("NOTE")
+  title      String
+  body       String   @default("")
+  authorName String   @default("System")
+  source     String   @default("SYSTEM")
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  jobId      String?
+  job        Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  leadId     String?
+  lead       Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([jobId])
+  @@index([leadId])
+  @@index([occurredAt])
+  @@index([type])
+}
+
+model InternalWorker {
+  id          String                   @id @default(cuid())
+  name        String                   @default("")
+  email       String                   @unique
+  role        String                   @default("SPECIALIST")
+  status      String                   @default("ACTIVE")
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  assignments InternalTaskAssignment[]
+  clientNotes InternalClientNote[]
+
+  @@index([status])
+}
+
+model InternalTaskAssignment {
+  id          String          @id @default(cuid())
+  title       String
+  description String          @default("")
+  category    String          @default("CLIENT_SETUP")
+  status      String          @default("TODO")
+  priority    String          @default("MEDIUM")
+  sourceType  String          @default("MANUAL")
+  sourceId    String          @default("")
+  dueAt       DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  businessId  String
+  business    Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  workerId    String?
+  worker      InternalWorker? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([workerId])
+  @@index([status])
+  @@index([dueAt])
+}
+
+model InternalClientNote {
+  id          String          @id @default(cuid())
+  body        String
+  category    String          @default("GENERAL")
+  authorEmail String          @default("")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  businessId  String
+  business    Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  workerId    String?
+  worker      InternalWorker? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([workerId])
+  @@index([createdAt])
+}
+
+model OpsJobRun {
+  id              String       @id @default(cuid())
+  name            String
+  kind            String       @default("MANUAL")
+  status          String       @default("PLANNED")
+  source          String       @default("ADMIN")
+  queueName       String       @default("")
+  queueJobId      String       @default("")
+  dedupeKey       String       @default("")
+  details         String       @default("")
+  error           String       @default("")
+  attemptsMade    Int          @default(0)
+  maxAttempts     Int          @default(3)
+  payload         Json         @default("{}")
+  result          Json         @default("{}")
+  scheduledFor    DateTime?
+  queuedAt        DateTime?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  lastHeartbeatAt DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  businessId      String?
+  business        Business?    @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  smsMessages     SmsMessage[]
+
+  @@index([businessId])
+  @@index([status])
+  @@index([kind])
+  @@index([queueJobId])
+  @@index([dedupeKey])
+  @@index([queuedAt])
+  @@index([scheduledFor])
+}
+
+model ServiceOpportunity {
+  id                  String   @id @default(cuid())
+  type                String
+  title               String
+  description         String   @default("")
+  status              String   @default("OPEN")
+  priority            String   @default("MEDIUM")
+  source              String   @default("DIGITAL_PRESENCE")
+  estimatedValueCents Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  businessId          String
+  business            Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, type])
+  @@index([businessId])
+  @@index([businessId, status])
+}
+
+model WebsiteAuditRun {
+  id         String                @id @default(cuid())
+  targetUrl  String
+  status     String                @default("COMPLETED")
+  score      Int                   @default(0)
+  summary    String                @default("")
+  checkedAt  DateTime              @default(now())
+  createdAt  DateTime              @default(now())
+  businessId String
+  business   Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  findings   WebsiteAuditFinding[]
+
+  @@index([businessId])
+  @@index([checkedAt])
+}
+
+model WebsiteAuditFinding {
+  id             String          @id @default(cuid())
+  category       String
+  severity       String          @default("MEDIUM")
+  title          String
+  description    String          @default("")
+  recommendation String          @default("")
+  status         String          @default("OPEN")
+  createdAt      DateTime        @default(now())
+  auditRunId     String
+  auditRun       WebsiteAuditRun @relation(fields: [auditRunId], references: [id], onDelete: Cascade)
+  businessId     String
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([auditRunId])
+  @@index([businessId, status])
+}
+
+model GrowthPlan {
+  id              String   @id @default(cuid())
+  title           String
+  summary         String   @default("")
+  status          String   @default("DRAFT")
+  source          String   @default("RULES")
+  aiProvider      String   @default("RULES")
+  aiModel         String   @default("")
+  aiError         String   @default("")
+  businessMemory  Json     @default("{}")
+  recommendations Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessId, status])
+}
+
+model BusinessMemorySource {
+  id          String               @id @default(cuid())
+  sourceType  String
+  sourceName  String               @default("")
+  status      String               @default("IMPORTED")
+  rawText     String               @default("")
+  extractedAt DateTime             @default(now())
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  businessId  String
+  business    Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  memoryItems BusinessMemoryItem[]
+
+  @@index([businessId])
+  @@index([businessId, sourceType])
+  @@index([businessId, status])
+}
+
+model BusinessMemoryItem {
+  id         String                @id @default(cuid())
+  category   String
+  title      String
+  content    String                @default("")
+  status     String                @default("NEEDS_REVIEW")
+  confidence Int                   @default(70)
+  sourceType String                @default("")
+  sourceName String                @default("")
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  businessId String
+  business   Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  sourceId   String?
+  source     BusinessMemorySource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([businessId, category])
+  @@index([businessId, status])
+  @@index([sourceId])
+}
+
+model AiUsageLog {
+  id                 String    @id @default(cuid())
+  feature            String
+  provider           String    @default("OPENAI")
+  model              String    @default("")
+  inputTokens        Int       @default(0)
+  outputTokens       Int       @default(0)
+  estimatedCostCents Int       @default(0)
+  status             String    @default("SUCCESS")
+  error              String    @default("")
+  createdAt          DateTime  @default(now())
+  businessId         String?
+  business           Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([feature])
+  @@index([createdAt])
 }
 
 model GrowthTask {
@@ -123,6 +508,27 @@ model MarketingCalendarItem {
   @@index([scheduledFor])
 }
 
+model MarketingCampaign {
+  id         String    @id @default(cuid())
+  name       String
+  channel    String    @default("")
+  goal       String    @default("")
+  status     String    @default("ACTIVE")
+  costCents  Int       @default(0)
+  notes      String    @default("")
+  startsAt   DateTime?
+  endsAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leads      Lead[]
+  jobs       Job[]
+
+  @@index([businessId])
+  @@index([businessId, status])
+}
+
 model PasswordResetToken {
   id        String    @id @default(cuid())
   email     String
@@ -153,6 +559,70 @@ model EmailLog {
   @@index([userId])
 }
 
+model SecurityEvent {
+  id         String    @id @default(cuid())
+  type       String
+  actorType  String    @default("USER")
+  actorEmail String    @default("")
+  outcome    String    @default("SUCCESS")
+  summary    String    @default("")
+  ipAddress  String    @default("")
+  userAgent  String    @default("")
+  metadata   Json      @default("{}")
+  createdAt  DateTime  @default(now())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([outcome])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([businessId])
+  @@index([actorEmail])
+}
+
+model SmsMessage {
+  id                  String           @id @default(cuid())
+  direction           String
+  status              String           @default("QUEUED")
+  provider            String           @default("TWILIO")
+  providerMessageId   String?          @unique
+  fromPhone           String           @default("")
+  fromPhoneNormalized String           @default("")
+  toPhone             String           @default("")
+  toPhoneNormalized   String           @default("")
+  body                String
+  purpose             String           @default("GENERAL")
+  error               String           @default("")
+  rawPayload          Json             @default("{}")
+  sentAt              DateTime?
+  deliveredAt         DateTime?
+  failedAt            DateTime?
+  receivedAt          DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  businessId          String?
+  business            Business?        @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  missedCallId        String?
+  missedCall          MissedCall?      @relation(fields: [missedCallId], references: [id], onDelete: SetNull)
+  missedCallAssistantIntakeId   String?
+  missedCallAssistantIntake     MissedCallAssistantIntake? @relation(fields: [missedCallAssistantIntakeId], references: [id], onDelete: SetNull)
+  opsJobRunId         String?
+  opsJobRun           OpsJobRun?       @relation(fields: [opsJobRunId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([missedCallId])
+  @@index([missedCallAssistantIntakeId])
+  @@index([opsJobRunId])
+  @@index([direction])
+  @@index([status])
+  @@index([fromPhoneNormalized])
+  @@index([toPhoneNormalized])
+  @@index([createdAt])
+}
+
 model SmsOptOut {
   id         String    @id @default(cuid())
   phone      String
@@ -167,18 +637,127 @@ model SmsOptOut {
 }
 
 model TeamMember {
-  id         String   @id @default(cuid())
-  name       String   @default("")
-  email      String
-  role       String   @default("STAFF")
-  status     String   @default("INVITED")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  name            String    @default("")
+  email           String
+  role            String    @default("STAFF")
+  status          String    @default("INVITED")
+  permissions     Json      @default("[]")
+  invitedAt       DateTime  @default(now())
+  inviteExpiresAt DateTime?
+  acceptedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  userId          String?
+  user            User?     @relation("TeamMemberUser", fields: [userId], references: [id], onDelete: SetNull)
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, email])
   @@index([businessId])
+  @@index([userId])
+}
+
+model BusinessMembership {
+  id              String    @id @default(cuid())
+  role            String    @default("OWNER")
+  status          String    @default("ACTIVE")
+  permissions     Json      @default("[]")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  acceptedAt      DateTime?
+  disabledAt      DateTime?
+  userId          String
+  user            User      @relation("BusinessMembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  businessId      String
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invitedByUserId String?
+  invitedByUser   User?     @relation("BusinessMembershipInvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
+  @@index([role])
+  @@index([status])
+  @@index([invitedByUserId])
+}
+
+model TeamInvitation {
+  id               String    @id @default(cuid())
+  name             String    @default("")
+  email            String    @default("")
+  phone            String    @default("")
+  role             String
+  permissions      Json      @default("[]")
+  status           String    @default("PENDING")
+  tokenHash        String    @unique
+  codeHash         String?   @unique
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  businessId       String
+  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invitedByUserId  String
+  invitedByUser    User      @relation("TeamInvitationInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  acceptedByUserId String?
+  acceptedByUser   User?     @relation("TeamInvitationAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([invitedByUserId])
+  @@index([acceptedByUserId])
+}
+
+model BusinessPhoneLine {
+  id                      String                     @id @default(cuid())
+  label                   String                     @default("")
+  phoneNumber             String
+  phoneNumberNormalized   String                     @default("")
+  provider                String                     @default("TWILIO")
+  providerLineId          String                     @default("")
+  routingTarget           String                     @default("")
+  routingTargetNormalized String                     @default("")
+  routingStrategy         String                     @default("PRIMARY")
+  planRequired            String                     @default("BASIC")
+  active                  Boolean                    @default(true)
+  notes                   String                     @default("")
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
+  businessId              String
+  business                Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  missedCalls             MissedCall[]
+  routeTargets            BusinessPhoneRouteTarget[]
+  routingAttempts         PhoneCallRoutingAttempt[]
+
+  @@unique([businessId, phoneNumberNormalized])
+  @@index([businessId])
+  @@index([businessId, active])
+  @@index([phoneNumberNormalized])
+}
+
+model BusinessPhoneRouteTarget {
+  id                    String            @id @default(cuid())
+  label                 String            @default("")
+  phoneNumber           String
+  phoneNumberNormalized String            @default("")
+  sortOrder             Int               @default(0)
+  active                Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  businessId            String
+  business              Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessPhoneLineId   String
+  businessPhoneLine     BusinessPhoneLine @relation(fields: [businessPhoneLineId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([businessPhoneLineId])
+  @@index([businessPhoneLineId, active, sortOrder])
 }
 
 model ServiceOffering {
@@ -198,7 +777,8 @@ model ServiceOffering {
   businessId           String
   business             Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   leads                Lead[]
-  conciergeIntakes     ConciergeIntake[]
+  jobs                 Job[]
+  missedCallAssistantIntakes     MissedCallAssistantIntake[]
 
   @@index([businessId])
 }
@@ -219,52 +799,103 @@ model AvailabilityWindow {
 }
 
 model MissedCall {
-  id              String           @id @default(cuid())
-  callerName      String
-  callerPhone     String
-  reason          String
-  status          String           @default("NEW")
-  createdAt       DateTime         @default(now())
-  repliedAt       DateTime?
-  convertedLeadId String?          @unique
-  convertedLead   Lead?            @relation(fields: [convertedLeadId], references: [id], onDelete: SetNull)
-  businessId      String
-  business        Business         @relation(fields: [businessId], references: [id])
-  conciergeIntake ConciergeIntake?
+  id                  String                    @id @default(cuid())
+  callerName          String
+  callerPhone         String
+  reason              String
+  status              String                    @default("NEW")
+  calledPhoneNumber   String                    @default("")
+  routedToPhoneNumber String                    @default("")
+  routingLabel        String                    @default("")
+  createdAt           DateTime                  @default(now())
+  repliedAt           DateTime?
+  convertedLeadId     String?                   @unique
+  convertedLead       Lead?                     @relation(fields: [convertedLeadId], references: [id], onDelete: SetNull)
+  businessId          String
+  business            Business                  @relation(fields: [businessId], references: [id])
+  businessPhoneLineId String?
+  businessPhoneLine   BusinessPhoneLine?        @relation(fields: [businessPhoneLineId], references: [id], onDelete: SetNull)
+  missedCallAssistantIntake     MissedCallAssistantIntake?
+  smsMessages         SmsMessage[]
+  routingAttempts     PhoneCallRoutingAttempt[]
 
   @@index([businessId])
+  @@index([businessPhoneLineId])
+}
+
+model PhoneCallRoutingAttempt {
+  id                            String             @id @default(cuid())
+  provider                      String             @default("TWILIO")
+  providerCallSid               String             @default("")
+  providerParentCallSid         String             @default("")
+  callerPhone                   String             @default("")
+  callerPhoneNormalized         String             @default("")
+  calledPhoneNumber             String             @default("")
+  calledPhoneNumberNormalized   String             @default("")
+  routedToPhoneNumber           String             @default("")
+  routedToPhoneNumberNormalized String             @default("")
+  routeLabel                    String             @default("")
+  routeOrder                    Int                @default(0)
+  status                        String             @default("UNKNOWN")
+  durationSeconds               Int                @default(0)
+  rawPayload                    Json               @default("{}")
+  createdAt                     DateTime           @default(now())
+  completedAt                   DateTime?
+  businessId                    String
+  business                      Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessPhoneLineId           String?
+  businessPhoneLine             BusinessPhoneLine? @relation(fields: [businessPhoneLineId], references: [id], onDelete: SetNull)
+  missedCallId                  String?
+  missedCall                    MissedCall?        @relation(fields: [missedCallId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([businessPhoneLineId])
+  @@index([missedCallId])
+  @@index([providerCallSid])
+  @@index([providerParentCallSid])
 }
 
 model Lead {
-  id                  String            @id @default(cuid())
+  id                  String             @id @default(cuid())
   customerName        String
   customerPhone       String
-  customerEmail       String            @default("")
-  source              String            @default("MISSED_CALL")
-  status              String            @default("NEW")
-  estimatedValueCents Int               @default(0)
-  capturedValueCents  Int               @default(0)
-  notes               String            @default("")
+  customerEmail       String             @default("")
+  source              String             @default("MISSED_CALL")
+  sourceDetail        String             @default("")
+  campaignName        String             @default("")
+  campaignCostCents   Int                @default(0)
+  marketingCampaignId String?
+  status              String             @default("NEW")
+  estimatedValueCents Int                @default(0)
+  capturedValueCents  Int                @default(0)
+  notes               String             @default("")
   followUpAt          DateTime?
-  followUpNote        String            @default("")
+  followUpNote        String             @default("")
   followUpCompletedAt DateTime?
-  appointmentStatus   String            @default("NOT_BOOKED")
+  appointmentStatus   String             @default("NOT_BOOKED")
   appointmentAt       DateTime?
-  appointmentNotes    String            @default("")
-  createdAt           DateTime          @default(now())
+  appointmentNotes    String             @default("")
+  createdAt           DateTime           @default(now())
   closedAt            DateTime?
+  customerId          String?
   serviceOfferingId   String?
   businessId          String
-  business            Business          @relation(fields: [businessId], references: [id])
-  serviceOffering     ServiceOffering?  @relation(fields: [serviceOfferingId], references: [id], onDelete: SetNull)
+  business            Business           @relation(fields: [businessId], references: [id])
+  customer            Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  serviceOffering     ServiceOffering?   @relation(fields: [serviceOfferingId], references: [id], onDelete: SetNull)
+  marketingCampaign   MarketingCampaign? @relation(fields: [marketingCampaignId], references: [id], onDelete: SetNull)
+  job                 Job?
   reviewRequests      ReviewRequest[]
   followUpSteps       FollowUpStep[]
-  conciergeIntakes    ConciergeIntake[]
+  missedCallAssistantIntakes    MissedCallAssistantIntake[]
   teamNotes           TeamNote[]
+  customerActivities  CustomerActivity[]
   sourceMissedCall    MissedCall?
 
   @@index([businessId])
+  @@index([customerId])
   @@index([serviceOfferingId])
+  @@index([marketingCampaignId])
 }
 
 model TeamNote {
@@ -298,12 +929,91 @@ model ReviewRequest {
   lead              Lead?     @relation(fields: [leadId], references: [id])
   businessId        String
   business          Business  @relation(fields: [businessId], references: [id])
+  externalReview    ExternalReview?
 
   @@index([businessId])
   @@index([leadId])
 }
 
-model ConciergeIntake {
+model ReviewProviderConnection {
+  id                    String          @id @default(cuid())
+  provider              String          @default("GOOGLE_BUSINESS_PROFILE")
+  status                String          @default("ACTION_REQUIRED")
+  accountId             String          @default("")
+  locationId            String          @default("")
+  locationName          String          @default("")
+  accessTokenEncrypted  String          @default("")
+  refreshTokenEncrypted String          @default("")
+  tokenExpiresAt        DateTime?
+  lastSyncAt            DateTime?
+  lastError             String          @default("")
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  businessId            String
+  business              Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  externalReviews       ExternalReview[]
+  syncRuns              ReviewSyncRun[]
+
+  @@unique([businessId, provider])
+  @@index([businessId])
+  @@index([provider])
+  @@index([status])
+}
+
+model ExternalReview {
+  id                      String                    @id @default(cuid())
+  provider                String                    @default("GOOGLE_BUSINESS_PROFILE")
+  providerReviewId        String
+  providerReviewName      String                    @default("")
+  reviewerName            String                    @default("")
+  reviewerProfilePhotoUrl String                    @default("")
+  rating                  Int                       @default(0)
+  comment                 String                    @default("")
+  reviewUrl               String                    @default("")
+  reviewCreatedAt         DateTime?
+  reviewUpdatedAt         DateTime?
+  matchedConfidence       Int                       @default(0)
+  rawPayload              Json                      @default("{}")
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  businessId              String
+  business                Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  connectionId            String?
+  connection              ReviewProviderConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  reviewRequestId         String?                   @unique
+  reviewRequest           ReviewRequest?            @relation(fields: [reviewRequestId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerReviewId])
+  @@index([businessId])
+  @@index([connectionId])
+  @@index([reviewRequestId])
+  @@index([reviewCreatedAt])
+}
+
+model ReviewSyncRun {
+  id             String                    @id @default(cuid())
+  provider       String                    @default("GOOGLE_BUSINESS_PROFILE")
+  status         String                    @default("RUNNING")
+  reviewsFetched Int                       @default(0)
+  reviewsMatched Int                       @default(0)
+  error          String                    @default("")
+  rawSummary     Json                      @default("{}")
+  startedAt      DateTime                  @default(now())
+  finishedAt     DateTime?
+  createdAt      DateTime                  @default(now())
+  businessId     String
+  business       Business                  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  connectionId   String?
+  connection     ReviewProviderConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([connectionId])
+  @@index([provider])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model MissedCallAssistantIntake {
   id                     String           @id @default(cuid())
   status                 String           @default("IN_PROGRESS")
   currentStep            Int              @default(0)
@@ -327,6 +1037,12 @@ model ConciergeIntake {
   aiProvider             String           @default("RULES")
   aiModel                String           @default("")
   aiError                String           @default("")
+  adminReviewStatus      String           @default("NEEDS_REVIEW")
+  adminReviewSummary     String           @default("")
+  adminReviewNextAction  String           @default("")
+  adminReviewNotes       String           @default("")
+  adminReviewedAt        DateTime?
+  adminReviewedByEmail   String           @default("")
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
   missedCallId           String           @unique
@@ -337,10 +1053,13 @@ model ConciergeIntake {
   matchedService         ServiceOffering? @relation(fields: [matchedServiceId], references: [id], onDelete: SetNull)
   leadId                 String?
   lead                   Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  smsMessages            SmsMessage[]
 
   @@index([businessId])
+  @@index([businessId, adminReviewStatus])
   @@index([matchedServiceId])
   @@index([leadId])
+  @@index([adminReviewedAt])
 }
 
 model FollowUpStep {

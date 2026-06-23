@@ -3,9 +3,9 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { AppNav } from "../../components/AppNav"
-import { LeadImportForm } from "./LeadImportForm"
+import { prisma } from "@/lib/data/prisma"
+import { AppNav } from "@/components/AppNav"
+import { LeadImportForm } from "@/features/leads/LeadImportForm"
 
 export const metadata: Metadata = {
   title: "Import Leads",
@@ -37,28 +37,28 @@ export default async function LeadImportPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-lr-page px-4 py-6 pb-10 sm:px-6 sm:py-8 md:pb-8">
+      <div className="mx-auto max-w-[1400px]">
         <AppNav />
 
-        <section className="mt-8 rounded-2xl bg-white p-5 shadow-sm sm:p-8">
+        <section className="mt-8 rounded-2xl bg-lr-surface p-5 shadow-sm sm:p-8">
           <Link
             href="/leads"
-            className="text-sm font-medium text-slate-600 hover:text-slate-950"
+            className="text-sm font-medium text-lr-muted hover:text-lr-strong"
           >
-            Back to leads
+            Back to Customers/Jobs
           </Link>
 
           <div className="mt-6">
             <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
               Import
             </p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-950">
-              Import leads from CSV
+            <h1 className="mt-2 text-3xl font-bold text-lr-strong">
+              Import customers/jobs from CSV
             </h1>
-            <p className="mt-3 max-w-2xl text-slate-600">
-              Bring existing leads into the CRM before launch or client
-              onboarding.
+            <p className="mt-3 max-w-2xl text-lr-muted">
+              Bring existing customers, jobs, and leads into the CRM before
+              launch or client onboarding.
             </p>
           </div>
 

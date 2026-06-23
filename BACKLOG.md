@@ -10,7 +10,10 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Live calendar sync: Google Calendar, Square, Toast, Mindbody, Jane, and other booking systems.
 - Owner alerts and weekly CRM summaries through production email.
 - Dependency security follow-up: revisit remaining moderate transitive advisories in Next/NextAuth/Prisma when non-breaking patched versions are available.
-- Generate draft SEO page briefs and social captions from Growth setup after launch.
+- Generate draft SEO page briefs and social captions from SEO and Marketing module setup after launch.
+- Deep audit V2: extend the current website audit with official Google profile data, connected social profiles, screenshots, richer competitor positioning, and larger crawl volume.
+- Revenue accuracy V2: replace the current captured-revenue fallback with exact recorded values from invoices, bookings, POS/payment integrations, or owner-confirmed job totals.
+- Full staff login and permission enforcement: convert tracked team members into login-capable users, hide owner-only billing/plan settings from workers, and enforce role capabilities in API routes.
 
 ## Business, Legal, And Launch Operations
 
@@ -79,8 +82,8 @@ This file is for ideas we like but are not pulling into the current build yet. A
 
 ## Completed From Backlog
 
-- Lead quality score: estimates which leads are most likely to convert based on source, value, activity, AI intake, and appointment outcome.
-- Notification center: shows new leads, missed calls, overdue follow-ups, AI intakes, sequence steps, and review prompts.
+- Lead quality score: estimates which leads are most likely to convert based on source, value, activity, missed-call assistant intake, and appointment outcome.
+- Notification center: shows new leads, missed calls, overdue follow-ups, missed-call assistant intakes, sequence steps, and review prompts.
 - Team notes: lets staff leave internal notes on a lead without changing customer-facing messages.
 - Appointment outcome tracking: records booked, showed, no-show, rescheduled, or cancelled.
 - Industry presets: adds starter services and availability for common business types.
@@ -97,9 +100,9 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Lead intake form: gives each business a public form that creates Website leads in the CRM.
 - Review funnel: tracks captured customers to review requested to review received, with status updates and a dedicated reviews page.
 - Follow-up sequences: creates a three-step text follow-up plan for leads, tracks draft/sent/skipped steps, and surfaces due steps on the dashboard, owner view, analytics, and lead detail page.
-- AI missed-call concierge: runs the automatic text intake after a missed call, asks industry-specific questions, saves the transcript and answers, creates or updates the lead, and flags scheduling next steps.
+- LeadReply missed-call assistant: runs the automatic text intake after a missed call, asks industry-specific questions, saves the transcript and answers, creates or updates the lead, and flags scheduling next steps.
 - Launch readiness dashboard: checks required env providers, business setup, sample data cleanup, Stripe checkout readiness, and deployment notes.
-- OpenAI concierge provider seam: can refine owner summaries while keeping deterministic scheduling and quote guard rails.
+- OpenAI missed-call assistant provider: can refine owner summaries while keeping deterministic scheduling and quote guard rails.
 - Twilio SMS provider seam: sends review and follow-up texts when credentials are configured and falls back to manual tracking when not.
 - Stripe checkout provider seam: creates subscription checkout sessions when live price IDs are configured.
 - Public form rate limits: protects signup, public intake, and widget lead capture from simple abuse.
@@ -114,15 +117,23 @@ This file is for ideas we like but are not pulling into the current build yet. A
 - Staff permissions setup: tracks team members, roles, and active/invited/disabled status.
 - Calendar setup: stores provider, booking link, scheduling notes, and self-scheduling preference.
 - Admin tools: adds an admin-only operations page for provider status, accounts, businesses, and email logs.
+- Internal operations portal: adds `/admin` client management, worker assignments, client notes, content approval visibility, AI usage, integration health, plan management, and job tracking.
 - Smoke test script: checks core public pages, SEO files, and widget script from the command line.
 - Visual polish pass: improves navigation, focus states, spacing, and app-wide surface styling.
-- Growth setup: stores structured SEO and marketing details, shows readiness counts, and connects those gaps to dashboard and launch checks.
-- Growth workbench: turns setup gaps into SEO actions, saved growth tasks, next-best dashboard prompts, and a marketing calendar with draft, approval, scheduled, and posted statuses.
+- SEO and Marketing module setup: stores structured search and campaign details, shows readiness counts, and connects those gaps to dashboard and launch checks.
+- SEO and Marketing workbench: turns setup gaps into SEO actions, saved growth tasks, next-best dashboard prompts, and a marketing calendar with draft, approval, scheduled, and posted statuses.
+- Digital presence setup: tracks website, Google profile, Facebook, Instagram, booking path, review destination, brand assets, and missing-piece setup help.
+- Service opportunity tracking: turns missing website/social/Google/review/booking/brand items into future paid setup opportunities.
+- Deep website audit V1: scans the saved public business website, scores SEO and conversion basics, stores findings, and creates growth tasks.
+- Growth plan foundation: generates rules-first or OpenAI-assisted growth plans from business memory, audit findings, lead data, SEO, and marketing setup.
+- Lead attribution expansion: tracks source detail, campaign name, campaign cost, and simple campaign ROI in Lead Center, analytics, and CSV exports.
+- Marketing campaign management: moves campaign name, campaign cost, lead links, and campaign ROI into the Marketing module while Lead details only links to a campaign.
 
 ## Later Integrations
 
 - Google Business Profile OAuth and review sync
 - Apple Business Connect
 - Live calendar and reservation-system sync
+- Browserless or Apify-powered crawl expansion for JavaScript rendering, screenshots, competitor scanning, and larger audit volume.
 - Native mobile app packaging
 - Dependency security follow-up for remaining moderate transitive advisories

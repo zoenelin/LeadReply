@@ -1,8 +1,7 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiOwnerBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const clearSchema = z.object({
   confirmation: z.literal("CLEAR"),
@@ -15,10 +14,10 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiOwnerBusinessAccess(req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   try {
@@ -34,7 +33,7 @@ export async function POST(req: Request) {
 
     const business = await prisma.business.findUnique({
       where: {
-        userId: session.user.id,
+        id: auth.access.businessId,
       },
     })
 
@@ -43,7 +42,12 @@ export async function POST(req: Request) {
     }
 
     await prisma.$transaction([
-      prisma.conciergeIntake.deleteMany({
+      prisma.smsMessage.deleteMany({
+        where: {
+          businessId: business.id,
+        },
+      }),
+      prisma.missedCallAssistantIntake.deleteMany({
         where: {
           businessId: business.id,
         },

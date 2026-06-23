@@ -1,32 +1,42 @@
 import type { Metadata } from "next"
 import { getServerSession } from "next-auth"
-import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { AppNav } from "../components/AppNav"
-import { LeadCenter } from "./LeadCenter"
+import { prisma } from "@/lib/data/prisma"
+import { AppNav } from "@/components/AppNav"
+import { CustomersJobsWorkspace } from "@/features/leads/CustomersJobsWorkspace"
+import {
+  getBusinessAccessForSession,
+  hasBusinessCapability,
+} from "@/services/auth/business-access"
+import { toCustomerJobSavedView } from "@/services/crm/customer-job-views"
 
 export const metadata: Metadata = {
-  title: "Lead Center",
+  title: "Customers/Jobs",
   description:
-    "Manage LeadReply CRM leads, values, status, and follow-up timing.",
+    "Manage LeadReply customers, jobs, values, status, and follow-up timing.",
   robots: {
     index: false,
     follow: false,
   },
 }
 
-export default async function LeadCenterPage() {
+export default async function CustomersJobsPage() {
   const session = await getServerSession(authOptions)
 
   if (!session) {
     redirect("/login")
   }
 
+  const access = await getBusinessAccessForSession(session, "manageLeads")
+
+  if (!access) {
+    redirect("/dashboard")
+  }
+
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: access.businessId,
     },
     include: {
       leads: {
@@ -34,8 +44,41 @@ export default async function LeadCenterPage() {
           createdAt: "desc",
         },
         include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              email: true,
+            },
+          },
+          job: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              estimatedValueCents: true,
+              capturedValueCents: true,
+              followUpAt: true,
+              appointmentStatus: true,
+              appointmentAt: true,
+              updatedAt: true,
+            },
+          },
           reviewRequests: true,
-          conciergeIntakes: {
+          serviceOffering: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          marketingCampaign: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          missedCallAssistantIntakes: {
             orderBy: {
               updatedAt: "desc",
             },
@@ -48,6 +91,21 @@ export default async function LeadCenterPage() {
           },
         },
       },
+      marketingCampaigns: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+        },
+      },
+      crmViews: {
+        orderBy: {
+          updatedAt: "desc",
+        },
+      },
     },
   })
 
@@ -56,47 +114,27 @@ export default async function LeadCenterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen bg-lr-page px-3 py-4 pb-10 sm:px-5 lg:px-8 md:pb-8">
+      <div className="mx-auto max-w-[1600px]">
         <AppNav />
 
-        <section className="mt-8 rounded-2xl bg-white p-5 shadow-sm sm:p-8">
+        <section className="mt-6 rounded-xl border border-lr-border bg-lr-surface px-4 py-5 shadow-sm shadow-lr-shadow/20 sm:px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-                Lead Center
+                Customers/Jobs
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-950">
-                Lead Center
+              <h1 className="mt-2 text-3xl font-bold text-lr-strong">
+                Home-services customer and job workspace
               </h1>
-              <p className="mt-3 max-w-2xl text-slate-600">
-                Track lead value, source, status, and follow-ups from one place.
+              <p className="mt-3 max-w-2xl text-lr-muted">
+                Track customers, services, status, next steps, appointments,
+                and money made from one spreadsheet-simple workspace.
               </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                href={`/intake/${business.id}`}
-                target="_blank"
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                Open intake form
-              </Link>
-              <Link
-                href="/leads/import"
-                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                Import CSV
-              </Link>
-              <Link
-                href="/analytics"
-                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                View analytics
-              </Link>
             </div>
           </div>
 
-          <LeadCenter
+          <CustomersJobsWorkspace
             leads={business.leads.map((lead) => ({
               ...lead,
               createdAt: lead.createdAt.toISOString(),
@@ -105,7 +143,18 @@ export default async function LeadCenterPage() {
               followUpCompletedAt:
                 lead.followUpCompletedAt?.toISOString() ?? null,
               appointmentAt: lead.appointmentAt?.toISOString() ?? null,
+              job: lead.job
+                ? {
+                    ...lead.job,
+                    followUpAt: lead.job.followUpAt?.toISOString() ?? null,
+                    appointmentAt: lead.job.appointmentAt?.toISOString() ?? null,
+                    updatedAt: lead.job.updatedAt.toISOString(),
+                  }
+                : null,
             }))}
+            marketingCampaigns={business.marketingCampaigns}
+            savedViews={business.crmViews.map(toCustomerJobSavedView)}
+            canManageCrmViews={hasBusinessCapability(access, "manageCrmViews")}
           />
         </section>
       </div>

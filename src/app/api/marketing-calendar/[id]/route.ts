@@ -1,8 +1,7 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const updateSchema = z.object({
   title: z.string().trim().min(1).max(140).optional(),
@@ -15,13 +14,11 @@ const updateSchema = z.object({
   notes: z.string().trim().max(1200).optional(),
 })
 
-async function findUserMarketingCalendarItem(id: string, userId: string) {
+async function findUserMarketingCalendarItem(id: string, businessId: string) {
   return prisma.marketingCalendarItem.findFirst({
     where: {
       id,
-      business: {
-        userId,
-      },
+      businessId,
     },
   })
 }
@@ -50,14 +47,17 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageMarketing", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existingItem = await findUserMarketingCalendarItem(id, session.user.id)
+  const existingItem = await findUserMarketingCalendarItem(
+    id,
+    auth.access.businessId
+  )
 
   if (!existingItem) {
     return Response.json(
@@ -111,14 +111,17 @@ export async function DELETE(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageMarketing", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existingItem = await findUserMarketingCalendarItem(id, session.user.id)
+  const existingItem = await findUserMarketingCalendarItem(
+    id,
+    auth.access.businessId
+  )
 
   if (!existingItem) {
     return Response.json(

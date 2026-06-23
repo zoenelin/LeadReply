@@ -3,9 +3,9 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
-import { buildNotifications } from "@/lib/notifications"
-import { prisma } from "@/lib/prisma"
-import { AppNav } from "../components/AppNav"
+import { buildNotifications } from "@/lib/domain/notifications"
+import { prisma } from "@/lib/data/prisma"
+import { AppNav } from "@/components/AppNav"
 
 export const metadata: Metadata = {
   title: "Alerts",
@@ -34,7 +34,7 @@ function priorityClassName(priority: string) {
     return "bg-amber-50 text-amber-700"
   }
 
-  return "bg-slate-100 text-slate-700"
+  return "bg-lr-hover text-lr-body"
 }
 
 export default async function NotificationsPage() {
@@ -54,7 +54,7 @@ export default async function NotificationsPage() {
     redirect("/settings/business")
   }
 
-  const [leads, missedCalls, conciergeIntakes, reviewRequests, followUpSteps] =
+  const [leads, missedCalls, missedCallAssistantIntakes, reviewRequests, followUpSteps] =
     await Promise.all([
       prisma.lead.findMany({
         where: {
@@ -80,7 +80,7 @@ export default async function NotificationsPage() {
           createdAt: "desc",
         },
       }),
-      prisma.conciergeIntake.findMany({
+      prisma.missedCallAssistantIntake.findMany({
         where: {
           businessId: business.id,
         },
@@ -130,7 +130,7 @@ export default async function NotificationsPage() {
   const notifications = buildNotifications({
     leads,
     missedCalls,
-    conciergeIntakes,
+    missedCallAssistantIntakes,
     reviewRequests,
     followUpSteps,
   })
@@ -139,50 +139,50 @@ export default async function NotificationsPage() {
   ).length
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-lr-page px-4 py-6 pb-10 sm:px-6 sm:py-8 md:pb-8">
+      <div className="mx-auto max-w-[1400px]">
         <AppNav />
 
-        <section className="mt-8 rounded-2xl bg-white p-5 shadow-sm sm:p-8">
+        <section className="mt-8 rounded-2xl bg-lr-surface p-5 shadow-sm sm:p-8">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-rose-700">
                 Notification center
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-950">
+              <h1 className="mt-2 text-3xl font-bold text-lr-strong">
                 What needs attention
               </h1>
-              <p className="mt-3 max-w-2xl text-slate-600">
-                LeadReply watches new leads, overdue follow-ups, AI intakes,
+              <p className="mt-3 max-w-2xl text-lr-muted">
+                LeadReply watches new leads, overdue follow-ups, missed-call assistant intakes,
                 and review prompts so owners know what to do next.
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 px-5 py-4">
-              <p className="text-sm text-slate-500">High priority</p>
-              <p className="mt-1 text-3xl font-bold text-slate-950">
+            <div className="rounded-2xl border border-lr-border px-5 py-4">
+              <p className="text-sm text-lr-subtle">High priority</p>
+              <p className="mt-1 text-3xl font-bold text-lr-strong">
                 {highPriorityCount}
               </p>
             </div>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">Total alerts</p>
-              <p className="mt-2 text-3xl font-bold text-slate-950">
+            <div className="rounded-2xl border border-lr-border p-5">
+              <p className="text-sm text-lr-subtle">Total alerts</p>
+              <p className="mt-2 text-3xl font-bold text-lr-strong">
                 {notifications.length}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">New leads</p>
-              <p className="mt-2 text-3xl font-bold text-slate-950">
+            <div className="rounded-2xl border border-lr-border p-5">
+              <p className="text-sm text-lr-subtle">New leads</p>
+              <p className="mt-2 text-3xl font-bold text-lr-strong">
                 {leads.filter((lead) => lead.status === "NEW").length}
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">AI intakes ready</p>
-              <p className="mt-2 text-3xl font-bold text-slate-950">
+            <div className="rounded-2xl border border-lr-border p-5">
+              <p className="text-sm text-lr-subtle">missed-call assistant intakes ready</p>
+              <p className="mt-2 text-3xl font-bold text-lr-strong">
                 {
-                  conciergeIntakes.filter(
+                  missedCallAssistantIntakes.filter(
                     (intake) => intake.status === "READY_FOR_OWNER"
                   ).length
                 }
@@ -192,11 +192,11 @@ export default async function NotificationsPage() {
 
           <div className="mt-8 space-y-3">
             {notifications.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
-                <p className="text-lg font-bold text-slate-950">
+              <div className="rounded-2xl border border-dashed border-lr-border-strong p-8 text-center">
+                <p className="text-lg font-bold text-lr-strong">
                   Nothing urgent right now
                 </p>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 text-sm text-lr-muted">
                   New leads, overdue tasks, and review prompts will appear here.
                 </p>
               </div>
@@ -205,12 +205,12 @@ export default async function NotificationsPage() {
                 <Link
                   key={notification.id}
                   href={notification.href}
-                  className="block rounded-2xl border border-slate-200 p-5 hover:bg-slate-50"
+                  className="block rounded-2xl border border-lr-border p-5 hover:bg-lr-hover"
                 >
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="font-bold text-slate-950">
+                        <h2 className="font-bold text-lr-strong">
                           {notification.title}
                         </h2>
                         <span
@@ -220,15 +220,15 @@ export default async function NotificationsPage() {
                         >
                           {notification.priority}
                         </span>
-                        <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
+                        <span className="rounded-lg bg-lr-hover px-2 py-1 text-xs font-bold text-lr-body">
                           {notification.category}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-slate-600">
+                      <p className="mt-2 text-sm text-lr-muted">
                         {notification.message}
                       </p>
                     </div>
-                    <p className="text-sm font-medium text-slate-500">
+                    <p className="text-sm font-medium text-lr-subtle">
                       {formatNotificationDate(notification.createdAt)}
                     </p>
                   </div>

@@ -1,13 +1,15 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const taskSchema = z.object({
   title: z.string().trim().min(1, "Please enter a task title.").max(140),
   description: z.string().trim().max(1200).optional().default(""),
-  category: z.enum(["SEO", "MARKETING", "GENERAL"]).optional().default("SEO"),
+  category: z
+    .enum(["PRESENCE", "SEO", "MARKETING", "GENERAL"])
+    .optional()
+    .default("SEO"),
   status: z
     .enum(["TODO", "IN_PROGRESS", "DONE"])
     .optional()
@@ -34,23 +36,10 @@ export async function POST(req: Request) {
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("requestGrowthServices", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
-  }
-
-  const business = await prisma.business.findUnique({
-    where: {
-      userId: session.user.id,
-    },
-    select: {
-      id: true,
-    },
-  })
-
-  if (!business) {
-    return Response.json({ error: "Business not found." }, { status: 404 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const body = await req.json().catch(() => ({}))
@@ -65,7 +54,7 @@ export async function POST(req: Request) {
 
   const task = await prisma.growthTask.create({
     data: {
-      businessId: business.id,
+      businessId: auth.access.businessId,
       title: result.data.title,
       description: result.data.description,
       category: result.data.category,

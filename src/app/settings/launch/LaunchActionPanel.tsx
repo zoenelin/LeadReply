@@ -41,13 +41,13 @@ export function LaunchActionPanel() {
   }
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-2xl bg-lr-surface p-5 shadow-sm sm:p-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
-          <h2 className="text-xl font-bold text-slate-950">
+          <h2 className="text-xl font-bold text-lr-strong">
             CRM activity cleanup
           </h2>
-          <p className="mt-2 max-w-xl text-sm text-slate-600">
+          <p className="mt-2 max-w-xl text-sm text-lr-muted">
             Deletes all leads, missed calls, review requests, follow-ups, and
             team notes for this business. Use it before connecting a real
             client account.
@@ -60,17 +60,17 @@ export function LaunchActionPanel() {
           <input
             value={confirmation}
             onChange={(e) => setConfirmation(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
           />
           <button
             type="button"
             onClick={clearData}
             disabled={loading}
-            className="mt-3 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            className="mt-3 w-full rounded-xl bg-lr-primary px-4 py-3 text-sm font-semibold text-lr-on-primary hover:bg-lr-primary-hover disabled:opacity-60"
           >
             {loading ? "Clearing..." : "Clear CRM activity"}
           </button>
-          {message && <p className="mt-3 text-sm text-slate-600">{message}</p>}
+          {message && <p className="mt-3 text-sm text-lr-muted">{message}</p>}
         </div>
       </div>
     </section>

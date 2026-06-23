@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { businessCategories, planOptions } from "@/lib/business-options"
+import { businessCategories, planOptions } from "@/lib/domain/business-options"
 
 const states = [
   "AL",
@@ -58,9 +58,13 @@ const states = [
 ]
 
 type BusinessSettingsFormProps = {
+  canManageBilling: boolean
   initialBusiness: {
     name: string
     phone: string
+    contactName: string
+    contactPhonePrimary: string
+    contactPhoneSecondary: string
     website: string
     address: string
     city: string
@@ -74,11 +78,19 @@ type BusinessSettingsFormProps = {
 }
 
 export function BusinessSettingsForm({
+  canManageBilling,
   initialBusiness,
 }: BusinessSettingsFormProps) {
   const router = useRouter()
   const [name, setName] = useState(initialBusiness.name)
   const [phone, setPhone] = useState(initialBusiness.phone)
+  const [contactName, setContactName] = useState(initialBusiness.contactName)
+  const [contactPhonePrimary, setContactPhonePrimary] = useState(
+    initialBusiness.contactPhonePrimary
+  )
+  const [contactPhoneSecondary, setContactPhoneSecondary] = useState(
+    initialBusiness.contactPhoneSecondary
+  )
   const [website, setWebsite] = useState(initialBusiness.website)
   const [address, setAddress] = useState(initialBusiness.address)
   const [city, setCity] = useState(initialBusiness.city)
@@ -111,6 +123,9 @@ export function BusinessSettingsForm({
         body: JSON.stringify({
           name,
           phone,
+          contactName,
+          contactPhonePrimary,
+          contactPhoneSecondary,
           website,
           address,
           city,
@@ -140,9 +155,9 @@ export function BusinessSettingsForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-950">Business profile</h2>
+        <h2 className="text-lg font-bold text-lr-strong">Business profile</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium">
@@ -152,7 +167,7 @@ export function BusinessSettingsForm({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
               required
             />
           </div>
@@ -165,8 +180,49 @@ export function BusinessSettingsForm({
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
               required
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Primary contact
+            </label>
+            <input
+              type="text"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
+              placeholder="Owner or manager"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Contact phone
+            </label>
+            <input
+              type="tel"
+              value={contactPhonePrimary}
+              onChange={(e) => setContactPhonePrimary(e.target.value)}
+              className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
+              placeholder={phone || "Primary contact phone"}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              Backup phone
+            </label>
+            <input
+              type="tel"
+              value={contactPhoneSecondary}
+              onChange={(e) => setContactPhoneSecondary(e.target.value)}
+              className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
+              placeholder="Optional"
             />
           </div>
         </div>
@@ -177,7 +233,7 @@ export function BusinessSettingsForm({
             type="url"
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
             placeholder="https://example.com"
           />
         </div>
@@ -190,7 +246,7 @@ export function BusinessSettingsForm({
             type="text"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
             required
           />
         </div>
@@ -202,7 +258,7 @@ export function BusinessSettingsForm({
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
               required
             />
           </div>
@@ -211,7 +267,7 @@ export function BusinessSettingsForm({
             <select
               value={state}
               onChange={(e) => setState(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-lr-border-strong bg-lr-surface px-4 py-3 outline-none focus:border-lr-strong"
               required
             >
               <option value="">Select</option>
@@ -228,7 +284,7 @@ export function BusinessSettingsForm({
               type="text"
               value={zip}
               onChange={(e) => setZip(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
               required
             />
           </div>
@@ -236,7 +292,7 @@ export function BusinessSettingsForm({
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-950">
+        <h2 className="text-lg font-bold text-lr-strong">
           Category and plan
         </h2>
         <div>
@@ -246,7 +302,7 @@ export function BusinessSettingsForm({
           <select
             value={businessType}
             onChange={(e) => setBusinessType(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
+            className="w-full rounded-xl border border-lr-border-strong bg-lr-surface px-4 py-3 outline-none focus:border-lr-strong"
             required
           >
             {businessCategories.map((group) => (
@@ -261,30 +317,42 @@ export function BusinessSettingsForm({
           </select>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {planOptions.map((plan) => (
-            <button
-              key={plan.value}
-              type="button"
-              onClick={() => setSelectedPlan(plan.value)}
-              className={`rounded-2xl border p-4 text-left ${
-                selectedPlan === plan.value
-                  ? "border-slate-950 bg-slate-50"
-                  : "border-slate-200 bg-white hover:bg-slate-50"
-              }`}
-            >
-              <p className="font-bold text-slate-950">{plan.label}</p>
-              <p className="mt-2 text-sm text-slate-600">{plan.tagline}</p>
-              <p className="mt-3 text-xs font-semibold text-slate-500">
-                Pricing coming soon
-              </p>
-            </button>
-          ))}
-        </div>
+        {canManageBilling ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            {planOptions.map((plan) => (
+              <button
+                key={plan.value}
+                type="button"
+                onClick={() => setSelectedPlan(plan.value)}
+                className={`rounded-2xl border p-4 text-left ${
+                  selectedPlan === plan.value
+                    ? "border-lr-strong bg-lr-surface-muted"
+                    : "border-lr-border bg-lr-surface hover:bg-lr-hover"
+                }`}
+              >
+                <p className="font-bold text-lr-strong">{plan.label}</p>
+                <p className="mt-2 text-sm text-lr-muted">{plan.tagline}</p>
+                <p className="mt-3 text-xs font-semibold text-lr-subtle">
+                  Pricing coming soon
+                </p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-lr-border bg-lr-surface-muted p-4">
+            <p className="text-sm font-bold text-lr-strong">
+              Plan changes are owner-only
+            </p>
+            <p className="mt-2 text-sm text-lr-muted">
+              Staff can update business profile details when allowed, but
+              billing and plan changes stay with the business owner.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-950">Follow-up setup</h2>
+        <h2 className="text-lg font-bold text-lr-strong">Follow-up setup</h2>
         <div>
           <label className="mb-1 block text-sm font-medium">
             Booking or reservation notes
@@ -292,7 +360,7 @@ export function BusinessSettingsForm({
           <textarea
             value={bookingNotes}
             onChange={(e) => setBookingNotes(e.target.value)}
-            className="min-h-28 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            className="min-h-28 w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
             placeholder="Tell us how customers usually book or reserve with you."
           />
         </div>
@@ -304,11 +372,11 @@ export function BusinessSettingsForm({
           <textarea
             value={replyTemplate}
             onChange={(e) => setReplyTemplate(e.target.value)}
-            className="min-h-32 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+            className="min-h-32 w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
             maxLength={500}
             placeholder="Thanks for calling. How can we help?"
           />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-lr-subtle">
             This is the message LeadReply will use as your saved missed call
             reply.
           </p>
@@ -318,12 +386,12 @@ export function BusinessSettingsForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+        className="rounded-xl bg-lr-primary px-5 py-3 text-sm font-semibold text-lr-on-primary hover:bg-lr-primary-hover disabled:opacity-60"
       >
         {loading ? "Saving..." : "Save changes"}
       </button>
 
-      {message && <p className="text-sm text-slate-600">{message}</p>}
+      {message && <p className="text-sm text-lr-muted">{message}</p>}
     </form>
   )
 }

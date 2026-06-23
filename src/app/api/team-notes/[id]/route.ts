@@ -1,7 +1,6 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 export async function DELETE(
   _req: Request,
@@ -13,19 +12,17 @@ export async function DELETE(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", _req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
   const note = await prisma.teamNote.findFirst({
     where: {
       id,
-      business: {
-        userId: session.user.id,
-      },
+      businessId: auth.access.businessId,
     },
   })
 

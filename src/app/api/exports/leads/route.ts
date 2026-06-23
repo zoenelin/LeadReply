@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
+import { prisma } from "@/lib/data/prisma"
 import {
   csvResponse,
   datedCsvFilename,
@@ -9,18 +7,19 @@ import {
   leadStatusLabel,
   moneyCsvValue,
   toCsv,
-} from "@/lib/reporting"
+} from "@/lib/analytics/reporting"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("exportData", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const business = await prisma.business.findUnique({
     where: {
-      userId: session.user.id,
+      id: auth.access.businessId,
     },
   })
 
@@ -47,6 +46,14 @@ export async function GET(req: Request) {
     orderBy: {
       createdAt: "desc",
     },
+    include: {
+      marketingCampaign: {
+        select: {
+          name: true,
+          costCents: true,
+        },
+      },
+    },
   })
 
   const rows = [
@@ -56,6 +63,9 @@ export async function GET(req: Request) {
       "Phone",
       "Email",
       "Source",
+      "Source detail",
+      "Campaign",
+      "Campaign cost USD",
       "Status",
       "Estimated value USD",
       "Captured value USD",
@@ -71,6 +81,11 @@ export async function GET(req: Request) {
       lead.customerPhone,
       lead.customerEmail,
       leadSourceLabel(lead.source),
+      lead.sourceDetail,
+      lead.marketingCampaign?.name ?? lead.campaignName,
+      moneyCsvValue(
+        lead.marketingCampaign?.costCents ?? lead.campaignCostCents
+      ),
       leadStatusLabel(lead.status),
       moneyCsvValue(lead.estimatedValueCents),
       moneyCsvValue(lead.capturedValueCents),

@@ -1,25 +1,22 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const updateSchema = z.object({
   title: z.string().trim().min(1).max(140).optional(),
   description: z.string().trim().max(1200).optional(),
-  category: z.enum(["SEO", "MARKETING", "GENERAL"]).optional(),
+  category: z.enum(["PRESENCE", "SEO", "MARKETING", "GENERAL"]).optional(),
   status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
   priority: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
   dueAt: z.string().trim().optional(),
 })
 
-async function findUserGrowthTask(id: string, userId: string) {
+async function findUserGrowthTask(id: string, businessId: string) {
   return prisma.growthTask.findFirst({
     where: {
       id,
-      business: {
-        userId,
-      },
+      businessId,
     },
   })
 }
@@ -48,14 +45,14 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("requestGrowthServices", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existingTask = await findUserGrowthTask(id, session.user.id)
+  const existingTask = await findUserGrowthTask(id, auth.access.businessId)
 
   if (!existingTask) {
     return Response.json({ error: "Growth task not found." }, { status: 404 })
@@ -104,14 +101,14 @@ export async function DELETE(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("requestGrowthServices", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existingTask = await findUserGrowthTask(id, session.user.id)
+  const existingTask = await findUserGrowthTask(id, auth.access.businessId)
 
   if (!existingTask) {
     return Response.json({ error: "Growth task not found." }, { status: 404 })

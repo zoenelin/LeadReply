@@ -1,11 +1,17 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { communicationStatuses, leadStatuses } from "@/lib/domain/status"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+
+const reviewRequestStatuses = [
+  communicationStatuses.draft,
+  communicationStatuses.sent,
+  communicationStatuses.received,
+] as const
 
 const reviewRequestUpdateSchema = z.object({
-  status: z.enum(["DRAFT", "SENT", "RECEIVED"]),
+  status: z.enum(reviewRequestStatuses),
 })
 
 export async function PATCH(
@@ -18,19 +24,17 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageReviews", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
   const existingRequest = await prisma.reviewRequest.findFirst({
     where: {
       id,
-      business: {
-        userId: session.user.id,
-      },
+      businessId: auth.access.businessId,
     },
   })
 
@@ -51,19 +55,37 @@ export async function PATCH(
 
     const now = new Date()
     const { status } = result.data
-    const reviewRequest = await prisma.reviewRequest.update({
-      where: {
-        id,
-      },
-      data: {
-        status,
-        sentAt:
-          status === "DRAFT" ? null : existingRequest.sentAt ?? now,
-        receivedAt:
-          status === "RECEIVED"
-            ? existingRequest.receivedAt ?? now
-            : null,
-      },
+    const reviewRequest = await prisma.$transaction(async (tx) => {
+      const updatedRequest = await tx.reviewRequest.update({
+        where: {
+          id,
+        },
+        data: {
+          status,
+          sentAt:
+            status === communicationStatuses.draft
+              ? null
+              : existingRequest.sentAt ?? now,
+          receivedAt:
+            status === communicationStatuses.received
+              ? existingRequest.receivedAt ?? now
+              : null,
+        },
+      })
+
+      if (status === communicationStatuses.received && existingRequest.leadId) {
+        await tx.lead.update({
+          where: {
+            id: existingRequest.leadId,
+          },
+          data: {
+            status: leadStatuses.closed,
+            closedAt: now,
+          },
+        })
+      }
+
+      return updatedRequest
     })
 
     return Response.json({ reviewRequest })

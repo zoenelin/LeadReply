@@ -1,8 +1,7 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/auth/auth"
-import { getSuggestedFollowUpSteps } from "@/lib/follow-up-sequences"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { getSuggestedFollowUpSteps } from "@/lib/domain/follow-up-sequences"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 export async function POST(
   req: Request,
@@ -14,10 +13,10 @@ export async function POST(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
@@ -25,9 +24,7 @@ export async function POST(
   const lead = await prisma.lead.findFirst({
     where: {
       id,
-      business: {
-        userId: session.user.id,
-      },
+      businessId: auth.access.businessId,
     },
     include: {
       business: true,

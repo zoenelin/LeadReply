@@ -1,10 +1,11 @@
 import { createHash, randomBytes } from "node:crypto"
 import { z } from "zod"
-import { buildPasswordResetEmail, sendEmail } from "@/lib/email"
-import { getAppBaseUrl } from "@/lib/integration-status"
-import { prisma } from "@/lib/prisma"
-import { checkRequestRateLimit, rateLimitResponse } from "@/lib/rate-limit"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { buildPasswordResetEmail, sendEmail } from "@/lib/integrations/email"
+import { getAppBaseUrl } from "@/lib/config/integration-status"
+import { prisma } from "@/lib/data/prisma"
+import { checkRequestRateLimit, rateLimitResponse } from "@/services/security/rate-limit"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
+import { logSecurityEvent } from "@/services/security/security-events"
 
 const requestSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -27,6 +28,13 @@ export async function POST(req: Request) {
   })
 
   if (!rateLimit.allowed) {
+    await logSecurityEvent({
+      req,
+      type: "PASSWORD_RESET_RATE_LIMITED",
+      outcome: "BLOCKED",
+      summary: "Password reset request blocked by route-level rate limit.",
+    })
+
     return rateLimitResponse(rateLimit.resetAt)
   }
 
@@ -34,6 +42,16 @@ export async function POST(req: Request) {
   const result = requestSchema.safeParse(body)
 
   if (!result.success) {
+    await logSecurityEvent({
+      req,
+      type: "PASSWORD_RESET_REQUEST_FAILED",
+      outcome: "FAILURE",
+      summary: "Password reset request failed validation.",
+      metadata: {
+        reason: result.error.issues[0]?.message ?? "Invalid input.",
+      },
+    })
+
     return Response.json(
       { error: result.error.issues[0]?.message ?? "Invalid input." },
       { status: 400 }
@@ -71,6 +89,17 @@ export async function POST(req: Request) {
       userId: user.id,
     })
   }
+
+  await logSecurityEvent({
+    req,
+    type: "PASSWORD_RESET_REQUESTED",
+    actorEmail: email,
+    userId: user?.id,
+    summary: "Password reset request accepted.",
+    metadata: {
+      accountMatched: Boolean(user),
+    },
+  })
 
   return Response.json({
     message:

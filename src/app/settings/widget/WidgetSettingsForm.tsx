@@ -70,16 +70,16 @@ export function WidgetSettingsForm({
     <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_0.9fr]">
       <form
         onSubmit={saveWidget}
-        className="rounded-2xl border border-slate-200 p-5"
+        className="rounded-2xl border border-lr-border p-5"
       >
-        <h2 className="text-xl font-bold text-slate-950">Widget setup</h2>
+        <h2 className="text-xl font-bold text-lr-strong">Widget setup</h2>
         <div className="mt-5 space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Greeting</label>
             <textarea
               value={widgetGreeting}
               onChange={(e) => setWidgetGreeting(e.target.value)}
-              className="min-h-28 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+              className="min-h-28 w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
               maxLength={180}
               required
             />
@@ -92,7 +92,7 @@ export function WidgetSettingsForm({
             <select
               value={widgetPrimaryAction}
               onChange={(e) => setWidgetPrimaryAction(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-500"
+              className="w-full rounded-xl border border-lr-border-strong bg-lr-surface px-4 py-3 outline-none focus:border-lr-strong"
             >
               <option value="CALLBACK">Request a callback</option>
               <option value="TEXT">Text us</option>
@@ -108,13 +108,13 @@ export function WidgetSettingsForm({
                 type="color"
                 value={widgetAccentColor}
                 onChange={(e) => setWidgetAccentColor(e.target.value)}
-                className="h-12 w-full rounded-xl border border-slate-300 bg-white p-1"
+                className="h-12 w-full rounded-xl border border-lr-border-strong bg-lr-surface p-1"
               />
               <input
                 type="text"
                 value={widgetAccentColor}
                 onChange={(e) => setWidgetAccentColor(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
+                className="w-full rounded-xl border border-lr-border-strong px-4 py-3 outline-none focus:border-lr-strong"
                 placeholder="#0f172a"
               />
             </div>
@@ -123,55 +123,57 @@ export function WidgetSettingsForm({
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-xl bg-lr-primary px-5 py-3 text-sm font-semibold text-lr-on-primary hover:bg-lr-primary-hover disabled:opacity-60"
           >
             {loading ? "Saving..." : "Save widget"}
           </button>
 
-          {message && <p className="text-sm text-slate-600">{message}</p>}
+          {message && <p className="text-sm text-lr-muted">{message}</p>}
         </div>
       </form>
 
       <aside className="space-y-5">
-        <div className="rounded-2xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500">Live link</p>
-          <p className="mt-3 break-all rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+        <div className="rounded-2xl border border-lr-border p-5">
+          <p className="text-sm font-medium text-lr-subtle">Live link</p>
+          <p className="mt-3 break-all rounded-xl bg-lr-surface-muted px-4 py-3 text-sm font-semibold text-lr-body">
             {widgetUrl}
           </p>
           <a
             href={widgetUrl}
             target="_blank"
-            className="mt-4 inline-flex rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            className="mt-4 inline-flex rounded-xl border border-lr-border-strong px-4 py-3 text-sm font-semibold text-lr-strong hover:bg-lr-hover"
           >
             Open widget
           </a>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500">
+        <div className="rounded-2xl border border-lr-border p-5">
+          <p className="text-sm font-medium text-lr-subtle">
             Recommended embed
           </p>
           <textarea
             readOnly
             value={scriptEmbedCode}
-            className="mt-3 min-h-28 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none"
+            className="mt-3 min-h-28 w-full rounded-xl border border-lr-border-strong bg-lr-surface-muted px-4 py-3 text-sm outline-none"
           />
-          <p className="mt-3 text-xs text-slate-500">
-            Use this script for a floating mobile-friendly widget.
+          <p className="mt-3 text-xs text-lr-subtle">
+            Use this script for a floating mobile-friendly lead capture widget.
+            Submissions flow into LeadReply; AI chat and self-scheduling will
+            connect here after those integrations are ready.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500">Inline iframe</p>
+        <div className="rounded-2xl border border-lr-border p-5">
+          <p className="text-sm font-medium text-lr-subtle">Inline iframe</p>
           <textarea
             readOnly
             value={iframeEmbedCode}
-            className="mt-3 min-h-40 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none"
+            className="mt-3 min-h-40 w-full rounded-xl border border-lr-border-strong bg-lr-surface-muted px-4 py-3 text-sm outline-none"
           />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 p-5">
-          <p className="text-sm font-medium text-slate-500">Preview</p>
+        <div className="rounded-2xl border border-lr-border p-5">
+          <p className="text-sm font-medium text-lr-subtle">Preview</p>
           <div
             className="mt-4 rounded-2xl p-5 text-white"
             style={{ backgroundColor: widgetAccentColor }}

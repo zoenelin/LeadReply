@@ -1,7 +1,7 @@
 import { z } from "zod"
-import { prisma } from "@/lib/prisma"
-import { checkRequestRateLimit, rateLimitResponse } from "@/lib/rate-limit"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { checkRequestRateLimit, rateLimitResponse } from "@/services/security/rate-limit"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const widgetLeadSchema = z.object({
   customerName: z.string().trim().min(1, "Please enter your name."),

@@ -2,7 +2,7 @@
 
 ## Active Build Order
 
-The original eight-item CRM foundation is now implemented. The current near-launch work is provider setup, production deployment, real-client onboarding, growth workflow polish, and safety testing.
+The original eight-item CRM foundation is now implemented. The current near-launch work is provider setup, production deployment, real-client onboarding, growth automation polish, and safety testing.
 
 1. Lead Center
    - Add a leads page.
@@ -16,6 +16,7 @@ The original eight-item CRM foundation is now implemented. The current near-laun
 3. Better Analytics
    - Add source, status, and date filters.
    - Split reporting into open lead value, captured revenue, lost opportunity, and recovered revenue.
+   - Track source details, campaign names, campaign cost, and simple campaign ROI.
 
 4. Follow-Up Tasks
    - Show today's follow-ups on the dashboard.
@@ -28,7 +29,13 @@ The original eight-item CRM foundation is now implemented. The current near-laun
 6. Automation Settings
    - Add setup screens for phone, booking, reviews, SEO, and marketing.
    - Collect enough information for later integrations.
-   - Keep SEO and marketing details in a dedicated Growth setup area with tasks, action plans, and a marketing calendar.
+   - Keep digital presence, SEO, marketing, audit, and growth-plan details in dedicated SEO and Marketing modules with tasks, action plans, service opportunities, and a marketing calendar.
+
+9. Digital Presence And Growth Automation
+   - Track website, Google profile, Facebook, Instagram, booking, reviews, and brand assets.
+   - Turn missing presence pieces into future service opportunities.
+   - Run a safe, permission-based website audit V1 for public client-owned websites.
+   - Generate rules-first or OpenAI-assisted growth plans that create tasks and approval-ready marketing ideas.
 
 7. Billing Plans
    - Add a billing/settings page.

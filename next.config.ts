@@ -42,7 +42,11 @@ const appContentSecurityPolicy = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-  `connect-src 'self'${isProduction ? "" : " ws: wss: http://localhost:*"}`,
+  `connect-src 'self'${
+    isProduction
+      ? ""
+      : " ws: wss: http://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
+  }`,
   "frame-src 'self' https://checkout.stripe.com https://js.stripe.com",
   "frame-ancestors 'self'",
 ].join("; ");
@@ -56,7 +60,11 @@ const widgetContentSecurityPolicy = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-  `connect-src 'self'${isProduction ? "" : " ws: wss: http://localhost:*"}`,
+  `connect-src 'self'${
+    isProduction
+      ? ""
+      : " ws: wss: http://localhost:* http://127.0.0.1:* ws://127.0.0.1:*"
+  }`,
   "frame-ancestors *",
 ].join("; ");
 
@@ -76,7 +84,7 @@ const appPageFrameHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["172.30.151.218"],
+  allowedDevOrigins: ["localhost", "127.0.0.1", "172.30.151.218"],
   poweredByHeader: false,
   reactCompiler: true,
   async headers() {

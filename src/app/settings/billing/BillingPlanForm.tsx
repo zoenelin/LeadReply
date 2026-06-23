@@ -115,13 +115,13 @@ export function BillingPlanForm({
 
   return (
     <div className="mt-8">
-      <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="mb-6 rounded-2xl border border-lr-border bg-lr-surface-muted p-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <p className="text-sm font-semibold text-slate-950">
+            <p className="text-sm font-semibold text-lr-strong">
               Current billing status: {billingStatus.replaceAll("_", " ")}
             </p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-lr-muted">
               {hasStripeCustomer
                 ? "A Stripe customer is connected for this business."
                 : "A Stripe customer will be created after checkout is completed."}
@@ -131,7 +131,7 @@ export function BillingPlanForm({
             type="button"
             onClick={openCustomerPortal}
             disabled={loading || !hasStripeCustomer || !stripeConfigured}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-lr-border-strong bg-lr-surface px-4 py-3 text-sm font-semibold text-lr-strong hover:bg-lr-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Opening..." : "Customer portal"}
           </button>
@@ -144,27 +144,27 @@ export function BillingPlanForm({
             key={plan.value}
             className={`rounded-2xl border p-5 text-left ${
               selectedPlan === plan.value
-                ? "border-slate-950 bg-slate-50"
-                : "border-slate-200 bg-white hover:bg-slate-50"
+                ? "border-lr-strong bg-lr-surface-muted"
+                : "border-lr-border bg-lr-surface hover:bg-lr-hover"
             }`}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xl font-bold text-slate-950">
+                <p className="text-xl font-bold text-lr-strong">
                   {plan.label}
                 </p>
-                <p className="mt-2 text-sm text-slate-600">{plan.tagline}</p>
+                <p className="mt-2 text-sm text-lr-muted">{plan.tagline}</p>
               </div>
-              <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
+              <span className="rounded-lg bg-lr-hover px-2 py-1 text-xs font-bold text-lr-body">
                 {stripeConfigured ? "Checkout" : "Setup"}
               </span>
             </div>
-            <ul className="mt-5 space-y-2 text-sm text-slate-700">
+            <ul className="mt-5 space-y-2 text-sm text-lr-body">
               {plan.features.map((feature) => (
                 <li key={feature}>{feature}</li>
               ))}
             </ul>
-            <p className="mt-5 text-sm font-semibold text-slate-500">
+            <p className="mt-5 text-sm font-semibold text-lr-subtle">
               {stripeConfigured ? "Stripe checkout ready" : "Pricing coming soon"}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -172,7 +172,7 @@ export function BillingPlanForm({
                 type="button"
                 onClick={() => savePlan(plan.value)}
                 disabled={loading}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+                className="rounded-xl border border-lr-border-strong bg-lr-surface px-4 py-3 text-sm font-semibold text-lr-strong hover:bg-lr-hover disabled:opacity-60"
               >
                 {loading && selectedPlan === plan.value ? "Saving..." : "Save"}
               </button>
@@ -180,7 +180,7 @@ export function BillingPlanForm({
                 type="button"
                 onClick={() => startCheckout(plan.value)}
                 disabled={loading}
-                className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                className="rounded-xl bg-lr-primary px-4 py-3 text-sm font-semibold text-lr-on-primary hover:bg-lr-primary-hover disabled:opacity-60"
               >
                 {loading && selectedPlan === plan.value
                   ? "Starting..."
@@ -191,7 +191,7 @@ export function BillingPlanForm({
         ))}
       </div>
 
-      {message && <p className="mt-4 text-sm text-slate-600">{message}</p>}
+      {message && <p className="mt-4 text-sm text-lr-muted">{message}</p>}
     </div>
   )
 }

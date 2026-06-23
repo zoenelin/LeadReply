@@ -1,14 +1,16 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
 import {
   appointmentStatusValues,
   dollarsToCents,
   leadSourceValues,
   leadStatusValues,
-} from "@/lib/lead-options"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+  normalizeLeadStatus,
+} from "@/lib/domain/lead-options"
+import { appointmentStatuses, leadStatuses } from "@/lib/domain/status"
+import { prisma } from "@/lib/data/prisma"
+import { requireApiBusinessAccess } from "@/services/auth/business-access"
+import { syncCustomerJobFromLead } from "@/services/crm/customer-jobs"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const leadUpdateSchema = z.object({
   customerName: z.string().min(1, "Please enter the lead name."),
@@ -17,6 +19,8 @@ const leadUpdateSchema = z.object({
   source: z.string().refine((value) => leadSourceValues.includes(value), {
     message: "Please choose a lead source.",
   }),
+  sourceDetail: z.string().trim().max(300).optional().default(""),
+  marketingCampaignId: z.string().trim().optional().default(""),
   status: z.string().refine((value) => leadStatusValues.includes(value), {
     message: "Please choose a lead status.",
   }),
@@ -29,7 +33,7 @@ const leadUpdateSchema = z.object({
   appointmentStatus: z
     .string()
     .optional()
-    .default("NOT_BOOKED")
+    .default(appointmentStatuses.notBooked)
     .refine((value) => appointmentStatusValues.includes(value), {
       message: "Please choose an appointment status.",
     }),
@@ -65,6 +69,48 @@ function parseAppointmentDate(value: string) {
   return parsedDate
 }
 
+function getCapturedValueCents(
+  status: string,
+  estimatedValueCents: number,
+  capturedValue: string,
+  existingCapturedValueCents = 0
+) {
+  if (status !== leadStatuses.captured && status !== leadStatuses.closed) {
+    return 0
+  }
+
+  const capturedValueCents = dollarsToCents(capturedValue)
+
+  if (status === leadStatuses.closed) {
+    return capturedValueCents > 0
+      ? capturedValueCents
+      : existingCapturedValueCents
+  }
+
+  return capturedValueCents > 0 ? capturedValueCents : estimatedValueCents
+}
+
+async function getValidMarketingCampaignId(
+  businessId: string,
+  marketingCampaignId: string
+) {
+  if (!marketingCampaignId) {
+    return null
+  }
+
+  const campaign = await prisma.marketingCampaign.findFirst({
+    where: {
+      id: marketingCampaignId,
+      businessId,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  return campaign?.id ?? undefined
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -75,10 +121,10 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiBusinessAccess("manageLeads", req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
@@ -86,9 +132,7 @@ export async function PATCH(
   const existingLead = await prisma.lead.findFirst({
     where: {
       id,
-      business: {
-        userId: session.user.id,
-      },
+      businessId: auth.access.businessId,
     },
   })
 
@@ -112,7 +156,9 @@ export async function PATCH(
       customerPhone,
       customerEmail,
       source,
-      status,
+      sourceDetail,
+      marketingCampaignId,
+      status: rawStatus,
       estimatedValue,
       capturedValue,
       notes,
@@ -123,28 +169,55 @@ export async function PATCH(
       appointmentAt,
       appointmentNotes,
     } = result.data
-    const shouldClose = status === "CAPTURED" || status === "LOST"
-    const lead = await prisma.lead.update({
-      where: {
-        id,
-      },
-      data: {
-        customerName,
-        customerPhone,
-        customerEmail,
-        source,
-        status,
-        estimatedValueCents: dollarsToCents(estimatedValue),
-        capturedValueCents: status === "CAPTURED" ? dollarsToCents(capturedValue) : 0,
-        notes,
-        followUpAt: parseFollowUpDate(followUpAt),
-        followUpNote,
-        followUpCompletedAt: followUpCompleted ? new Date() : null,
-        appointmentStatus,
-        appointmentAt: parseAppointmentDate(appointmentAt),
-        appointmentNotes,
-        closedAt: shouldClose ? existingLead.closedAt ?? new Date() : null,
-      },
+    const status = normalizeLeadStatus(rawStatus)
+    const shouldClose = status === leadStatuses.closed
+    const estimatedValueCents = dollarsToCents(estimatedValue)
+    const validMarketingCampaignId = await getValidMarketingCampaignId(
+      existingLead.businessId,
+      marketingCampaignId
+    )
+
+    if (validMarketingCampaignId === undefined) {
+      return Response.json(
+        { error: "Please choose a valid marketing campaign." },
+        { status: 400 }
+      )
+    }
+
+    const lead = await prisma.$transaction(async (tx) => {
+      const updatedLead = await tx.lead.update({
+        where: {
+          id,
+        },
+        data: {
+          customerName,
+          customerPhone,
+          customerEmail,
+          source,
+          sourceDetail,
+          marketingCampaignId: validMarketingCampaignId,
+          status,
+          estimatedValueCents,
+          capturedValueCents: getCapturedValueCents(
+            status,
+            estimatedValueCents,
+            capturedValue,
+            existingLead.capturedValueCents
+          ),
+          notes,
+          followUpAt: parseFollowUpDate(followUpAt),
+          followUpNote,
+          followUpCompletedAt: followUpCompleted ? new Date() : null,
+          appointmentStatus,
+          appointmentAt: parseAppointmentDate(appointmentAt),
+          appointmentNotes,
+          closedAt: shouldClose ? existingLead.closedAt ?? new Date() : null,
+        },
+      })
+
+      await syncCustomerJobFromLead(tx, updatedLead)
+
+      return updatedLead
     })
 
     return Response.json({ lead })

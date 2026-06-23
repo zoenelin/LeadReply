@@ -1,5 +1,7 @@
-import { prisma } from "@/lib/prisma"
-import { verifyTwilioSignature } from "@/lib/twilio"
+import { prisma } from "@/lib/data/prisma"
+import { verifyTwilioSignature } from "@/lib/integrations/twilio"
+import { updateSmsMessageFromTwilioStatus } from "@/services/communications/sms-messages"
+import { logger } from "@/services/observability/logger"
 
 function formDataToRecord(formData: FormData) {
   return Object.fromEntries(
@@ -10,8 +12,14 @@ function formDataToRecord(formData: FormData) {
 export async function POST(req: Request) {
   const formData = await req.formData()
   const fields = formDataToRecord(formData)
+  const requestId = req.headers.get("x-request-id") || ""
 
   if (!verifyTwilioSignature({ req, fields })) {
+    logger.warn("webhook.twilio_status.invalid_signature", {
+      requestId,
+      messageSid: fields.MessageSid,
+    })
+
     return Response.json({ error: "Invalid signature." }, { status: 400 })
   }
 
@@ -30,6 +38,13 @@ export async function POST(req: Request) {
     : ""
 
   await Promise.all([
+    updateSmsMessageFromTwilioStatus({
+      messageSid,
+      messageStatus,
+      errorCode,
+      errorMessage,
+      fields,
+    }),
     prisma.followUpStep.updateMany({
       where: {
         providerMessageId: messageSid,
@@ -47,6 +62,13 @@ export async function POST(req: Request) {
       },
     }),
   ])
+
+  logger.info("webhook.twilio_status.received", {
+    requestId,
+    messageSid,
+    messageStatus,
+    failed,
+  })
 
   return Response.json({ received: true })
 }

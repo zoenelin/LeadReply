@@ -1,21 +1,19 @@
-import { getServerSession } from "next-auth"
 import { z } from "zod"
-import { authOptions } from "@/auth/auth"
-import { prisma } from "@/lib/prisma"
-import { rejectCrossSiteRequest } from "@/lib/request-security"
+import { prisma } from "@/lib/data/prisma"
+import { businessRoles } from "@/lib/security/permissions"
+import { requireApiOwnerBusinessAccess } from "@/services/auth/business-access"
+import { rejectCrossSiteRequest } from "@/services/security/request-security"
 
 const updateSchema = z.object({
-  role: z.enum(["OWNER", "MANAGER", "STAFF", "VIEWER"]).optional(),
+  role: z.enum(businessRoles).optional(),
   status: z.enum(["INVITED", "ACTIVE", "DISABLED"]).optional(),
 })
 
-async function getOwnedTeamMember(id: string, userId: string) {
+async function getOwnedTeamMember(id: string, businessId: string) {
   return prisma.teamMember.findFirst({
     where: {
       id,
-      business: {
-        userId,
-      },
+      businessId,
     },
   })
 }
@@ -30,14 +28,14 @@ export async function PATCH(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiOwnerBusinessAccess(req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existing = await getOwnedTeamMember(id, session.user.id)
+  const existing = await getOwnedTeamMember(id, auth.access.businessId)
 
   if (!existing) {
     return Response.json({ error: "Team member not found." }, { status: 404 })
@@ -73,14 +71,14 @@ export async function DELETE(
     return crossSite
   }
 
-  const session = await getServerSession(authOptions)
+  const auth = await requireApiOwnerBusinessAccess(req)
 
-  if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+  if ("response" in auth) {
+    return auth.response
   }
 
   const { id } = await params
-  const existing = await getOwnedTeamMember(id, session.user.id)
+  const existing = await getOwnedTeamMember(id, auth.access.businessId)
 
   if (!existing) {
     return Response.json({ error: "Team member not found." }, { status: 404 })

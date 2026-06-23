@@ -3,30 +3,29 @@ import { getServerSession } from "next-auth"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { authOptions } from "@/auth/auth"
-import { ReviewRequestStatusButtons } from "@/app/components/ReviewRequestStatusButtons"
+import { ReviewRequestStatusButtons } from "@/features/reviews/ReviewRequestStatusButtons"
 import {
-  appointmentStatusClassName,
   appointmentStatusLabels,
   formatMoney,
-  leadSourceLabels,
   leadStatusLabels,
+  normalizeLeadStatus,
   statusClassName,
-} from "@/lib/lead-options"
-import { getLeadQualityScore } from "@/lib/lead-quality"
-import { prisma } from "@/lib/prisma"
-import { formatDuration, formatServiceEstimate } from "@/lib/service-catalog"
+} from "@/lib/domain/lead-options"
+import { prisma } from "@/lib/data/prisma"
+import { formatDuration, formatServiceEstimate } from "@/lib/domain/service-catalog"
 import {
   getReviewStatusLabel,
   reviewStatusClassName,
-} from "@/lib/review-funnel"
-import { AppNav } from "../../components/AppNav"
-import { LeadDetailForm } from "./LeadDetailForm"
-import { LeadFollowUpSequence } from "./LeadFollowUpSequence"
-import { LeadTeamNotes } from "./LeadTeamNotes"
+} from "@/lib/domain/review-funnel"
+import { AppNav } from "@/components/AppNav"
+import { LeadDetailForm } from "@/features/leads/LeadDetailForm"
+import { LeadFollowUpSequence } from "@/features/leads/LeadFollowUpSequence"
+import { LeadTeamNotes } from "@/features/leads/LeadTeamNotes"
+import { getBusinessAccessForSession } from "@/services/auth/business-access"
 
 export const metadata: Metadata = {
-  title: "Lead Detail",
-  description: "Review and update a LeadReply CRM lead.",
+  title: "Customer/Job Detail",
+  description: "Review and update a LeadReply customer and job record.",
   robots: {
     index: false,
     follow: false,
@@ -74,18 +73,32 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     redirect("/login")
   }
 
+  const access = await getBusinessAccessForSession(session, "manageLeads")
+
+  if (!access) {
+    redirect("/dashboard")
+  }
+
   const { id } = await params
   const lead = await prisma.lead.findFirst({
     where: {
       id,
-      business: {
-        userId: session.user.id,
-      },
+      businessId: access.businessId,
     },
     include: {
-      business: true,
+      customer: {
+        include: {
+          activities: {
+            orderBy: {
+              occurredAt: "desc",
+            },
+            take: 20,
+          },
+        },
+      },
+      job: true,
       serviceOffering: true,
-      conciergeIntakes: {
+      missedCallAssistantIntakes: {
         include: {
           matchedService: true,
         },
@@ -115,206 +128,187 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     notFound()
   }
 
-  const latestConciergeIntake = lead.conciergeIntakes[0]
+  const latestMissedCallAssistantIntake = lead.missedCallAssistantIntakes[0]
   const matchedService =
-    lead.serviceOffering ?? latestConciergeIntake?.matchedService ?? null
+    lead.serviceOffering ?? latestMissedCallAssistantIntake?.matchedService ?? null
   const matchedServiceName =
-    matchedService?.name ?? latestConciergeIntake?.matchedServiceName ?? ""
+    matchedService?.name ?? latestMissedCallAssistantIntake?.matchedServiceName ?? ""
   const quoteRange = matchedService
     ? formatServiceEstimate(matchedService)
-    : latestConciergeIntake
+    : latestMissedCallAssistantIntake
       ? formatQuoteRange(
-          latestConciergeIntake.matchedQuoteLowCents,
-          latestConciergeIntake.matchedQuoteHighCents
+          latestMissedCallAssistantIntake.matchedQuoteLowCents,
+          latestMissedCallAssistantIntake.matchedQuoteHighCents
         )
       : "No estimate matched"
   const durationLabel = matchedService
     ? formatDuration(matchedService.durationMinutes)
-    : latestConciergeIntake?.matchedDurationMinutes
-      ? formatDuration(latestConciergeIntake.matchedDurationMinutes)
+    : latestMissedCallAssistantIntake?.matchedDurationMinutes
+      ? formatDuration(latestMissedCallAssistantIntake.matchedDurationMinutes)
       : "No duration matched"
-  const qualityScore = getLeadQualityScore(lead)
+  const appointmentStatus =
+    lead.job?.appointmentStatus ?? lead.appointmentStatus
+  const appointmentAt = lead.job?.appointmentAt ?? lead.appointmentAt
+  const jobStatus = lead.job?.status ?? "Not synced"
+  const jobTitle = lead.job?.title || matchedServiceName || "Service request"
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 pb-28 sm:px-6 sm:py-8 md:pb-8">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-lr-page px-4 py-6 pb-10 sm:px-6 sm:py-8 md:pb-8">
+      <div className="mx-auto max-w-[1400px]">
         <AppNav />
 
-        <section className="mt-8 rounded-2xl bg-white p-5 shadow-sm sm:p-8">
+        <section className="mt-8 rounded-2xl bg-lr-surface p-5 shadow-sm sm:p-8">
           <Link
             href="/leads"
-            className="text-sm font-medium text-slate-600 hover:text-slate-950"
+            className="text-sm font-medium text-lr-muted hover:text-lr-strong"
           >
-            Back to leads
+            Back to Customers/Jobs
           </Link>
 
-          <div className="mt-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-bold text-slate-950">
-                  {lead.customerName}
-                </h1>
-                <span
-                  className={`rounded-lg px-2 py-1 text-xs font-bold ${statusClassName(
-                    lead.status
-                  )}`}
-                >
-                  {leadStatusLabels[lead.status] ?? lead.status}
+          <div className="mt-6 border-b border-lr-border pb-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-3xl font-bold text-lr-strong">
+                {lead.customer?.name || lead.customerName}
+              </h1>
+              <span
+                className={`rounded-lg px-2 py-1 text-xs font-bold ${statusClassName(
+                  lead.status
+                )}`}
+              >
+                {leadStatusLabels[normalizeLeadStatus(lead.status)] ??
+                  lead.status}
+              </span>
+              {lead.job && (
+                <span className="rounded-lg bg-lr-hover px-2 py-1 text-xs font-bold text-lr-body">
+                  Job: {lead.job.status}
                 </span>
-              </div>
-              <p className="mt-2 text-slate-600">
-                {lead.customerPhone}
-                {lead.customerEmail ? ` - ${lead.customerEmail}` : ""}
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-600">
-                {leadSourceLabels[lead.source] ?? lead.source}
-              </p>
+              )}
             </div>
-            <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-xs font-medium text-slate-500">
-                  Estimated
-                </p>
-                <p className="mt-1 text-xl font-bold">
-                  {formatMoney(lead.estimatedValueCents)}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-xs font-medium text-slate-500">Captured</p>
-                <p className="mt-1 text-xl font-bold">
-                  {formatMoney(lead.capturedValueCents)}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-xs font-medium text-slate-500">
-                  Follow-up
-                </p>
-                <p className="mt-1 text-sm font-bold">
-                  {formatDate(lead.followUpAt)}
-                </p>
-              </div>
-            </div>
+            {lead.job && (
+              <p className="mt-3 text-sm font-semibold text-lr-muted">
+                {lead.job.title}
+              </p>
+            )}
           </div>
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <LeadDetailForm
-              lead={{
-                id: lead.id,
-                customerName: lead.customerName,
-                customerPhone: lead.customerPhone,
-                customerEmail: lead.customerEmail,
-                source: lead.source,
-                status: lead.status,
-                estimatedValueCents: lead.estimatedValueCents,
-                capturedValueCents: lead.capturedValueCents,
-                notes: lead.notes,
-                followUpAt: lead.followUpAt?.toISOString() ?? null,
-                followUpNote: lead.followUpNote,
-                followUpCompletedAt:
-                  lead.followUpCompletedAt?.toISOString() ?? null,
-                appointmentStatus: lead.appointmentStatus,
-                appointmentAt: lead.appointmentAt?.toISOString() ?? null,
-                appointmentNotes: lead.appointmentNotes,
-                reviewRequests: lead.reviewRequests.map((request) => ({
-                  id: request.id,
-                })),
-              }}
-            />
+          <div className="mt-6 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+            <div id="lead-details">
+              <LeadDetailForm
+                lead={{
+                  id: lead.id,
+                  customerName: lead.customer?.name ?? lead.customerName,
+                  customerPhone: lead.customer?.phone ?? lead.customerPhone,
+                  customerEmail: lead.customer?.email ?? lead.customerEmail,
+                  source: lead.source,
+                  sourceDetail: lead.sourceDetail,
+                  marketingCampaignId: lead.marketingCampaignId,
+                  status: lead.status,
+                  estimatedValueCents: lead.estimatedValueCents,
+                  capturedValueCents:
+                    lead.job?.capturedValueCents ?? lead.capturedValueCents,
+                  notes: lead.job?.notes ?? lead.notes,
+                  followUpAt:
+                    lead.job?.followUpAt?.toISOString() ??
+                    lead.followUpAt?.toISOString() ??
+                    null,
+                  followUpNote: lead.job?.followUpNote ?? lead.followUpNote,
+                  followUpCompletedAt:
+                    lead.followUpCompletedAt?.toISOString() ?? null,
+                  appointmentStatus:
+                    lead.job?.appointmentStatus ?? lead.appointmentStatus,
+                  appointmentAt:
+                    lead.job?.appointmentAt?.toISOString() ??
+                    lead.appointmentAt?.toISOString() ??
+                    null,
+                  appointmentNotes:
+                    lead.job?.appointmentNotes ?? lead.appointmentNotes,
+                }}
+              />
+            </div>
 
             <aside className="space-y-5">
-              <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-sm font-medium text-slate-500">
-                  Lead quality
+              <div className="rounded-2xl border border-lr-border p-5">
+                <p className="text-sm font-medium text-lr-subtle">
+                  Job overview
                 </p>
-                <p className="mt-2 text-3xl font-bold text-slate-950">
-                  {qualityScore.score}/100
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-700">
-                  {qualityScore.label}
-                </p>
-                <p className="mt-3 text-sm text-slate-600">
-                  {qualityScore.reason}
-                </p>
-                <div className="mt-4 space-y-2">
-                  {qualityScore.factors.slice(0, 4).map((factor) => (
-                    <div
-                      key={factor.label}
-                      className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
-                    >
-                      <span className="text-sm font-medium text-slate-700">
-                        {factor.label}
-                      </span>
-                      <span className="text-sm font-bold text-slate-950">
-                        {factor.points > 0 ? "+" : ""}
-                        {factor.points}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-sm font-medium text-slate-500">
-                  Appointment outcome
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded-lg px-2 py-1 text-xs font-bold ${appointmentStatusClassName(
-                      lead.appointmentStatus
-                    )}`}
-                  >
-                    {appointmentStatusLabels[lead.appointmentStatus] ??
-                      lead.appointmentStatus}
-                  </span>
-                  <span className="text-sm text-slate-600">
-                    {lead.appointmentAt
-                      ? formatDate(lead.appointmentAt)
-                      : "No appointment time"}
-                  </span>
-                </div>
-                {lead.appointmentNotes && (
-                  <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                    {lead.appointmentNotes}
-                  </p>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-sm font-medium text-slate-500">
-                  Service and booking
-                </p>
-                <p className="mt-2 text-xl font-bold text-slate-950">
-                  {matchedServiceName || "No service matched yet"}
-                </p>
+                <h2 className="mt-2 text-xl font-bold text-lr-strong">
+                  {jobTitle}
+                </h2>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium text-slate-500">
-                      Estimate range
+                  <div className="rounded-xl bg-lr-surface-muted px-4 py-3">
+                    <p className="text-xs font-medium text-lr-subtle">
+                      Customer
                     </p>
-                    <p className="mt-1 text-sm font-bold text-slate-950">
+                    <p className="mt-1 text-sm font-bold text-lr-strong">
+                      {lead.customer?.name || lead.customerName}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-lr-surface-muted px-4 py-3">
+                    <p className="text-xs font-medium text-lr-subtle">
+                      Job status
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-lr-strong">
+                      {jobStatus}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-lr-surface-muted px-4 py-3">
+                    <p className="text-xs font-medium text-lr-subtle">
+                      Appointment
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-lr-strong">
+                      {appointmentAt ? formatDate(appointmentAt) : "Not scheduled"}
+                    </p>
+                    <p className="mt-1 text-xs text-lr-muted">
+                      {appointmentStatusLabels[appointmentStatus] ??
+                        appointmentStatus}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-lr-surface-muted px-4 py-3">
+                    <p className="text-xs font-medium text-lr-subtle">
+                      Estimate
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-lr-strong">
                       {quoteRange}
                     </p>
                   </div>
-                  <div className="rounded-xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium text-slate-500">
+                  <div className="rounded-xl bg-lr-surface-muted px-4 py-3">
+                    <p className="text-xs font-medium text-lr-subtle">
                       Duration
                     </p>
-                    <p className="mt-1 text-sm font-bold text-slate-950">
+                    <p className="mt-1 text-sm font-bold text-lr-strong">
                       {durationLabel}
                     </p>
                   </div>
                 </div>
-                <p className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                  {latestConciergeIntake?.availabilityGuidance ||
-                    "Availability guidance will appear after a concierge intake or service setup."}
+                <p className="mt-4 rounded-xl bg-lr-surface-muted px-4 py-3 text-sm text-lr-body">
+                  {latestMissedCallAssistantIntake?.availabilityGuidance ||
+                    "Availability guidance will appear after a missed-call assistant intake or service setup."}
                 </p>
                 <Link
                   href="/settings/services"
-                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-lr-border-strong bg-lr-surface px-4 py-3 text-sm font-semibold text-lr-strong hover:bg-lr-hover"
                 >
                   Manage services
                 </Link>
               </div>
+
+              {latestMissedCallAssistantIntake && (
+                <div
+                  id="ai-intake"
+                  className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5"
+                >
+                  <p className="text-sm font-semibold uppercase tracking-wide text-indigo-800">
+                    missed-call assistant intake
+                  </p>
+                  <h2 className="mt-2 text-xl font-bold text-lr-strong">
+                    {latestMissedCallAssistantIntake.summary || "Summary pending"}
+                  </h2>
+                  <p className="mt-2 text-sm text-lr-body">
+                    {latestMissedCallAssistantIntake.nextAction ||
+                      "Review the customer answers and choose the next step."}
+                  </p>
+                </div>
+              )}
 
               <LeadFollowUpSequence
                 leadId={lead.id}
@@ -341,46 +335,52 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                 }))}
               />
 
-              <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-sm font-medium text-slate-500">
+              <div
+                id="review-funnel"
+                className="rounded-2xl border border-lr-border p-5"
+              >
+                <p className="text-sm font-medium text-lr-subtle">
                   Review funnel
                 </p>
                 <p className="mt-2 text-3xl font-bold">
                   {lead.reviewRequests.length}
                 </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  Mark this lead as captured, send a review request, then track
+                <p className="mt-2 text-sm text-lr-muted">
+                  Mark this job as captured, send a review request, then track
                   when the review comes in.
                 </p>
                 <Link
                   href="/reviews"
-                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-lr-border-strong bg-lr-surface px-4 py-3 text-sm font-semibold text-lr-strong hover:bg-lr-hover"
                 >
                   Open funnel
                 </Link>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-sm font-medium text-slate-500">
+              <div
+                id="history"
+                className="rounded-2xl border border-lr-border p-5"
+              >
+                <p className="text-sm font-medium text-lr-subtle">
                   Review requests
                 </p>
                 <div className="mt-4 space-y-3">
                   {lead.reviewRequests.length === 0 ? (
-                    <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <div className="rounded-xl bg-lr-surface-muted px-4 py-3 text-sm text-lr-muted">
                       No review requests yet.
                     </div>
                   ) : (
                     lead.reviewRequests.map((request) => (
                       <div
                         key={request.id}
-                        className="rounded-xl bg-slate-50 px-4 py-3 text-sm"
+                        className="rounded-xl bg-lr-surface-muted px-4 py-3 text-sm"
                       >
                         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
                           <div>
-                            <p className="font-semibold text-slate-950">
+                            <p className="font-semibold text-lr-strong">
                               {getReviewStatusLabel(request.status)}
                             </p>
-                            <p className="mt-1 text-slate-600">
+                            <p className="mt-1 text-lr-muted">
                               {request.status === "RECEIVED"
                                 ? `Received ${formatDate(request.receivedAt)}`
                                 : request.status === "SENT"
@@ -396,7 +396,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                             {getReviewStatusLabel(request.status)}
                           </span>
                         </div>
-                        <p className="mt-3 text-slate-700">{request.message}</p>
+                        <p className="mt-3 text-lr-body">{request.message}</p>
                         <ReviewRequestStatusButtons
                           requestId={request.id}
                           status={request.status}
@@ -407,15 +407,38 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-sm font-medium text-slate-500">History</p>
+              <div className="rounded-2xl border border-lr-border p-5">
+                <p className="text-sm font-medium text-lr-subtle">History</p>
                 <div className="mt-4 space-y-3">
-                  <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm">
+                  {lead.customer?.activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="rounded-xl bg-lr-surface-muted px-4 py-3 text-sm"
+                    >
+                      <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-start">
+                        <p className="font-semibold text-lr-strong">
+                          {activity.title}
+                        </p>
+                        <p className="text-xs text-lr-subtle">
+                          {formatDate(activity.occurredAt)}
+                        </p>
+                      </div>
+                      {activity.body && (
+                        <p className="mt-2 whitespace-pre-line text-lr-body">
+                          {activity.body}
+                        </p>
+                      )}
+                      <p className="mt-2 text-xs text-lr-subtle">
+                        {activity.authorName}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="rounded-xl bg-lr-surface-muted px-4 py-3 text-sm">
                     Created on {formatDate(lead.createdAt)}
                   </div>
                   {lead.closedAt && (
                     <div
-                      className="rounded-xl bg-slate-50 px-4 py-3 text-sm"
+                      className="rounded-xl bg-lr-surface-muted px-4 py-3 text-sm"
                     >
                       Closed on {formatDate(lead.closedAt)}
                     </div>
